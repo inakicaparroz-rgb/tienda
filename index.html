@@ -83,11 +83,36 @@
     .pcard .pimg .ph{position:absolute;inset:0;transition:transform .8s cubic-bezier(0.16,1,0.3,1);will-change:transform}
     .pcard:hover .pimg .ph{transform:scale(1.045)}
     .pcard h3{font-family:'Archivo',sans-serif;font-weight:500;text-transform:uppercase;line-height:1.1;letter-spacing:-0.005em;color:var(--ink);font-size:14px}
-    .pcard-btns{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.25rem}
-    .pcard-btn{display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.5rem .25rem;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;text-decoration:none;transition:opacity .2s ease,background .2s ease}
-    .pcard-btn:hover{opacity:.85}
-    .pcard-btn-wsp{background:#25D366;color:#000}
-    .pcard-btn-mp{background:#009EE3;color:#fff}
+    .btn-add-cart{width:100%;margin-top:.25rem;padding:.55rem;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;border:1px solid var(--accent);color:var(--accent);background:transparent;transition:background .2s ease,color .2s ease;cursor:pointer}
+    .btn-add-cart:hover{background:var(--accent);color:var(--bg)}
+    .btn-add-cart.in-cart{background:var(--accent);color:var(--bg)}
+    /* Cart FAB */
+    #cart-fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:100;width:56px;height:56px;background:var(--accent);color:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s ease,opacity .2s ease;opacity:0;pointer-events:none}
+    #cart-fab.visible{opacity:1;pointer-events:auto}
+    #cart-fab:hover{transform:scale(1.07)}
+    #cart-badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 4px;background:#fff;color:#000;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border-radius:0}
+    /* Cart drawer */
+    #cart-overlay{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .3s ease}
+    #cart-overlay.open{opacity:1;pointer-events:auto}
+    #cart-drawer{position:fixed;top:0;right:0;bottom:0;z-index:151;width:min(420px,100vw);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(0.16,1,0.3,1)}
+    #cart-drawer.open{transform:translateX(0)}
+    #cart-items{flex:1;overflow-y:auto;padding:1.25rem}
+    #cart-items::-webkit-scrollbar{width:4px}
+    #cart-items::-webkit-scrollbar-track{background:transparent}
+    #cart-items::-webkit-scrollbar-thumb{background:var(--border)}
+    .cart-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;border-bottom:1px solid var(--border)}
+    .cart-item-info{flex:1;min-width:0}
+    .cart-item-name{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cart-item-price{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);margin-top:2px}
+    .cart-item-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:4px;transition:color .2s}
+    .cart-item-remove:hover{color:var(--ink)}
+    #cart-footer{padding:1.25rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:.75rem}
+    .cart-total-row{display:flex;justify-content:space-between;align-items:baseline}
+    .btn-cart-wsp{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.7rem;background:#25D366;color:#000;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;text-decoration:none;border:none;cursor:pointer;transition:opacity .2s}
+    .btn-cart-wsp:hover{opacity:.88}
+    .btn-cart-mp{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.7rem;background:#009EE3;color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;border:none;cursor:pointer;transition:opacity .2s}
+    .btn-cart-mp:hover{opacity:.88}
+    .btn-cart-mp:disabled{opacity:.4;cursor:not-allowed}
     .ph-art{width:100%;height:100%;background:var(--surface);position:relative;display:flex;align-items:center;justify-content:center;padding:1.5rem;overflow:hidden}
     .ph-art::before{content:'';position:absolute;inset:1.25rem;border:1px solid var(--border);pointer-events:none}
     .ph-art .ph-brand{position:absolute;top:1.5rem;left:1.75rem;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted)}
@@ -354,6 +379,40 @@
     </div>
   </div>
 </footer>
+<!-- Cart FAB -->
+<button id="cart-fab" aria-label="Ver carrito">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/></svg>
+  <span id="cart-badge" class="hidden">0</span>
+</button>
+
+<!-- Cart overlay + drawer -->
+<div id="cart-overlay"></div>
+<aside id="cart-drawer" aria-label="Carrito de compras">
+  <div style="padding:1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+    <span class="font-mono text-xs uppercase tracking-[.18em]">CARRITO</span>
+    <button id="cart-close" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:4px" aria-label="Cerrar carrito">×</button>
+  </div>
+  <div id="cart-items"></div>
+  <div id="cart-footer" class="hidden">
+    <div class="cart-total-row">
+      <span class="font-mono text-xs uppercase tracking-[.14em] text-muted">TOTAL</span>
+      <span id="cart-total" class="font-mono text-sm font-semibold text-accent"></span>
+    </div>
+    <p class="font-mono text-[9px] uppercase tracking-[.14em] text-muted">Precio en ARS · Dólar blue del día</p>
+    <a id="btn-wsp" class="btn-cart-wsp" href="#" target="_blank" rel="noreferrer noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.116.55 4.103 1.51 5.829L.057 23.5l5.82-1.528A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.032-1.386l-.361-.214-3.733.979.997-3.642-.235-.374A9.818 9.818 0 012.182 12c0-5.42 4.398-9.818 9.818-9.818 5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+      Consultar por WhatsApp
+    </a>
+    <button id="btn-mp" class="btn-cart-mp">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.33c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.891z"/></svg>
+      Pagar con Mercado Pago
+    </button>
+  </div>
+  <div id="cart-empty" style="flex:1;display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem;text-align:center">
+    <p class="font-mono text-xs uppercase tracking-[.18em] text-muted">El carrito está vacío.<br>Agregá productos del catálogo.</p>
+  </div>
+</aside>
+
 <script>
   const TIENDA = "https://copordropar.mitiendanube.com/productos";
   const PRODUCTS = [
@@ -482,7 +541,10 @@
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
   const buyUrl = (slug) => `${TIENDA}/${slug}/`;
-  const WA = "https://wa.link/nvx9l1";
+  const WA_NUMBER = "541134435571";
+  // Reemplazá con tu Access Token de Mercado Pago (Producción)
+  // Obtenelo en: mercadopago.com.ar/developers/panel → Credenciales de producción
+  const MP_ACCESS_TOKEN = "";
 
   document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
 
@@ -503,7 +565,9 @@
       grid.innerHTML = `<div class="col-span-full border border-border p-12 text-center"><p class="font-mono text-xs uppercase tracking-[0.18em] text-muted">No hay productos para los filtros actuales.</p></div>`;
       return;
     }
-    grid.innerHTML = filtered.map((p, i) => `
+    grid.innerHTML = filtered.map((p, i) => {
+      const inCart = cart.some(c => c.slug === p.slug);
+      return `
       <div class="pcard fade-card">
         <div class="pimg">
           <div class="ph ph-art">
@@ -519,18 +583,11 @@
           <h3>${p.name}</h3>
           <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">REF · USD ${p.priceUSD} · USDT</span>
         </div>
-        <div class="pcard-btns">
-          <a class="pcard-btn pcard-btn-wsp" href="${WA}" target="_blank" rel="noreferrer noopener">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.116.55 4.103 1.51 5.829L.057 23.5l5.82-1.528A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.032-1.386l-.361-.214-3.733.979.997-3.642-.235-.374A9.818 9.818 0 012.182 12c0-5.42 4.398-9.818 9.818-9.818 5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
-            WhatsApp
-          </a>
-          <a class="pcard-btn pcard-btn-mp" href="${buyUrl(p.slug)}" target="_blank" rel="noreferrer noopener">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.33c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.891z"/></svg>
-            Mercado Pago
-          </a>
-        </div>
-      </div>
-    `).join("");
+        <button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="cartToggle('${p.slug}')">
+          ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
+        </button>
+      </div>`;
+    }).join("");
     if (typeof anime !== "undefined") {
       anime({targets:".fade-card",opacity:[0,1],translateY:[24,0],delay:anime.stagger(40),easing:"easeOutCubic",duration:600});
     }
@@ -623,6 +680,124 @@
   });
 
   document.getElementById("year").textContent = new Date().getFullYear();
+
+  // ── CARRITO ──────────────────────────────────────────────────────────────
+  let cart = [];
+
+  const cartFab = document.getElementById("cart-fab");
+  const cartBadge = document.getElementById("cart-badge");
+  const cartOverlay = document.getElementById("cart-overlay");
+  const cartDrawer = document.getElementById("cart-drawer");
+  const cartItemsEl = document.getElementById("cart-items");
+  const cartFooter = document.getElementById("cart-footer");
+  const cartEmptyEl = document.getElementById("cart-empty");
+  const cartTotalEl = document.getElementById("cart-total");
+  const btnWsp = document.getElementById("btn-wsp");
+  const btnMp = document.getElementById("btn-mp");
+
+  function openCart() {
+    cartOverlay.classList.add("open");
+    cartDrawer.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeCart() {
+    cartOverlay.classList.remove("open");
+    cartDrawer.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  cartFab.addEventListener("click", openCart);
+  document.getElementById("cart-close").addEventListener("click", closeCart);
+  cartOverlay.addEventListener("click", closeCart);
+
+  function cartToggle(slug) {
+    const p = PRODUCTS.find(x => x.slug === slug);
+    if (!p) return;
+    const idx = cart.findIndex(c => c.slug === slug);
+    if (idx >= 0) cart.splice(idx, 1);
+    else cart.push(p);
+    updateCart();
+    render();
+  }
+  window.cartToggle = cartToggle;
+
+  function updateCart() {
+    const count = cart.length;
+    cartFab.classList.toggle("visible", count > 0);
+    cartBadge.textContent = count;
+    cartBadge.classList.toggle("hidden", count === 0);
+
+    if (count === 0) {
+      cartItemsEl.innerHTML = "";
+      cartFooter.classList.add("hidden");
+      cartEmptyEl.style.display = "flex";
+    } else {
+      cartEmptyEl.style.display = "none";
+      cartFooter.classList.remove("hidden");
+      const total = cart.reduce((s, p) => s + effectiveARS(p), 0);
+      cartTotalEl.textContent = formatARS(total);
+
+      cartItemsEl.innerHTML = cart.map(p => `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <div class="cart-item-name">${p.name}</div>
+            <div class="cart-item-price">${formatARS(effectiveARS(p))} · USD ${p.priceUSD}</div>
+          </div>
+          <button class="cart-item-remove" onclick="cartToggle('${p.slug}')" aria-label="Quitar ${p.name}">×</button>
+        </div>
+      `).join("");
+
+      // WhatsApp: mensaje pre-cargado con el carrito
+      const lines = cart.map(p => `• ${p.name} — ${formatARS(effectiveARS(p))}`).join("\n");
+      const total_line = `\nTOTAL: ${formatARS(total)}`;
+      const msg = encodeURIComponent(`Hola! Quiero comprar:\n${lines}${total_line}`);
+      btnWsp.href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
+    }
+  }
+
+  btnMp.addEventListener("click", async () => {
+    if (!MP_ACCESS_TOKEN) {
+      alert("Configurá el Access Token de Mercado Pago para activar este método de pago.");
+      return;
+    }
+    btnMp.disabled = true;
+    btnMp.textContent = "Generando link...";
+    try {
+      const items = cart.map(p => ({
+        title: p.name,
+        quantity: 1,
+        unit_price: effectiveARS(p),
+        currency_id: "ARS",
+      }));
+      const res = await fetch("https://api.mercadopago.com/checkout/preferences", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${MP_ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify({
+          items,
+          back_urls: { success: location.href, failure: location.href },
+          auto_return: "approved",
+          statement_descriptor: "COP OR DROP",
+        }),
+      });
+      const data = await res.json();
+      if (data.init_point) {
+        window.open(data.init_point, "_blank");
+      } else {
+        alert("Error al generar el link de pago. Revisá el Access Token.");
+        console.error(data);
+      }
+    } catch (e) {
+      alert("Error de conexión con Mercado Pago.");
+      console.error(e);
+    } finally {
+      btnMp.disabled = false;
+      btnMp.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.33c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.891z"/></svg> Pagar con Mercado Pago`;
+    }
+  });
+
   render();
 </script>
 </body>
