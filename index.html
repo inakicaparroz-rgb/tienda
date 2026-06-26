@@ -77,15 +77,17 @@
     .badge-sin-stock{border-color:var(--muted);color:var(--muted)}
     .reveal{opacity:0;transform:translateY(28px);transition:opacity .9s cubic-bezier(0.16,1,0.3,1),transform .9s cubic-bezier(0.16,1,0.3,1)}
     .reveal.active{opacity:1;transform:translateY(0)}
-    .pcard{display:flex;flex-direction:column;gap:.75rem;text-decoration:none;color:inherit}
+    .pcard{display:flex;flex-direction:column;gap:.75rem;color:inherit;cursor:default}
     .pcard .pimg{position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--surface);border:1px solid transparent;transition:border-color .3s ease}
     .pcard:hover .pimg{border-color:var(--border)}
     .pcard .pimg .ph{position:absolute;inset:0;transition:transform .8s cubic-bezier(0.16,1,0.3,1);will-change:transform}
     .pcard:hover .pimg .ph{transform:scale(1.045)}
-    .pcard .hover-cta{position:absolute;left:.75rem;right:.75rem;bottom:.75rem;opacity:0;transform:translateY(.5rem);transition:all .35s cubic-bezier(0.16,1,0.3,1);display:flex;align-items:center;justify-content:flex-start;z-index:10}
-    .pcard:hover .hover-cta{opacity:1;transform:translateY(0)}
-    .pcard h3{font-family:'Archivo',sans-serif;font-weight:500;text-transform:uppercase;line-height:1.1;letter-spacing:-0.005em;color:var(--ink);font-size:14px;transition:color .2s ease}
-    .pcard:hover h3{color:var(--accent)}
+    .pcard h3{font-family:'Archivo',sans-serif;font-weight:500;text-transform:uppercase;line-height:1.1;letter-spacing:-0.005em;color:var(--ink);font-size:14px}
+    .pcard-btns{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.25rem}
+    .pcard-btn{display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.5rem .25rem;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;text-decoration:none;transition:opacity .2s ease,background .2s ease}
+    .pcard-btn:hover{opacity:.85}
+    .pcard-btn-wsp{background:#25D366;color:#000}
+    .pcard-btn-mp{background:#009EE3;color:#fff}
     .ph-art{width:100%;height:100%;background:var(--surface);position:relative;display:flex;align-items:center;justify-content:center;padding:1.5rem;overflow:hidden}
     .ph-art::before{content:'';position:absolute;inset:1.25rem;border:1px solid var(--border);pointer-events:none}
     .ph-art .ph-brand{position:absolute;top:1.5rem;left:1.75rem;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted)}
@@ -480,6 +482,7 @@
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
   const buyUrl = (slug) => `${TIENDA}/${slug}/`;
+  const WA = "https://wa.link/nvx9l1";
 
   document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
 
@@ -501,7 +504,7 @@
       return;
     }
     grid.innerHTML = filtered.map((p, i) => `
-      <a class="pcard fade-card" href="${buyUrl(p.slug)}" target="_blank" rel="noreferrer noopener" aria-label="${p.name} — ${formatARS(effectiveARS(p))} — ${statusLabel(p.status)}">
+      <div class="pcard fade-card">
         <div class="pimg">
           <div class="ph ph-art">
             <div class="ph-brand">${p.brand.toUpperCase()}</div>
@@ -510,14 +513,23 @@
             <div class="flex flex-col items-center gap-2 relative z-[1]"><span class="ph-word ph-w1">${p.w1}</span><span class="ph-word ph-w2">${p.w2}</span></div>
           </div>
           <div class="absolute left-3 top-3 z-10"><span class="badge ${statusClass(p.status)}" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span></div>
-          <div class="hover-cta"><span class="font-mono text-xs uppercase tracking-[0.18em] text-bg bg-accent px-3 py-2">${p.status==="sin-stock" ? "CONSULTAR →" : "COMPRAR →"}</span></div>
         </div>
         <div class="flex flex-col gap-1">
           <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">${formatARS(effectiveARS(p))}</span></div>
           <h3>${p.name}</h3>
           <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">REF · USD ${p.priceUSD} · USDT</span>
         </div>
-      </a>
+        <div class="pcard-btns">
+          <a class="pcard-btn pcard-btn-wsp" href="${WA}" target="_blank" rel="noreferrer noopener">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.116.55 4.103 1.51 5.829L.057 23.5l5.82-1.528A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.032-1.386l-.361-.214-3.733.979.997-3.642-.235-.374A9.818 9.818 0 012.182 12c0-5.42 4.398-9.818 9.818-9.818 5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
+            WhatsApp
+          </a>
+          <a class="pcard-btn pcard-btn-mp" href="${buyUrl(p.slug)}" target="_blank" rel="noreferrer noopener">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.33c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.891z"/></svg>
+            Mercado Pago
+          </a>
+        </div>
+      </div>
     `).join("");
     if (typeof anime !== "undefined") {
       anime({targets:".fade-card",opacity:[0,1],translateY:[24,0],delay:anime.stagger(40),easing:"easeOutCubic",duration:600});
