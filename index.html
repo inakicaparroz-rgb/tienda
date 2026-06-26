@@ -474,7 +474,8 @@
 
   const BLUE = 1530; // dólar blue 26/06/2026
   const TN_FEE = 1.24; // comisión Tienda Nube 24%
-  const effectiveARS = (p) => p.priceARS > 0 ? p.priceARS : Math.round(p.priceUSD * BLUE * TN_FEE / 1000) * 1000;
+  // precio base en ARS (si no tiene, calcula desde USD blue), luego +24% comisión
+  const effectiveARS = (p) => Math.round((p.priceARS > 0 ? p.priceARS : p.priceUSD * BLUE) * TN_FEE / 1000) * 1000;
   const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
