@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Cop or Drop — Únicamente Productos Originales</title>
+  <meta name="description" content="Cop or Drop. Streetwear y sneakers 100% originales en CABA. Hellstar, Supreme, Corteiz, Denim Tears, Casablanca, Bape, Adidas y más. Envíos a todo el país." />
+  <meta name="theme-color" content="#000000" />
+  <meta property="og:title" content="Cop or Drop — Únicamente Productos Originales" />
+  <meta property="og:description" content="Streetwear y sneakers hype, 100% originales. Envíos a toda Argentina." />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_AR" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='Barlow Condensed,sans-serif' font-weight='900' font-size='26' fill='%2357BEA1'%3EC%3C/text%3E%3C/svg%3E" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bg: '#000000', ink: '#FFFFFF', surface: '#0E0E0E',
+            'surface-elevated': '#141416', border: '#242424',
+            muted: '#7A7A7A', accent: '#57BEA1', 'accent-dim': '#3D8A75',
+          },
+          fontFamily: {
+            display: ['"Barlow Condensed"', 'Helvetica Neue', 'sans-serif'],
+            sans: ['Archivo', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          letterSpacing: { tightest: '-0.04em', ultra: '0.18em' },
+          borderRadius: { none: '0' },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root {
+      --bg: #000000; --ink: #FFFFFF; --surface: #0E0E0E;
+      --surface-elevated: #141416; --border: #242424;
+      --muted: #7A7A7A; --accent: #57BEA1; --accent-glow: rgba(87,190,161,0.25);
+    }
+    *{box-sizing:border-box}
+    html,body{background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
+    body{font-family:'Archivo','Helvetica Neue',Arial,sans-serif;font-feature-settings:'ss01','cv11'}
+    ::selection{background:var(--accent);color:var(--bg)}
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-track{background:var(--bg)}
+    ::-webkit-scrollbar-thumb{background:var(--border)}
+    ::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+    .skip-link{position:absolute;top:-100px;left:1rem;z-index:100;background:var(--accent);color:var(--bg);padding:.75rem 1rem;font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:0.18em}
+    .skip-link:focus{top:1rem}
+    .display{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;line-height:0.88;letter-spacing:-0.02em}
+    .display-tight{letter-spacing:-0.035em}
+    .spec-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted)}
+    .spec-value{font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink)}
+    .section-number{font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted)}
+    .hairline{height:1px;width:100%;background:var(--border)}
+    .container-edge{max-width:1600px;margin:0 auto;padding-left:1rem;padding-right:1rem}
+    @media(min-width:640px){.container-edge{padding-left:1.5rem;padding-right:1.5rem}}
+    @media(min-width:1024px){.container-edge{padding-left:2.5rem;padding-right:2.5rem}}
+    .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border:1px solid var(--ink);padding:.875rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:0.18em;color:var(--ink);text-decoration:none;transition:all .25s cubic-bezier(0.16,1,0.3,1);background:transparent;cursor:pointer;position:relative;overflow:hidden}
+    .btn-primary::after{content:'';position:absolute;inset:0;background:var(--accent);transform:translateY(101%);transition:transform .35s cubic-bezier(0.16,1,0.3,1);z-index:-1}
+    .btn-primary:hover{color:var(--bg);border-color:var(--accent)}
+    .btn-primary:hover::after{transform:translateY(0)}
+    .btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .btn-ghost{display:inline-flex;align-items:center;gap:.5rem;font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);text-decoration:none;transition:color .2s ease;background:transparent;border:0;cursor:pointer}
+    .btn-ghost:hover{color:var(--accent)}
+    .btn-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .badge{display:inline-flex;align-items:center;gap:.375rem;border:1px solid;padding:.25rem .5rem;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.18em}
+    .badge-stock{border-color:var(--accent);color:var(--accent)}
+    .badge-encargo{border-color:var(--ink);color:var(--ink)}
+    .badge-sin-stock{border-color:var(--muted);color:var(--muted)}
+    .reveal{opacity:0;transform:translateY(28px);transition:opacity .9s cubic-bezier(0.16,1,0.3,1),transform .9s cubic-bezier(0.16,1,0.3,1)}
+    .reveal.active{opacity:1;transform:translateY(0)}
+    .pcard{display:flex;flex-direction:column;gap:.75rem;text-decoration:none;color:inherit}
+    .pcard .pimg{position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--surface);border:1px solid transparent;transition:border-color .3s ease}
+    .pcard:hover .pimg{border-color:var(--border)}
+    .pcard .pimg .ph{position:absolute;inset:0;transition:transform .8s cubic-bezier(0.16,1,0.3,1);will-change:transform}
+    .pcard:hover .pimg .ph{transform:scale(1.045)}
+    .pcard .hover-cta{position:absolute;left:.75rem;right:.75rem;bottom:.75rem;opacity:0;transform:translateY(.5rem);transition:all .35s cubic-bezier(0.16,1,0.3,1);display:flex;align-items:center;justify-content:flex-start;z-index:10}
+    .pcard:hover .hover-cta{opacity:1;transform:translateY(0)}
+    .pcard h3{font-family:'Archivo',sans-serif;font-weight:500;text-transform:uppercase;line-height:1.1;letter-spacing:-0.005em;color:var(--ink);font-size:14px;transition:color .2s ease}
+    .pcard:hover h3{color:var(--accent)}
+    .ph-art{width:100%;height:100%;background:var(--surface);position:relative;display:flex;align-items:center;justify-content:center;padding:1.5rem;overflow:hidden}
+    .ph-art::before{content:'';position:absolute;inset:1.25rem;border:1px solid var(--border);pointer-events:none}
+    .ph-art .ph-brand{position:absolute;top:1.5rem;left:1.75rem;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted)}
+    .ph-art .ph-cat{position:absolute;bottom:1.5rem;left:1.75rem;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.18em;color:var(--accent)}
+    .ph-art .ph-num{position:absolute;top:1.5rem;right:1.75rem;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted)}
+    .ph-art .ph-word{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;line-height:0.85;text-align:center;letter-spacing:-0.035em}
+    .ph-art .ph-w1{color:var(--ink);font-size:clamp(1.5rem,5.5vw,3.25rem)}
+    .ph-art .ph-w2{color:var(--accent);font-size:clamp(1.75rem,6.5vw,3.75rem)}
+    @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .marquee-track{display:flex;white-space:nowrap;animation:marquee 45s linear infinite;will-change:transform}
+    .marquee-pause:hover .marquee-track{animation-play-state:paused}
+    .hero-grid{background-image:linear-gradient(to right,rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:80px 80px}
+    .hero-glow{position:absolute;width:50vw;height:50vw;max-width:700px;max-height:700px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);filter:blur(60px);opacity:0.6;top:30%;right:-10%;pointer-events:none;animation:glowDrift 18s ease-in-out infinite}
+    @keyframes glowDrift{0%,100%{transform:translate(0,0) scale(1);opacity:.55}50%{transform:translate(-40px,30px) scale(1.1);opacity:.7}}
+    .chip{border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:all .2s ease;white-space:nowrap}
+    .chip:hover{border-color:var(--ink);color:var(--ink)}
+    .chip.active{border-color:var(--accent);background:var(--accent);color:var(--bg)}
+    .chip:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .faq-content{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(0.16,1,0.3,1)}
+    .faq-icon{transition:transform .35s ease}
+    .faq-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+    .nav-blur{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+    .burger span{display:block;width:24px;height:1px;background:var(--ink);transition:transform .3s ease,opacity .25s ease}
+    .burger span:nth-child(2){width:16px;margin-left:auto}
+    .menu-open .burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .menu-open .burger span:nth-child(2){opacity:0}
+    .menu-open .burger span:nth-child(3){transform:translateY(-5px) rotate(-45deg);width:24px}
+    a,button{cursor:pointer}
+    a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}.marquee-track{animation:none!important}.hero-glow{animation:none!important}}
+  </style>
+</head>
+<body class="min-h-screen bg-bg text-ink">
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<header id="nav" class="fixed inset-x-0 top-0 z-50 border-b border-transparent transition-all duration-300">
+  <div class="container-edge h-16 md:h-20 flex items-center justify-between">
+    <a href="#top" class="display text-2xl md:text-[1.65rem] text-ink hover:text-accent transition-colors" aria-label="Cop or Drop — Inicio">COP&nbsp;OR&nbsp;DROP</a>
+    <nav class="hidden md:flex items-center gap-10" aria-label="Navegación principal">
+      <a href="#catalogo" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">CATÁLOGO</a>
+      <a href="#categorias" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">CATEGORÍAS</a>
+      <a href="#manifesto" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">MANIFIESTO</a>
+      <a href="#faq" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">FAQ</a>
+      <a href="#contacto" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">CONTACTO</a>
+    </nav>
+    <div class="hidden md:flex items-center gap-4">
+      <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary">WhatsApp →</a>
+    </div>
+    <button id="menu-toggle" class="md:hidden w-10 h-10 flex items-center justify-center burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu">
+      <div class="flex flex-col items-end gap-[6px]"><span></span><span></span><span></span></div>
+    </button>
+  </div>
+  <div id="mobile-menu" class="fixed inset-x-0 top-16 bottom-0 z-40 bg-bg opacity-0 pointer-events-none transition-opacity duration-300 md:hidden" aria-hidden="true">
+    <div class="container-edge h-full flex flex-col justify-between py-10">
+      <nav class="flex flex-col gap-5" aria-label="Navegación móvil">
+        <a href="#catalogo" class="menu-link group flex items-baseline gap-4"><span class="font-mono text-xs text-muted">01</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATÁLOGO</span></a>
+        <a href="#categorias" class="menu-link group flex items-baseline gap-4"><span class="font-mono text-xs text-muted">02</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATEGORÍAS</span></a>
+        <a href="#manifesto" class="menu-link group flex items-baseline gap-4"><span class="font-mono text-xs text-muted">03</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">MANIFIESTO</span></a>
+        <a href="#faq" class="menu-link group flex items-baseline gap-4"><span class="font-mono text-xs text-muted">04</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">FAQ</span></a>
+        <a href="#contacto" class="menu-link group flex items-baseline gap-4"><span class="font-mono text-xs text-muted">05</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CONTACTO</span></a>
+      </nav>
+      <div class="flex flex-col gap-3">
+        <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary w-full">WhatsApp →</a>
+        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-ghost justify-center">Unirse a la comunidad →</a>
+      </div>
+    </div>
+  </div>
+</header>
+<main id="main">
+<section id="top" class="relative min-h-[100svh] overflow-hidden border-b border-border">
+  <div class="hero-grid absolute inset-0 pointer-events-none"></div>
+  <div class="hero-glow"></div>
+  <div class="container-edge relative z-10 flex min-h-[100svh] flex-col justify-between pt-24 pb-10 md:pt-32">
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex flex-col gap-2">
+        <span class="spec-label">/01 · STREETWEAR · HYPE · CABA</span>
+        <span class="spec-label">EST. 2024</span>
+      </div>
+      <div class="hidden md:flex flex-col items-end gap-2">
+        <span class="spec-label">N° 001 / DROP CONTINUO</span>
+        <span class="spec-label">UNICAMENTE PRODUCTOS ORIGINALES</span>
+      </div>
+    </div>
+    <div class="flex flex-col gap-7 py-10 md:py-16">
+      <h1 class="hero-title display text-ink" style="font-size:clamp(4rem,17vw,15rem);line-height:0.85;">
+        <span class="hero-line block overflow-hidden"><span class="hero-word inline-block">Únicamente</span></span>
+        <span class="hero-line block overflow-hidden"><span class="hero-word inline-block text-accent">productos</span></span>
+        <span class="hero-line block overflow-hidden"><span class="hero-word inline-block">originales.</span></span>
+      </h1>
+      <p class="hero-sub max-w-xl font-mono text-xs sm:text-sm uppercase tracking-[0.1em] text-muted opacity-0">Hellstar · Supreme · Corteiz · Denim Tears · Casablanca · Bape · Adidas. Curado de piezas hype, 100% verificadas, en Argentina.</p>
+    </div>
+    <div class="hero-cta flex flex-col gap-6 opacity-0">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <a href="#catalogo" class="btn-primary">Ver catálogo →</a>
+        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-ghost">Unirse a la comunidad</a>
+      </div>
+      <div class="hairline"></div>
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <span class="inline-block h-2 w-2 rounded-full bg-accent" style="animation:pulse 2s infinite;"></span>
+          <span class="spec-label text-accent">LIVE · ACTUALIZADO HOY</span>
+        </div>
+        <span class="spec-label">↓ SCROLL</span>
+      </div>
+    </div>
+  </div>
+  <style>@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(87,190,161,0.6)}70%{box-shadow:0 0 0 10px rgba(87,190,161,0)}100%{box-shadow:0 0 0 0 rgba(87,190,161,0)}}</style>
+</section>
+<section class="border-b border-border">
+  <div class="container-edge grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 pr-6 pl-0 md:pl-0 md:pr-10"><span class="display text-4xl md:text-6xl text-accent" data-counter="100" data-suffix="%">0%</span><span class="spec-label">ORIGINAL</span></div>
+    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink" data-counter="500" data-suffix="+">0+</span><span class="spec-label">PIEZAS COLOCADAS</span></div>
+    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink" data-counter="24" data-suffix="H">0H</span><span class="spec-label">RESPUESTA WHATSAPP</span></div>
+    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink">AR</span><span class="spec-label">ENVÍOS A TODO EL PAÍS</span></div>
+  </div>
+</section>
+<section id="catalogo" class="container-edge py-20 md:py-28">
+  <div class="reveal flex flex-col gap-6 pb-10 md:pb-14">
+    <div class="flex items-center gap-4">
+      <span class="section-number">02</span>
+      <div class="hairline flex-1"></div>
+      <span class="spec-label hidden sm:inline" id="drop-count">114 / DROP ACTUAL</span>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div class="flex flex-col gap-3">
+        <span class="spec-label">LO QUE TENÉS QUE TENER</span>
+        <h2 class="display text-ink" style="font-size:clamp(2.75rem,8vw,6.5rem);">Catálogo.</h2>
+      </div>
+      <a href="https://copordropar.mitiendanube.com/" target="_blank" rel="noreferrer noopener" class="btn-ghost">Ver tienda completa →</a>
+    </div>
+  </div>
+  <div class="reveal flex flex-col gap-6 border-y border-border py-6 mb-10">
+    <div class="flex flex-col gap-3">
+      <span class="spec-label">/ CATEGORÍA</span>
+      <div id="cat-filters" class="flex flex-wrap gap-2" role="group" aria-label="Filtros por categoría">
+        <button class="chip active" data-cat="todas" aria-pressed="true">Todas</button>
+        <button class="chip" data-cat="remeras" aria-pressed="false">Remeras</button>
+        <button class="chip" data-cat="pantalones" aria-pressed="false">Pantalones</button>
+        <button class="chip" data-cat="buzos" aria-pressed="false">Buzos</button>
+        <button class="chip" data-cat="zapatillas" aria-pressed="false">Zapatillas</button>
+        <button class="chip" data-cat="accesorios" aria-pressed="false">Accesorios</button>
+      </div>
+    </div>
+    <div class="flex flex-col gap-3">
+      <span class="spec-label">/ ESTADO</span>
+      <div id="status-filters" class="flex flex-wrap gap-2" role="group" aria-label="Filtros por estado de stock">
+        <button class="chip active" data-status="todos" aria-pressed="true">Todos</button>
+        <button class="chip" data-status="stock" aria-pressed="false">En stock</button>
+        <button class="chip" data-status="encargo" aria-pressed="false">Por encargo</button>
+        <button class="chip" data-status="sin-stock" aria-pressed="false">Sin stock</button>
+      </div>
+    </div>
+    <div class="flex items-center justify-between gap-4">
+      <span class="spec-label" id="results-count" aria-live="polite">MOSTRANDO 114 / 114 PRODUCTOS</span>
+      <button id="clear-filters" class="btn-ghost hidden">Limpiar filtros ×</button>
+    </div>
+  </div>
+  <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 md:gap-x-6 gap-y-12"></div>
+</section>
+<section id="categorias" class="container-edge py-20 md:py-28">
+  <div class="reveal flex flex-col gap-6 pb-10 md:pb-14">
+    <div class="flex items-center gap-4"><span class="section-number">03</span><div class="hairline flex-1"></div></div>
+    <div class="flex flex-col gap-3"><span class="spec-label">EXPLORÁ POR TIPO</span><h2 class="display text-ink" style="font-size:clamp(2.75rem,8vw,6.5rem);">Categorías.</h2></div>
+  </div>
+  <ul class="reveal divide-y divide-border border-y border-border" role="list">
+    <li><a href="#catalogo" data-jump-cat="remeras" class="cat-jump group flex items-center justify-between py-7 md:py-9 transition-colors"><div class="flex items-baseline gap-4 md:gap-8"><span class="font-mono text-xs uppercase tracking-[0.18em] text-muted w-8">01</span><span class="display text-ink group-hover:text-accent transition-colors" style="font-size:clamp(2.25rem,7vw,5.5rem);">Remeras</span></div><div class="hidden md:flex items-center gap-8"><span class="font-mono text-xs uppercase tracking-wider text-muted">Tees &amp; jerseys statement.</span><span class="font-mono text-xs uppercase tracking-[0.18em] text-ink group-hover:text-accent transition-colors">Ver →</span></div><span class="md:hidden font-mono text-xl text-muted group-hover:text-accent transition-all">→</span></a></li>
+    <li><a href="#catalogo" data-jump-cat="pantalones" class="cat-jump group flex items-center justify-between py-7 md:py-9"><div class="flex items-baseline gap-4 md:gap-8"><span class="font-mono text-xs uppercase tracking-[0.18em] text-muted w-8">02</span><span class="display text-ink group-hover:text-accent transition-colors" style="font-size:clamp(2.25rem,7vw,5.5rem);">Pantalones</span></div><div class="hidden md:flex items-center gap-8"><span class="font-mono text-xs uppercase tracking-wider text-muted">Shorts, joggers, denim.</span><span class="font-mono text-xs uppercase tracking-[0.18em] text-ink group-hover:text-accent transition-colors">Ver →</span></div><span class="md:hidden font-mono text-xl text-muted group-hover:text-accent transition-all">→</span></a></li>
+    <li><a href="#catalogo" data-jump-cat="buzos" class="cat-jump group flex items-center justify-between py-7 md:py-9"><div class="flex items-baseline gap-4 md:gap-8"><span class="font-mono text-xs uppercase tracking-[0.18em] text-muted w-8">03</span><span class="display text-ink group-hover:text-accent transition-colors" style="font-size:clamp(2.25rem,7vw,5.5rem);">Buzos</span></div><div class="hidden md:flex items-center gap-8"><span class="font-mono text-xs uppercase tracking-wider text-muted">Hoodies, crewnecks.</span><span class="font-mono text-xs uppercase tracking-[0.18em] text-ink group-hover:text-accent transition-colors">Ver →</span></div><span class="md:hidden font-mono text-xl text-muted group-hover:text-accent transition-all">→</span></a></li>
+    <li><a href="#catalogo" data-jump-cat="zapatillas" class="cat-jump group flex items-center justify-between py-7 md:py-9"><div class="flex items-baseline gap-4 md:gap-8"><span class="font-mono text-xs uppercase tracking-[0.18em] text-muted w-8">04</span><span class="display text-ink group-hover:text-accent transition-colors" style="font-size:clamp(2.25rem,7vw,5.5rem);">Zapatillas</span></div><div class="hidden md:flex items-center gap-8"><span class="font-mono text-xs uppercase tracking-wider text-muted">Hype sneakers originales.</span><span class="font-mono text-xs uppercase tracking-[0.18em] text-ink group-hover:text-accent transition-colors">Ver →</span></div><span class="md:hidden font-mono text-xl text-muted group-hover:text-accent transition-all">→</span></a></li>
+    <li><a href="#catalogo" data-jump-cat="accesorios" class="cat-jump group flex items-center justify-between py-7 md:py-9"><div class="flex items-baseline gap-4 md:gap-8"><span class="font-mono text-xs uppercase tracking-[0.18em] text-muted w-8">05</span><span class="display text-ink group-hover:text-accent transition-colors" style="font-size:clamp(2.25rem,7vw,5.5rem);">Accesorios</span></div><div class="hidden md:flex items-center gap-8"><span class="font-mono text-xs uppercase tracking-wider text-muted">Caps, bolsos, detalles.</span><span class="font-mono text-xs uppercase tracking-[0.18em] text-ink group-hover:text-accent transition-colors">Ver →</span></div><span class="md:hidden font-mono text-xl text-muted group-hover:text-accent transition-all">→</span></a></li>
+  </ul>
+</section>
+<section id="manifesto" class="container-edge py-20 md:py-28">
+  <div class="reveal flex flex-col gap-6 pb-10 md:pb-14">
+    <div class="flex items-center gap-4"><span class="section-number">04</span><div class="hairline flex-1"></div></div>
+    <div class="flex flex-col gap-3"><span class="spec-label">POR QUÉ COP OR DROP</span><h2 class="display text-ink" style="font-size:clamp(2.75rem,8vw,6.5rem);">Manifiesto.</h2></div>
+  </div>
+  <div class="reveal mb-12 md:mb-16 max-w-4xl">
+    <p class="font-display font-medium text-2xl md:text-4xl leading-tight text-ink">Vendemos hype. Pero <span class="text-accent">no vendemos humo</span>. Cada pieza que llega pasa por nuestras manos antes de llegar a las tuyas. Si la dudás, no la dropeamos.</p>
+  </div>
+  <div class="reveal grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border border-y border-border">
+    <article class="feature group flex flex-col gap-6 p-6 md:p-10 hover:bg-surface transition-colors">
+      <div class="flex items-center justify-between"><span class="section-number text-accent">01</span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-muted group-hover:text-accent transition-colors"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" /></svg></div>
+      <h3 class="display text-3xl md:text-4xl text-ink">Comunidad</h3>
+      <p class="text-sm leading-relaxed text-muted">Red activa de drops y releases. Unite al grupo de WhatsApp y enterate antes que nadie.</p>
+    </article>
+    <article class="feature group flex flex-col gap-6 p-6 md:p-10 hover:bg-surface transition-colors">
+      <div class="flex items-center justify-between"><span class="section-number text-accent">02</span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-muted group-hover:text-accent transition-colors"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-4.5" /></svg></div>
+      <h3 class="display text-3xl md:text-4xl text-ink">Envío Nacional</h3>
+      <p class="text-sm leading-relaxed text-muted">Despachamos a toda la Argentina. Coordinación 1 a 1 vía WhatsApp.</p>
+    </article>
+    <article class="feature group flex flex-col gap-6 p-6 md:p-10 hover:bg-surface transition-colors">
+      <div class="flex items-center justify-between"><span class="section-number text-accent">03</span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-muted group-hover:text-accent transition-colors"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" /></svg></div>
+      <h3 class="display text-3xl md:text-4xl text-ink">Mejor Precio</h3>
+      <p class="text-sm leading-relaxed text-muted">Precio justo sobre piezas hype. Referencia en ARS, USD y USDT.</p>
+    </article>
+    <article class="feature group flex flex-col gap-6 p-6 md:p-10 hover:bg-surface transition-colors">
+      <div class="flex items-center justify-between"><span class="section-number text-accent">04</span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-muted group-hover:text-accent transition-colors"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" /></svg></div>
+      <h3 class="display text-3xl md:text-4xl text-ink">100% Verificado</h3>
+      <p class="text-sm leading-relaxed text-muted">Checkout protegido en Tienda Nube. Cada pieza autenticada antes de salir.</p>
+    </article>
+  </div>
+</section>
+<section class="py-20 md:py-28">
+  <div class="container-edge">
+    <div class="reveal flex flex-col gap-6 pb-10 md:pb-14">
+      <div class="flex items-center gap-4"><span class="section-number">05</span><div class="hairline flex-1"></div></div>
+      <div class="flex flex-col gap-3"><span class="spec-label">MARCAS DISPONIBLES</span><h2 class="display text-ink" style="font-size:clamp(2.75rem,8vw,6.5rem);">Lo que vendemos.</h2></div>
+    </div>
+  </div>
+  <div class="relative overflow-hidden border-y border-border py-7 marquee-pause">
+    <div class="marquee-track" id="marquee" aria-hidden="true"></div>
+    <div class="pointer-events-none absolute inset-y-0 left-0 w-20 md:w-40" style="background:linear-gradient(to right,var(--bg),transparent);"></div>
+    <div class="pointer-events-none absolute inset-y-0 right-0 w-20 md:w-40" style="background:linear-gradient(to left,var(--bg),transparent);"></div>
+  </div>
+  <div class="container-edge mt-10 flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
+    <p class="reveal max-w-xl text-sm leading-relaxed text-muted">Curado preciso de marcas hype. Stüssy, Palace, Off-White y más por encargo. Si la querés, la conseguimos.</p>
+    <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary">Hacé tu encargo →</a>
+  </div>
+</section>
+<section id="faq" class="container-edge py-20 md:py-28">
+  <div class="reveal flex flex-col gap-6 pb-10 md:pb-14">
+    <div class="flex items-center gap-4"><span class="section-number">06</span><div class="hairline flex-1"></div></div>
+    <div class="flex flex-col gap-3"><span class="spec-label">DUDAS FRECUENTES</span><h2 class="display text-ink" style="font-size:clamp(2.75rem,8vw,6.5rem);">FAQ.</h2></div>
+  </div>
+  <div class="reveal divide-y divide-border border-y border-border">
+    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Son 100% originales?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Trabajamos únicamente con piezas originales verificadas por nosotros antes del envío. Cada producto incluye etiqueta, packaging y todos los detalles de fábrica.</p></div></div>
+    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Cómo es el envío?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Operamos desde CABA y enviamos a toda la Argentina. Coordinamos por WhatsApp para confirmar dirección, tiempos (24-72 hs en AMBA, 3-7 días al interior) y costo según destino.</p></div></div>
+    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Aceptan USDT o USD?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Cada producto tiene su referencia en USD/USDT. El pago se coordina por WhatsApp: transferencia, USDT (red TRC20 / BEP20) o efectivo en CABA.</p></div></div>
+    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Qué pasa si no tienen mi talle?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Tomamos encargos. Si la pieza existe en el mercado, la conseguimos. Tiempo estimado: 2 a 4 semanas según marca y disponibilidad global. Seña del 50% para arrancar el pedido.</p></div></div>
+    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Hay cambios o devoluciones?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Cambio de talle dentro de las 48 hs de recibido, siempre que la prenda esté sin uso, con tags y packaging original. Devoluciones no, salvo defecto de fábrica.</p></div></div>
+  </div>
+</section>
+<section id="contacto" class="container-edge py-20 md:py-28">
+  <div class="reveal flex flex-col gap-6 pb-10 md:pb-14">
+    <div class="flex items-center gap-4"><span class="section-number">07</span><div class="hairline flex-1"></div></div>
+    <div class="flex flex-col gap-3"><span class="spec-label">HABLAMOS</span><h2 class="display text-ink" style="font-size:clamp(2.75rem,8vw,6.5rem);">Contacto.</h2></div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border border-y border-border">
+    <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">01</span><span class="spec-label">WHATSAPP</span></div><h3 class="display text-3xl md:text-4xl text-ink">Hablá con nosotros.</h3><p class="flex-1 text-sm leading-relaxed text-muted">Respondemos rápido. Consultas, encargos y coordinación de envíos.</p><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Abrir chat →</a></div>
+    <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">02</span><span class="spec-label">COMUNIDAD</span></div><h3 class="display text-3xl md:text-4xl text-ink">Sumate al grupo.</h3><p class="flex-1 text-sm leading-relaxed text-muted">Drops, releases y previews antes que nadie. Una red activa de streetwear.</p><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Unirme →</a></div>
+    <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">03</span><span class="spec-label">INSTAGRAM</span></div><h3 class="display text-3xl md:text-4xl text-ink">@copordrop_ar</h3><p class="flex-1 text-sm leading-relaxed text-muted">Cada pieza nueva, restocks y previews. DM para consultas rápidas.</p><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Seguinos →</a></div>
+  </div>
+  <div class="reveal mt-20 md:mt-28 border-t border-border pt-10 md:pt-14">
+    <p class="display text-ink" style="font-size:clamp(3rem,10vw,9rem);line-height:0.88;">Unicamente<br><span class="text-accent">productos</span><br>originales.</p>
+  </div>
+</section>
+</main>
+<footer class="border-t border-border">
+  <div class="container-edge py-16 md:py-24">
+    <div class="reveal overflow-hidden">
+      <span class="display block text-ink" style="font-size:clamp(4.5rem,22vw,22rem);letter-spacing:-0.045em;line-height:0.78;">cop or drop</span>
+    </div>
+    <div class="hairline mt-12"></div>
+    <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-10">
+      <div class="flex flex-col gap-3"><span class="spec-label">/01 NAVEGACIÓN</span><a href="#top" class="text-sm text-ink hover:text-accent transition-colors">Inicio</a><a href="#catalogo" class="text-sm text-ink hover:text-accent transition-colors">Catálogo</a><a href="#manifesto" class="text-sm text-ink hover:text-accent transition-colors">Manifiesto</a><a href="#faq" class="text-sm text-ink hover:text-accent transition-colors">FAQ</a></div>
+      <div class="flex flex-col gap-3"><span class="spec-label">/02 COMUNIDAD</span><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">WhatsApp directo</a><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">Grupo WhatsApp</a><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">@copordrop_ar</a></div>
+      <div class="flex flex-col gap-3"><span class="spec-label">/03 UBICACIÓN</span><p class="text-sm text-ink">CABA, Argentina</p><p class="text-xs text-muted">Envíos a todo el país.</p></div>
+      <div class="flex flex-col gap-3"><span class="spec-label">/04 CHECKOUT</span><a href="https://copordropar.mitiendanube.com/" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">Tienda oficial →</a><p class="text-xs text-muted">Pagos, stock y envíos en Tienda Nube.</p></div>
+    </div>
+    <div class="hairline mt-12"></div>
+    <div class="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">© <span id="year">2025</span> COP OR DROP · UNICAMENTE PRODUCTOS ORIGINALES</p>
+      <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">CABA / AR — V2.1</p>
+    </div>
+  </div>
+</footer>
+<script>
+  const TIENDA = "https://copordropar.mitiendanube.com/productos";
+  const PRODUCTS = [
+    {slug:"maison-mihara-350usd-usdt",name:"MAISON MIHARA",brand:"Maison Mihara",category:"zapatillas",priceARS:678000,priceUSD:350,status:"sin-stock",w1:"MAISON",w2:"MIHARA"},
+    {slug:"mixed-emotion-black-end-tee-150usd-usdt",name:'MIXED EMOTION BLACK "END" TEE',brand:"Mixed Emotion",category:"remeras",priceARS:0,priceUSD:150,status:"stock",w1:"MIXED",w2:"EMOTION"},
+    {slug:"essentials-jersey-sand-120usd-usdt",name:"ESSENTIALS JERSEY SAND",brand:"Essentials",category:"remeras",priceARS:0,priceUSD:120,status:"stock",w1:"ESSENTIAL",w2:"JERSEY"},
+    {slug:"essentials-hoodie-light-oatmeal-160usd-usdt",name:"ESSENTIALS HOODIE LIGHT OATMEAL",brand:"Essentials",category:"buzos",priceARS:0,priceUSD:160,status:"sin-stock",w1:"ESSENTIAL",w2:"HOODIE"},
+    {slug:"kith-tee-doghouse-120usd-usdt",name:"KITH TEE DOGHOUSE",brand:"Kith",category:"remeras",priceARS:0,priceUSD:120,status:"stock",w1:"KITH",w2:"DOGHOUSE"},
+    {slug:"tee-quinn-kith-120usd-usdt",name:"TEE QUINN KITH",brand:"Kith",category:"remeras",priceARS:0,priceUSD:120,status:"stock",w1:"KITH",w2:"QUINN"},
+    {slug:"supreme-boxers-black-100usd-usdt",name:"SUPREME BOXERS BLACK",brand:"Supreme",category:"accesorios",priceARS:0,priceUSD:100,status:"stock",w1:"SUPREME",w2:"BOXERS"},
+    {slug:"supreme-boxers-white-100usd-usdt",name:"SUPREME BOXERS WHITE",brand:"Supreme",category:"accesorios",priceARS:0,priceUSD:100,status:"stock",w1:"SUPREME",w2:"BOXERS"},
+    {slug:"supreme-pilled-sweater-300usd-usdt",name:"SUPREME PILLED SWEATER",brand:"Supreme",category:"buzos",priceARS:0,priceUSD:300,status:"stock",w1:"SUPREME",w2:"PILLED"},
+    {slug:"supreme-classic-logo-hoodie-300usd-usdt",name:"SUPREME CLASSIC LOGO HOODIE",brand:"Supreme",category:"buzos",priceARS:0,priceUSD:300,status:"stock",w1:"SUPREME",w2:"CLASSIC"},
+    {slug:"supreme-small-box-zip-hoodie-300usd-usdt",name:"SUPREME SMALL BOX ZIP HOODIE",brand:"Supreme",category:"buzos",priceARS:0,priceUSD:300,status:"stock",w1:"SUPREME",w2:"ZIP"},
+    {slug:"tee-diesel-100usd-usdt",name:"TEE DIESEL",brand:"Diesel",category:"remeras",priceARS:0,priceUSD:100,status:"stock",w1:"DIESEL",w2:"TEE"},
+    {slug:"nike-polo-green-80usd-usdt",name:"NIKE POLO GREEN",brand:"Nike",category:"remeras",priceARS:0,priceUSD:80,status:"stock",w1:"NIKE",w2:"POLO"},
+    {slug:"jordan-hoodie-chimney-80usd-usdt",name:"JORDAN HOODIE CHIMNEY",brand:"Jordan",category:"buzos",priceARS:0,priceUSD:80,status:"stock",w1:"JORDAN",w2:"HOODIE"},
+    {slug:"pant-michigan-jordan-80usd-usdt",name:"PANT MICHIGAN JORDAN",brand:"Jordan",category:"pantalones",priceARS:0,priceUSD:80,status:"stock",w1:"JORDAN",w2:"MICHIGAN"},
+    {slug:"jogger-nike-65usd-usdt",name:"JOGGER NIKE",brand:"Nike",category:"pantalones",priceARS:0,priceUSD:65,status:"stock",w1:"NIKE",w2:"JOGGER"},
+    {slug:"short-adidas-x-bape-100usd-usdt",name:"SHORT ADIDAS X BAPE",brand:"Adidas × Bape",category:"pantalones",priceARS:193000,priceUSD:100,status:"sin-stock",w1:"ADIDAS",w2:"×BAPE"},
+    {slug:"casa-blanca-tee-montangne-280usd-usdt",name:"CASA BLANCA TEE MONTAGNE",brand:"Casablanca",category:"remeras",priceARS:542000,priceUSD:280,status:"stock",w1:"CASA",w2:"MONTAGNE"},
+    {slug:"casa-blanca-tee-casa-way-mountain-280usd-usdt",name:"CASA BLANCA TEE CASA WAY MOUNTAIN",brand:"Casablanca",category:"remeras",priceARS:542000,priceUSD:280,status:"stock",w1:"CASA",w2:"WAY"},
+    {slug:"mixed-emotion-tee-rhinestone-cropped-150usd-usdt",name:"MIXED EMOTION TEE RHINESTONE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"RHINESTONE"},
+    {slug:"mixed-emotion-sweatpants-pearls-220usd-usdt",name:"MIXED EMOTION SWEATPANTS PEARLS",brand:"Mixed Emotion",category:"pantalones",priceARS:426000,priceUSD:220,status:"stock",w1:"MIXED",w2:"PEARLS"},
+    {slug:"mixed-emotion-pearl-hoodie-220usd-usdt",name:"MIXED EMOTION PEARL HOODIE",brand:"Mixed Emotion",category:"buzos",priceARS:426000,priceUSD:220,status:"stock",w1:"MIXED",w2:"PEARL"},
+    {slug:"mixed-emotion-paisley-denim-black-shirt-150usd-usdt",name:"MIXED EMOTION PAISLEY DENIM BLACK",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"PAISLEY"},
+    {slug:"supreme-zip-hoodie-collegiate-blue-usd-usdt-250",name:"SUPREME ZIP HOODIE COLLEGIATE BLUE",brand:"Supreme",category:"buzos",priceARS:484000,priceUSD:250,status:"stock",w1:"SUPREME",w2:"COLLEGIATE"},
+    {slug:"corteiz-tee-dog-usd-usdt-120",name:"CORTEIZ TEE DOG",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"DOG"},
+    {slug:"denim-tears-crewneck-blue-usd-usdt-200",name:"DENIM TEARS CREWNECK BLUE",brand:"Denim Tears",category:"buzos",priceARS:387000,priceUSD:200,status:"stock",w1:"DENIM",w2:"TEARS"},
+    {slug:"corteiz-artillerey-white-tee-120usd-usdt",name:"CORTEIZ ARTILLERY WHITE TEE",brand:"Corteiz",category:"remeras",priceARS:0,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"ARTILLERY"},
+    {slug:"adidas-x-bape-tee-160usd-usdt",name:"ADIDAS X BAPE TEE",brand:"Adidas × Bape",category:"remeras",priceARS:0,priceUSD:160,status:"sin-stock",w1:"ADIDAS",w2:"×BAPE"},
+    {slug:"corteiz-island-pink-camo-120usd-usdt",name:"CORTEIZ ISLAND PINK CAMO",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"ISLAND"},
+    {slug:"mixed-emotion-paisley-denim-blue-shirt-150usd-usdt",name:"MIXED EMOTION PAISLEY DENIM BLUE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"BLUE"},
+    {slug:"mixed-emotion-dove-tee-150usd-usdt",name:"MIXED EMOTION DOVE TEE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"DOVE"},
+    {slug:"mixed-emotion-angel-tee-150usd-usdt",name:"MIXED EMOTION ANGEL TEE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"ANGEL"},
+    {slug:"mixed-emotion-me-zip-up-shirt-150usd-usdt",name:'MIXED EMOTION "ME" ZIP UP SHIRT',brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"MIXED",w2:"ZIP"},
+    {slug:"mixed-emotion-black-beanie-100usd-usdt",name:"MIXED EMOTION BLACK BEANIE",brand:"Mixed Emotion",category:"accesorios",priceARS:193000,priceUSD:100,status:"stock",w1:"MIXED",w2:"BEANIE"},
+    {slug:"mixed-emotion-white-end-tee-150usd-usdt",name:'MIXED EMOTION WHITE "END" TEE',brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"WHITE"},
+    {slug:"mixed-emotion-blue-end-tee-150usd-usdt",name:'MIXED EMOTION BLUE "END" TEE',brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"BLUE"},
+    {slug:"mixed-emotion-arch-angel-tee-150usd-usdt",name:"MIXED EMOTION ARCH ANGEL TEE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"MIXED",w2:"ARCH"},
+    {slug:"mixed-emotion-angel-tee-150usd-usdt1",name:"MIXED EMOTION ANGEL TEE (ROSA)",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"MIXED",w2:"ANGEL"},
+    {slug:"mixed-emotion-blue-end-hoodie-220-usd-usdt",name:'MIXED EMOTION BLUE "END" HOODIE',brand:"Mixed Emotion",category:"buzos",priceARS:426000,priceUSD:220,status:"stock",w1:"MIXED",w2:"HOODIE"},
+    {slug:"corteiz-artillery-tee-120usd-usdt",name:"CORTEIZ ARTILLERY TEE",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"ARTILLERY"},
+    {slug:"corteiz-island-tee-reflective-120usd-usdt",name:"CORTEIZ ISLAND TEE REFLECTIVE",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"REFLECTIVE"},
+    {slug:"hellstar-moto-jersey-280usd-usdt",name:"HELLSTAR MOTO JERSEY",brand:"Hellstar",category:"remeras",priceARS:542000,priceUSD:280,status:"stock",w1:"HELLSTAR",w2:"MOTO"},
+    {slug:"hellstar-snapback-hat-220usd-usdt",name:"HELLSTAR SNAPBACK HAT",brand:"Hellstar",category:"accesorios",priceARS:426000,priceUSD:220,status:"sin-stock",w1:"HELLSTAR",w2:"SNAPBACK"},
+    {slug:"sprayground-the-phanton-toiletry-bag-150usd-usdt",name:"SPRAYGROUND PHANTOM TOILETRY BAG",brand:"Sprayground",category:"accesorios",priceARS:290625,priceUSD:150,status:"sin-stock",w1:"SPRAY",w2:"GROUND"},
+    {slug:"hellstar-og-logo-59fifty-160usd-usdt",name:"HELLSTAR OG LOGO 59FIFTY",brand:"Hellstar",category:"accesorios",priceARS:310000,priceUSD:160,status:"sin-stock",w1:"HELLSTAR",w2:"59FIFTY"},
+    {slug:"sprayground-the-phantom-backpack-200usd-usdt",name:"SPRAYGROUND PHANTOM BACKPACK",brand:"Sprayground",category:"accesorios",priceARS:387500,priceUSD:200,status:"sin-stock",w1:"SPRAY",w2:"BACKPACK"},
+    {slug:"vale-forever-crystal-camo-jacket-380usd-usdt",name:"VALE FOREVER CRYSTAL CAMO JACKET",brand:"Vale Forever",category:"buzos",priceARS:736500,priceUSD:380,status:"sin-stock",w1:"VALE",w2:"CRYSTAL"},
+    {slug:"hellstar-camo-sport-tee-250usd-usdt",name:"HELLSTAR CAMO SPORT TEE",brand:"Hellstar",category:"remeras",priceARS:484375,priceUSD:250,status:"sin-stock",w1:"HELLSTAR",w2:"CAMO"},
+    {slug:"vale-forever-polo-bling-tee-200usd-usdt",name:"VALE FOREVER POLO BLING TEE",brand:"Vale Forever",category:"remeras",priceARS:387500,priceUSD:200,status:"stock",w1:"VALE",w2:"BLING"},
+    {slug:"prada-eyewear-sunglasses-bone-300usd-usdt1",name:"PRADA EYEWEAR SUNGLASSES BONE",brand:"Prada",category:"accesorios",priceARS:581000,priceUSD:300,status:"stock",w1:"PRADA",w2:"SUNGLASS"},
+    {slug:"nocta-cap-black-50usd-usdt",name:"NOCTA CAP BLACK",brand:"Nocta",category:"accesorios",priceARS:97000,priceUSD:50,status:"stock",w1:"NOCTA",w2:"CAP"},
+    {slug:"syna-star-cap-black-120usd-usdt",name:"SYNA STAR CAP BLACK",brand:"Syna",category:"accesorios",priceARS:232000,priceUSD:120,status:"stock",w1:"SYNA",w2:"CAP"},
+    {slug:"syna-world-menasyn-tee-navy-130usd-usdt",name:"SYNA WORLD MENASYN TEE NAVY",brand:"Syna",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"SYNA",w2:"MENASYN"},
+    {slug:"syna-world-menasyn-tee-grey-130usd-usdt",name:"SYNA WORLD MENASYN TEE GREY",brand:"Syna",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"SYNA",w2:"MENASYN"},
+    {slug:"syna-college-tee-blue-100usd-usdt",name:"SYNA COLLEGE TEE BLUE",brand:"Syna",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"SYNA",w2:"COLLEGE"},
+    {slug:"syna-world-play-boy-tee-white-100usd-usdt",name:"SYNA WORLD PLAY BOY TEE WHITE",brand:"Syna",category:"remeras",priceARS:194000,priceUSD:100,status:"sin-stock",w1:"SYNA",w2:"PLAYBOY"},
+    {slug:"supreme-chorme-tee-100usd-usdt",name:"SUPREME CHROME TEE",brand:"Supreme",category:"remeras",priceARS:194000,priceUSD:100,status:"sin-stock",w1:"SUPREME",w2:"CHROME"},
+    {slug:"eric-emanuel-hawaiian-short-yellow-100usd-usdt",name:"ERIC EMANUEL HAWAIIAN SHORT YELLOW",brand:"Eric Emanuel",category:"pantalones",priceARS:194000,priceUSD:100,status:"stock",w1:"ERIC",w2:"HAWAIIAN"},
+    {slug:"supreme-tee-cartoon-100usd-usdt",name:"SUPREME TEE CARTOON",brand:"Supreme",category:"remeras",priceARS:290000,priceUSD:100,status:"sin-stock",w1:"SUPREME",w2:"CARTOON"},
+    {slug:"broken-planet-fast-boyz-tee-black-120usd-usdt",name:"BROKEN PLANET FAST BOYZ TEE BLACK",brand:"Broken Planet",category:"remeras",priceARS:232000,priceUSD:120,status:"stock",w1:"BROKEN",w2:"PLANET"},
+    {slug:"broken-planet-bp-sport-tee-grey-120usd-usdt",name:"BROKEN PLANET BP SPORT TEE GREY",brand:"Broken Planet",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"BROKEN",w2:"PLANET"},
+    {slug:"eric-emanuel-bagy-short-baby-blue-160usd-usdt",name:"ERIC EMANUEL BAGGY SHORT BABY BLUE",brand:"Eric Emanuel",category:"pantalones",priceARS:310000,priceUSD:160,status:"stock",w1:"ERIC",w2:"BAGGY"},
+    {slug:"nike-naos-short-80usd-usdt",name:"NIKE NAOS SHORT",brand:"Nike",category:"pantalones",priceARS:155000,priceUSD:80,status:"stock",w1:"NIKE",w2:"NAOS"},
+    {slug:"all-saints-snake-bite-oversized-tee-150usd-usdt",name:"ALL SAINTS SNAKE BITE OVERSIZED TEE",brand:"All Saints",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"ALL",w2:"SAINTS"},
+    {slug:"all-saints-underground-oversized-tee-pink-150usd-usdt",name:"ALL SAINTS UNDERGROUND TEE PINK",brand:"All Saints",category:"remeras",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"ALL",w2:"SAINTS"},
+    {slug:"all-saints-underground-oversized-tee-olive-150usd-usdt",name:"ALL SAINTS UNDERGROUND TEE OLIVE",brand:"All Saints",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"ALL",w2:"SAINTS"},
+    {slug:"eric-emanuel-cargo-short-black-160usd-usdt",name:"ERIC EMANUEL CARGO SHORT BLACK",brand:"Eric Emanuel",category:"pantalones",priceARS:310000,priceUSD:160,status:"stock",w1:"ERIC",w2:"CARGO"},
+    {slug:"vale-forever-94-olympia-tee-white-120usd-usdt",name:"VALE FOREVER 94' OLYMPIA TEE WHITE",brand:"Vale Forever",category:"remeras",priceARS:232000,priceUSD:120,status:"stock",w1:"VALE",w2:"OLYMPIA"},
+    {slug:"vale-forever-crash-tee-120usd-usdt",name:"VALE FOREVER CRASH TEE",brand:"Vale Forever",category:"remeras",priceARS:232000,priceUSD:120,status:"stock",w1:"VALE",w2:"CRASH"},
+    {slug:"jordan-diamond-real-tree-short-80usd-usdt",name:"JORDAN DIAMOND REAL TREE SHORT",brand:"Jordan",category:"pantalones",priceARS:155000,priceUSD:80,status:"stock",w1:"JORDAN",w2:"DIAMOND"},
+    {slug:"vale-forever-dreams-futball-jersey-150usd-usdt",name:"VALE FOREVER DREAMS FUTBALL JERSEY",brand:"Vale Forever",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"VALE",w2:"DREAMS"},
+    {slug:"essentials-abbey-stone-basket-short-1500usd-usdt",name:"ESSENTIALS ABBEY STONE BASKET SHORT",brand:"Essentials",category:"pantalones",priceARS:290000,priceUSD:150,status:"stock",w1:"ESSENTIAL",w2:"ABBEY"},
+    {slug:"vale-forever-insignia-crewneck-purple-250usd-usdt",name:"VALE FOREVER INSIGNIA CREWNECK PURPLE",brand:"Vale Forever",category:"buzos",priceARS:484000,priceUSD:250,status:"sin-stock",w1:"VALE",w2:"INSIGNIA"},
+    {slug:"essentials-abbey-stone-tee-120usd-usdt",name:"ESSENTIALS ABBEY STONE TEE",brand:"Essentials",category:"remeras",priceARS:232000,priceUSD:120,status:"stock",w1:"ESSENTIAL",w2:"ABBEY"},
+    {slug:"vale-forever-techwood-pullover-red-250usd-usdt",name:"VALE FOREVER TECHWOOD PULLOVER RED",brand:"Vale Forever",category:"buzos",priceARS:484000,priceUSD:250,status:"stock",w1:"VALE",w2:"TECHWOOD"},
+    {slug:"vale-forever-anthem-pullover-black-280usd-usdt",name:"VALE FOREVER ANTHEM PULLOVER BLACK",brand:"Vale Forever",category:"buzos",priceARS:542000,priceUSD:280,status:"sin-stock",w1:"VALE",w2:"ANTHEM"},
+    {slug:"vale-forever-angry-bee-jacket-black-300usd-usdt",name:"VALE FOREVER ANGRY BEE JACKET BLACK",brand:"Vale Forever",category:"buzos",priceARS:581000,priceUSD:300,status:"sin-stock",w1:"VALE",w2:"ANGRYBEE"},
+    {slug:"essentials-embroidered-tee-grey-130usd-usdt",name:"ESSENTIALS EMBROIDERED TEE GREY",brand:"Essentials",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"ESSENTIAL",w2:"EMBROID"},
+    {slug:"essentials-lounge-fleece-sweatpant-180usd-usdt",name:"ESSENTIALS LOUNGE FLEECE SWEATPANT",brand:"Essentials",category:"pantalones",priceARS:348000,priceUSD:180,status:"stock",w1:"ESSENTIAL",w2:"LOUNGE"},
+    {slug:"essentials-crewneck-heather-stone-150usd-usdt",name:"ESSENTIALS CREWNECK HEATHER STONE",brand:"Essentials",category:"buzos",priceARS:290000,priceUSD:150,status:"stock",w1:"ESSENTIAL",w2:"CREWNECK"},
+    {slug:"essentials-crewneck-timber-1500usd-usdt",name:"ESSENTIALS CREWNECK TIMBER",brand:"Essentials",category:"buzos",priceARS:290000,priceUSD:150,status:"stock",w1:"ESSENTIAL",w2:"TIMBER"},
+    {slug:"corteiz-island-puff-print-zip-black-260usd-usdt",name:"CORTEIZ ISLAND PUFF PRINT ZIP BLACK",brand:"Corteiz",category:"buzos",priceARS:504000,priceUSD:260,status:"sin-stock",w1:"CORTEIZ",w2:"ISLAND"},
+    {slug:"corteiz-island-puff-print-zip-baby-blue-220usd-usdt",name:"CORTEIZ ISLAND PUFF PRINT ZIP BLUE",brand:"Corteiz",category:"buzos",priceARS:426000,priceUSD:220,status:"sin-stock",w1:"CORTEIZ",w2:"ISLAND"},
+    {slug:"corteiz-c-star-hoodie-240usd-usdt",name:"CORTEIZ C STAR HOODIE",brand:"Corteiz",category:"buzos",priceARS:387500,priceUSD:240,status:"stock",w1:"CORTEIZ",w2:"C★STAR"},
+    {slug:"corteiz-arch-logo-zip-grey-240usd-usdt",name:"CORTEIZ ARCH LOGO ZIP GREY",brand:"Corteiz",category:"buzos",priceARS:465000,priceUSD:240,status:"sin-stock",w1:"CORTEIZ",w2:"ARCH"},
+    {slug:"corteiz-alcatraz-grey-hoodie-240usd-usdt",name:"CORTEIZ ALCATRAZ GREY HOODIE",brand:"Corteiz",category:"buzos",priceARS:465000,priceUSD:240,status:"stock",w1:"CORTEIZ",w2:"ALCATRAZ"},
+    {slug:"corteiz-baby-tee-allztarz-100usd-usdt",name:"CORTEIZ BABY TEE ALLZTARZ",brand:"Corteiz",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"CORTEIZ",w2:"ALLZTARZ"},
+    {slug:"corteiz-tank-tee-black-80usd-usdt",name:"CORTEIZ TANK TEE BLACK",brand:"Corteiz",category:"remeras",priceARS:155000,priceUSD:80,status:"stock",w1:"CORTEIZ",w2:"TANK"},
+    {slug:"corteiz-tee-island-white-120usd-usdt",name:"CORTEIZ TEE ISLAND WHITE",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"ISLAND"},
+    {slug:"nocta-hoodie-champions-league-250usd-usdt",name:"NOCTA HOODIE CHAMPIONS LEAGUE",brand:"Nocta",category:"buzos",priceARS:484000,priceUSD:250,status:"sin-stock",w1:"NOCTA",w2:"CHAMPIONS"},
+    {slug:"casa-blanca-tee-nature-teacher-printed-280usd-usdt",name:"CASA BLANCA TEE NATURE TEACHER",brand:"Casablanca",category:"remeras",priceARS:542000,priceUSD:280,status:"stock",w1:"CASA",w2:"NATURE"},
+    {slug:"off-white-helvetica-hoodie-white-350usd-usdt",name:"OFF-WHITE HELVETICA HOODIE WHITE",brand:"Off-White",category:"buzos",priceARS:678000,priceUSD:350,status:"stock",w1:"OFF",w2:"WHITE"},
+    {slug:"off-white-tee-bacchus-300usd-usdt",name:"OFF-WHITE TEE BACCHUS",brand:"Off-White",category:"remeras",priceARS:581000,priceUSD:300,status:"stock",w1:"OFF",w2:"WHITE"},
+    {slug:"off-white-short-caravag-paint-250usd-usdt",name:"OFF-WHITE SHORT CARAVAG PAINT",brand:"Off-White",category:"pantalones",priceARS:484000,priceUSD:250,status:"stock",w1:"OFF",w2:"WHITE"},
+    {slug:"corteiz-trucker-black-120usd-usdt",name:"CORTEIZ TRUCKER BLACK",brand:"Corteiz",category:"accesorios",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"TRUCKER"},
+    {slug:"jordan-4-rare-air-330usd-usdt",name:"JORDAN 4 RARE AIR",brand:"Jordan",category:"zapatillas",priceARS:640000,priceUSD:330,status:"stock",w1:"JORDAN",w2:"RARE AIR"},
+    {slug:"stussy-wourld-tour-crewneck-100usd-usdt",name:"STÜSSY WORLD TOUR CREWNECK",brand:"Stüssy",category:"buzos",priceARS:194000,priceUSD:100,status:"sin-stock",w1:"STÜSSY",w2:"WORLD"},
+    {slug:"adidas-gazelle-bad-bunny-cabo-rojo-250usd-usdt",name:"ADIDAS GAZELLE BAD BUNNY CABO ROJO",brand:"Adidas",category:"zapatillas",priceARS:484000,priceUSD:250,status:"sin-stock",w1:"ADIDAS",w2:"GAZELLE"},
+    {slug:"syna-track-jacket-blue-200usd-usdt",name:"SYNA TRACK JACKET BLUE",brand:"Syna",category:"buzos",priceARS:387000,priceUSD:200,status:"stock",w1:"SYNA",w2:"TRACK"},
+    {slug:"corteiz-allstarz-tee-green-100usd-usdt",name:"CORTEIZ ALLSTARZ TEE GREEN",brand:"Corteiz",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"CORTEIZ",w2:"ALLSTARZ"},
+    {slug:"corteiz-allstarz-tee-grey-100usd-usdt",name:"CORTEIZ ALLSTARZ TEE GREY",brand:"Corteiz",category:"remeras",priceARS:194000,priceUSD:100,status:"sin-stock",w1:"CORTEIZ",w2:"ALLSTARZ"},
+    {slug:"north-face-700-puffer-black-350usd-usdt",name:"NORTH FACE 700 PUFFER BLACK",brand:"North Face",category:"buzos",priceARS:678000,priceUSD:350,status:"stock",w1:"NORTH",w2:"FACE"},
+    {slug:"corteiz-3-pack-boxers-black-70usd-usdt",name:"CORTEIZ 3 PACK BOXERS BLACK",brand:"Corteiz",category:"accesorios",priceARS:135000,priceUSD:70,status:"sin-stock",w1:"CORTEIZ",w2:"BOXERS"},
+    {slug:"sp5der-atlanta-jacket-white-330usd-usdt",name:"SP5DER ATLANTA JACKET WHITE",brand:"Sp5der",category:"buzos",priceARS:640000,priceUSD:330,status:"stock",w1:"SP5DER",w2:"ATLANTA"},
+    {slug:"corteiz-gradient-jacket-black-270usd-usdt",name:"CORTEIZ GRADIENT JACKET BLACK",brand:"Corteiz",category:"buzos",priceARS:523000,priceUSD:270,status:"stock",w1:"CORTEIZ",w2:"GRADIENT"},
+    {slug:"sp5der-web-hoodie-red-300usd-usdt",name:"SP5DER WEB HOODIE RED",brand:"Sp5der",category:"buzos",priceARS:581000,priceUSD:300,status:"sin-stock",w1:"SP5DER",w2:"WEB"},
+    {slug:"hoodie-denim-tears1",name:"DENIM TEARS HOODIE GREY",brand:"Denim Tears",category:"buzos",priceARS:678000,priceUSD:350,status:"stock",w1:"DENIM",w2:"TEARS"},
+    {slug:"syna-vortex-short-black-red-80usd-usdt",name:"SYNA VORTEX SHORT BLACK/RED",brand:"Syna",category:"pantalones",priceARS:155000,priceUSD:80,status:"stock",w1:"SYNA",w2:"VORTEX"},
+    {slug:"denim-tears-hoodie-brown-320usd-usdt",name:"DENIM TEARS HOODIE BROWN",brand:"Denim Tears",category:"buzos",priceARS:620000,priceUSD:320,status:"stock",w1:"DENIM",w2:"TEARS"},
+    {slug:"essentials-fleece-hoodie-grey-150usd-usdt",name:"ESSENTIALS FLEECE HOODIE GREY",brand:"Essentials",category:"buzos",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"ESSENTIAL",w2:"FLEECE"},
+    {slug:"essentials-fleece-pant-grey-1500usd-usdt",name:"ESSENTIALS FLEECE PANT GREY",brand:"Essentials",category:"pantalones",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"ESSENTIAL",w2:"FLEECE"},
+    {slug:"corteiz-gradient-pant-black-250usd-usdt",name:"CORTEIZ GRADIENT PANT BLACK",brand:"Corteiz",category:"pantalones",priceARS:484000,priceUSD:250,status:"stock",w1:"CORTEIZ",w2:"GRADIENT"},
+    {slug:"syna-no-gimmicks-tee-black-100usd-usdt",name:"SYNA NO GIMMICKS TEE BLACK",brand:"Syna",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"SYNA",w2:"NOGIMMICKS"},
+    {slug:"syna-x-psg-tee-black-130usd-usdt",name:"SYNA X PSG TEE BLACK",brand:"Syna",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"SYNA",w2:"PSG"}
+  ];
+  const BRANDS = ["HELLSTAR","SUPREME","CORTEIZ","DENIM TEARS","CASABLANCA","BAPE","ADIDAS","VALE FOREVER","STÜSSY","OFF-WHITE","MIXED EMOTION","ESSENTIALS","KITH","JORDAN","NIKE","SYNA","ERIC EMANUEL","BROKEN PLANET","ALL SAINTS","NOCTA","PRADA","SP5DER","NORTH FACE","SPRAYGROUND","DIESEL"];
+
+  const BLUE = 1530; // dólar blue 26/06/2026
+  const TN_FEE = 1.24; // comisión Tienda Nube 24%
+  const effectiveARS = (p) => p.priceARS > 0 ? p.priceARS : Math.round(p.priceUSD * BLUE * TN_FEE / 1000) * 1000;
+  const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
+  const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
+  const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
+  const buyUrl = (slug) => `${TIENDA}/${slug}/`;
+
+  document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
+
+  const grid = document.getElementById("product-grid");
+  const resultsCount = document.getElementById("results-count");
+  const clearBtn = document.getElementById("clear-filters");
+  let activeCat = "todas", activeStatus = "todos";
+
+  function render() {
+    const filtered = PRODUCTS.filter(p => {
+      const okCat = activeCat==="todas" || p.category===activeCat;
+      const okSt = activeStatus==="todos" || p.status===activeStatus;
+      return okCat && okSt;
+    });
+    resultsCount.textContent = `MOSTRANDO ${filtered.length} / ${PRODUCTS.length} PRODUCTOS`;
+    clearBtn.classList.toggle("hidden", activeCat==="todas" && activeStatus==="todos");
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="col-span-full border border-border p-12 text-center"><p class="font-mono text-xs uppercase tracking-[0.18em] text-muted">No hay productos para los filtros actuales.</p></div>`;
+      return;
+    }
+    grid.innerHTML = filtered.map((p, i) => `
+      <a class="pcard fade-card" href="${buyUrl(p.slug)}" target="_blank" rel="noreferrer noopener" aria-label="${p.name} — ${formatARS(effectiveARS(p))} — ${statusLabel(p.status)}">
+        <div class="pimg">
+          <div class="ph ph-art">
+            <div class="ph-brand">${p.brand.toUpperCase()}</div>
+            <div class="ph-num">${String(i+1).padStart(2,"0")} / ${String(filtered.length).padStart(2,"0")}</div>
+            <div class="ph-cat">${p.category.toUpperCase()}</div>
+            <div class="flex flex-col items-center gap-2 relative z-[1]"><span class="ph-word ph-w1">${p.w1}</span><span class="ph-word ph-w2">${p.w2}</span></div>
+          </div>
+          <div class="absolute left-3 top-3 z-10"><span class="badge ${statusClass(p.status)}" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span></div>
+          <div class="hover-cta"><span class="font-mono text-xs uppercase tracking-[0.18em] text-bg bg-accent px-3 py-2">${p.status==="sin-stock" ? "CONSULTAR →" : "COMPRAR →"}</span></div>
+        </div>
+        <div class="flex flex-col gap-1">
+          <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">${formatARS(effectiveARS(p))}</span></div>
+          <h3>${p.name}</h3>
+          <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">REF · USD ${p.priceUSD} · USDT</span>
+        </div>
+      </a>
+    `).join("");
+    if (typeof anime !== "undefined") {
+      anime({targets:".fade-card",opacity:[0,1],translateY:[24,0],delay:anime.stagger(40),easing:"easeOutCubic",duration:600});
+    }
+  }
+
+  function bindFilter(containerId, attr, setter) {
+    document.querySelectorAll(`#${containerId} .chip`).forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(`#${containerId} .chip`).forEach(b => { b.classList.remove("active"); b.setAttribute("aria-pressed","false"); });
+        btn.classList.add("active"); btn.setAttribute("aria-pressed","true");
+        setter(btn.dataset[attr]); render();
+      });
+    });
+  }
+  bindFilter("cat-filters","cat",v => activeCat = v);
+  bindFilter("status-filters","status",v => activeStatus = v);
+
+  clearBtn.addEventListener("click", () => {
+    activeCat = "todas"; activeStatus = "todos";
+    document.querySelectorAll(".chip").forEach(b => { b.classList.toggle("active", b.dataset.cat==="todas" || b.dataset.status==="todos"); b.setAttribute("aria-pressed", b.classList.contains("active") ? "true" : "false"); });
+    render();
+  });
+
+  document.querySelectorAll(".cat-jump").forEach(a => {
+    a.addEventListener("click", () => {
+      const target = document.querySelector(`#cat-filters .chip[data-cat="${a.dataset.jumpCat}"]`);
+      if (target) target.click();
+    });
+  });
+
+  const marquee = document.getElementById("marquee");
+  marquee.innerHTML = [...BRANDS,...BRANDS].map(b => `<span class="mx-8 inline-flex items-center gap-8 display text-ink" style="font-size:clamp(2rem,5vw,3.5rem);">${b}<span class="text-accent">✦</span></span>`).join("");
+
+  const io = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("active"); io.unobserve(e.target); } }); }, {threshold:0.1,rootMargin:"0px 0px -10% 0px"});
+  document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+  const featureIO = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting && typeof anime !== "undefined") {
+        anime({targets:e.target.querySelectorAll(".feature"),opacity:[0,1],translateY:[30,0],delay:anime.stagger(120,{start:100}),easing:"easeOutCubic",duration:800});
+        featureIO.unobserve(e.target);
+      }
+    });
+  },{threshold:0.15});
+  document.querySelectorAll("#manifesto").forEach(el => featureIO.observe(el));
+
+  const counterIO = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting && typeof anime !== "undefined") {
+        const el = e.target; const target = parseInt(el.dataset.counter,10); const suffix = el.dataset.suffix||""; const obj={v:0};
+        anime({targets:obj,v:target,round:1,duration:1800,easing:"easeOutExpo",update:()=>{el.textContent=obj.v+suffix;}});
+        counterIO.unobserve(el);
+      }
+    });
+  },{threshold:0.4});
+  document.querySelectorAll("[data-counter]").forEach(el => counterIO.observe(el));
+
+  const nav = document.getElementById("nav");
+  const onScroll = () => { if (window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.background="rgba(0,0,0,0.78)"; } else { nav.classList.remove("border-border","nav-blur"); nav.style.background="transparent"; } };
+  window.addEventListener("scroll",onScroll,{passive:true}); onScroll();
+
+  const menuToggle = document.getElementById("menu-toggle");
+  const mobileMenu = document.getElementById("mobile-menu");
+  let menuOpen = false;
+  function toggleMenu(force) {
+    menuOpen = typeof force==="boolean" ? force : !menuOpen;
+    document.body.classList.toggle("menu-open",menuOpen);
+    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; }
+    else { mobileMenu.classList.add("opacity-0","pointer-events-none"); mobileMenu.classList.remove("opacity-100"); mobileMenu.setAttribute("aria-hidden","true"); menuToggle.setAttribute("aria-expanded","false"); document.body.style.overflow=""; }
+  }
+  menuToggle.addEventListener("click",()=>toggleMenu());
+  document.querySelectorAll(".menu-link").forEach(a=>a.addEventListener("click",()=>toggleMenu(false)));
+
+  document.querySelectorAll(".faq-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const content=btn.nextElementSibling; const icon=btn.querySelector(".faq-icon");
+      const isOpen=content.style.maxHeight && content.style.maxHeight!=="0px";
+      document.querySelectorAll(".faq-content").forEach(c=>{c.style.maxHeight="0px";});
+      document.querySelectorAll(".faq-icon").forEach(i=>{i.style.transform="rotate(0deg)";i.textContent="+";});
+      document.querySelectorAll(".faq-btn").forEach(b=>b.setAttribute("aria-expanded","false"));
+      if (!isOpen) { content.style.maxHeight=content.scrollHeight+"px"; icon.style.transform="rotate(45deg)"; btn.setAttribute("aria-expanded","true"); }
+    });
+  });
+
+  window.addEventListener("load",()=>{
+    if (typeof anime==="undefined") return;
+    anime({targets:".hero-word",translateY:["110%","0%"],opacity:[0,1],delay:anime.stagger(120,{start:200}),easing:"easeOutExpo",duration:1100});
+    anime({targets:".hero-sub",opacity:[0,1],translateY:[16,0],delay:800,easing:"easeOutCubic",duration:900});
+    anime({targets:".hero-cta",opacity:[0,1],translateY:[16,0],delay:1000,easing:"easeOutCubic",duration:900});
+  });
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+  render();
+</script>
+</body>
+</html>
