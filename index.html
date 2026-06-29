@@ -765,6 +765,7 @@
 
   // ── CARRITO ──────────────────────────────────────────────────────────────
   let cart = [];
+  window.cart = cart;
   function initCart() {
 
   const cartFab = document.getElementById("cart-fab");
@@ -939,7 +940,7 @@
     }
 
     // Info panel
-    const inCart = typeof cart !== "undefined" && cart.some(c => c.slug === slug);
+    const inCart = cart.some(c => c.slug === slug);
     pdpInfo.innerHTML = `
       <div>
         <span class="spec-label">${p.brand}</span>
@@ -951,11 +952,9 @@
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
       </div>
       ${p.description ? `<p class="text-sm leading-relaxed text-muted border-t border-border pt-4">${p.description}</p>` : ""}
-      <div class="flex flex-col gap-2 mt-auto pt-4 border-t border-border">
-        <button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')">
-          ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
-        </button>
-      </div>
+      <button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')">
+        ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
+      </button>
     `;
 
     pdpOverlay.classList.add("open");
