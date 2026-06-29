@@ -340,9 +340,7 @@
   <div class="reveal divide-y divide-border border-y border-border">
     <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Son 100% originales?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Trabajamos únicamente con piezas originales verificadas por nosotros antes del envío. Cada producto incluye etiqueta, packaging y todos los detalles de fábrica.</p></div></div>
     <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Cómo es el envío?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Operamos desde CABA y enviamos a toda la Argentina. Coordinamos por WhatsApp para confirmar dirección, tiempos (24-72 hs en AMBA, 3-7 días al interior) y costo según destino.</p></div></div>
-    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Aceptan USDT o USD?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Cada producto tiene su referencia en USD/USDT. El pago se coordina por WhatsApp: transferencia, USDT (red TRC20 / BEP20) o efectivo en CABA.</p></div></div>
-    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Hay descuento por pago en efectivo o transferencia?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Pagando en efectivo o por transferencia bancaria aplicamos un 10% de descuento sobre el precio publicado. Coordiná el pago por WhatsApp antes de cerrar el pedido.</p></div></div>
-    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Qué pasa si no tienen mi talle?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Tomamos encargos. Si la pieza existe en el mercado, la conseguimos. Tiempo estimado: 2 a 4 semanas según marca y disponibilidad global. Seña del 50% para arrancar el pedido.</p></div></div>
+    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Aceptan USDT o USD?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Cada producto tiene su referencia en USD/USDT. El pago se coordina por WhatsApp: transferencia, USDT (red TRC20 / BEP20) o efectivo en CABA.</p></div></div>    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Qué pasa si no tienen mi talle?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Tomamos encargos. Si la pieza existe en el mercado, la conseguimos. Tiempo estimado: 2 a 4 semanas según marca y disponibilidad global. Seña del 50% para arrancar el pedido.</p></div></div>
     <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Hay cambios o devoluciones?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Cambio de talle dentro de las 48 hs de recibido, siempre que la prenda esté sin uso, con tags y packaging original. Devoluciones no, salvo defecto de fábrica.</p></div></div>
   </div>
 </section>
@@ -606,9 +604,9 @@
           <div class="absolute left-3 top-3 z-10"><span class="badge ${statusClass(p.status)}" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span></div>
         </div>
         <div class="flex flex-col gap-1">
-          <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">${formatARS(effectiveARS(p))}</span></div>
+          <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
           <h3>${p.name}</h3>
-          <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">REF · USD ${p.priceUSD} · USDT</span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">REF · ${formatARS(effectiveARS(p))} ARS</span>
         </div>
         <button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="cartToggle('${p.slug}')">
           ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
@@ -790,8 +788,9 @@
       `).join("");
 
       // WhatsApp: mensaje pre-cargado con el carrito
-      const lines = cart.map(p => `• ${p.name} — ${formatARS(effectiveARS(p))}`).join("\n");
-      const total_line = `\nTOTAL: ${formatARS(total)}`;
+      const lines = cart.map(p => `• ${p.name} — USD ${p.priceUSD}`).join("\n");
+      const total_usd = cart.reduce((s, p) => s + p.priceUSD, 0);
+      const total_line = `\nTOTAL: USD ${total_usd} (≈ ${formatARS(total)} ARS)`;
       const msg = encodeURIComponent(`Hola! Quiero comprar:\n${lines}${total_line}`);
       btnWsp.href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
     }
