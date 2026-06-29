@@ -266,7 +266,6 @@
         <span class="spec-label">LO QUE TENÉS QUE TENER</span>
         <h2 class="display text-ink" style="font-size:clamp(2.75rem,8vw,6.5rem);">Catálogo.</h2>
       </div>
-      <a href="https://copordropar.mitiendanube.com/" target="_blank" rel="noreferrer noopener" class="btn-ghost">Ver tienda completa →</a>
     </div>
   </div>
   <div class="reveal flex flex-col gap-6 border-y border-border py-6 mb-10">
@@ -337,7 +336,7 @@
     <article class="feature group flex flex-col gap-6 p-6 md:p-10 hover:bg-surface transition-colors">
       <div class="flex items-center justify-between"><span class="section-number text-accent">04</span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-muted group-hover:text-accent transition-colors"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" /></svg></div>
       <h3 class="display text-3xl md:text-4xl text-ink">100% Verificado</h3>
-      <p class="text-sm leading-relaxed text-muted">Checkout protegido en Tienda Nube. Cada pieza autenticada antes de salir.</p>
+      <p class="text-sm leading-relaxed text-muted">Pagá en efectivo, transferencia o en 3 cuotas sin interés. Cada pieza autenticada antes de salir.</p>
     </article>
   </div>
 </section>
@@ -411,7 +410,7 @@
       <div class="flex flex-col gap-3"><span class="spec-label">/01 NAVEGACIÓN</span><a href="#top" class="text-sm text-ink hover:text-accent transition-colors">Inicio</a><a href="#catalogo" class="text-sm text-ink hover:text-accent transition-colors">Catálogo</a><a href="#manifesto" class="text-sm text-ink hover:text-accent transition-colors">Manifiesto</a><a href="#faq" class="text-sm text-ink hover:text-accent transition-colors">FAQ</a></div>
       <div class="flex flex-col gap-3"><span class="spec-label">/02 COMUNIDAD</span><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">WhatsApp directo</a><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">Grupo WhatsApp</a><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">@copordrop_ar</a></div>
       <div class="flex flex-col gap-3"><span class="spec-label">/03 UBICACIÓN</span><p class="text-sm text-ink">CABA, Argentina</p><p class="text-xs text-muted">Envíos a todo el país.</p></div>
-      <div class="flex flex-col gap-3"><span class="spec-label">/04 CHECKOUT</span><a href="https://copordropar.mitiendanube.com/" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">Tienda oficial →</a><p class="text-xs text-muted">Pagos, stock y envíos en Tienda Nube.</p></div>
+      <div class="flex flex-col gap-3"><span class="spec-label">/04 PAGOS</span><p class="text-sm text-ink">Efectivo · Transferencia</p><p class="text-sm text-ink">3 cuotas sin interés</p><p class="text-xs text-muted">Coordiná por WhatsApp.</p></div>
     </div>
     <div class="hairline mt-12"></div>
     <div class="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -455,7 +454,6 @@
 </aside>
 
 <script>
-  const TIENDA = "https://copordropar.mitiendanube.com/productos";
   const SHEETS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfBmxBQgdQJb5_CkPfoMzR2G_r1_zFCX1K4hiANpUKt7IKohRQ80LQDYUlMcH5EfaQE92at5iW0xM8/pub?gid=2088560133&single=true&output=csv";
   const PRODUCTS_FALLBACK = [
     {slug:"maison-mihara-350usd-usdt",name:"MAISON MIHARA",brand:"Maison Mihara",category:"zapatillas",priceARS:678000,priceUSD:350,status:"sin-stock",w1:"MAISON",w2:"MIHARA"},
@@ -607,7 +605,6 @@
   const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
-  const buyUrl = (slug) => `${TIENDA}/${slug}/`;
   const WA_NUMBER = "541134435571";
   // Reemplazá con tu Access Token de Mercado Pago (Producción)
   // Obtenelo en: mercadopago.com.ar/developers/panel → Credenciales de producción
