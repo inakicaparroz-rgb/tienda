@@ -606,7 +606,7 @@
         <div class="flex flex-col gap-1">
           <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
           <h3>${p.name}</h3>
-          <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">REF · ${formatARS(effectiveARS(p))} ARS</span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
         </div>
         <button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="cartToggle('${p.slug}')">
           ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
