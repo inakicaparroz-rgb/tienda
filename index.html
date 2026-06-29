@@ -415,7 +415,8 @@
 
 <script>
   const TIENDA = "https://copordropar.mitiendanube.com/productos";
-  const PRODUCTS = [
+  const SHEETS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfBmxBQgdQJb5_CkPfoMzR2G_r1_zFCX1K4hiANpUKt7IKohRQ80LQDYUlMcH5EfaQE92at5iW0xM8/pub?gid=2088560133&single=true&output=csv";
+  const PRODUCTS_FALLBACK = [
     {slug:"maison-mihara-350usd-usdt",name:"MAISON MIHARA",brand:"Maison Mihara",category:"zapatillas",priceARS:678000,priceUSD:350,status:"sin-stock",w1:"MAISON",w2:"MIHARA"},
     {slug:"mixed-emotion-black-end-tee-150usd-usdt",name:'MIXED EMOTION BLACK "END" TEE',brand:"Mixed Emotion",category:"remeras",priceARS:0,priceUSD:150,status:"stock",w1:"MIXED",w2:"EMOTION"},
     {slug:"essentials-jersey-sand-120usd-usdt",name:"ESSENTIALS JERSEY SAND",brand:"Essentials",category:"remeras",priceARS:0,priceUSD:120,status:"stock",w1:"ESSENTIAL",w2:"JERSEY"},
@@ -531,6 +532,31 @@
     {slug:"syna-no-gimmicks-tee-black-100usd-usdt",name:"SYNA NO GIMMICKS TEE BLACK",brand:"Syna",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"SYNA",w2:"NOGIMMICKS"},
     {slug:"syna-x-psg-tee-black-130usd-usdt",name:"SYNA X PSG TEE BLACK",brand:"Syna",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"SYNA",w2:"PSG"}
   ];
+
+  let PRODUCTS = PRODUCTS_FALLBACK;
+
+  function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g,""));
+    return lines.slice(1).map(line => {
+      const vals = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
+      const obj = {};
+      headers.forEach((h,i) => { obj[h] = (vals[i]||"").replace(/^"|"$/g,"").trim(); });
+      const words = obj.nombre ? obj.nombre.split(" ") : ["",""];
+      return {
+        slug: obj.slug,
+        name: obj.nombre,
+        brand: obj.marca,
+        category: obj.categoria,
+        priceUSD: parseFloat(obj.precioUSD)||0,
+        priceARS: 0,
+        status: obj.stock || "sin-stock",
+        w1: words[0]||"",
+        w2: words[1]||words[0]||""
+      };
+    }).filter(p => p.slug && p.name);
+  }
+
   const BRANDS = ["HELLSTAR","SUPREME","CORTEIZ","DENIM TEARS","CASABLANCA","BAPE","ADIDAS","VALE FOREVER","STÜSSY","OFF-WHITE","MIXED EMOTION","ESSENTIALS","KITH","JORDAN","NIKE","SYNA","ERIC EMANUEL","BROKEN PLANET","ALL SAINTS","NOCTA","PRADA","SP5DER","NORTH FACE","SPRAYGROUND","DIESEL"];
 
   const BLUE = 1530; // dólar blue 26/06/2026
@@ -545,8 +571,6 @@
   // Obtenelo en: mercadopago.com.ar/developers/panel → Credenciales de producción
   const IMGS = {"corteiz-gradient-jacket-black-270usd-usdt":1,"corteiz-gradient-pant-black-250usd-usdt":1,"syna-track-jacket-blue-200usd-usdt":1,"sp5der-atlanta-jacket-white-330usd-usdt":1,"hoodie-denim-tears1":1,"syna-x-psg-tee-black-130usd-usdt":1,"syna-no-gimmicks-tee-black-100usd-usdt":1,"corteiz-allstarz-tee-green-100usd-usdt":1,"syna-vortex-short-black-red-80usd-usdt":1,"corteiz-alcatraz-grey-hoodie-240usd-usdt":1,"jordan-4-rare-air-330usd-usdt":1,"eric-emanuel-hawaiian-short-yellow-100usd-usdt":1,"syna-world-menasyn-tee-grey-130usd-usdt":1,"syna-world-menasyn-tee-navy-130usd-usdt":1,"syna-star-cap-black-120usd-usdt":1,"off-white-helvetica-hoodie-white-350usd-usdt":1,"off-white-short-caravag-paint-250usd-usdt":1,"vale-forever-dreams-futball-jersey-150usd-usdt":1,"jordan-diamond-real-tree-short-80usd-usdt":1,"nike-naos-short-80usd-usdt":1,"vale-forever-techwood-pullover-red-250usd-usdt":1,"corteiz-tank-tee-black-80usd-usdt":1,"eric-emanuel-bagy-short-baby-blue-160usd-usdt":1,"eric-emanuel-cargo-short-black-160usd-usdt":1,"all-saints-underground-oversized-tee-olive-150usd-usdt":1,"broken-planet-bp-sport-tee-grey-120usd-usdt":1,"vale-forever-94-olympia-tee-white-120usd-usdt":1,"essentials-crewneck-heather-stone-150usd-usdt":1,"essentials-crewneck-timber-1500usd-usdt":1,"essentials-abbey-stone-basket-short-1500usd-usdt":1,"corteiz-baby-tee-allztarz-100usd-usdt":1,"casa-blanca-tee-montangne-280usd-usdt":1,"vale-forever-crash-tee-120usd-usdt":1,"denim-tears-crewneck-blue-usd-usdt-200":1,"mixed-emotion-angel-tee-150usd-usdt":1,"mixed-emotion-arch-angel-tee-150usd-usdt":1,"mixed-emotion-tee-rhinestone-cropped-150usd-usdt":1,"denim-tears-hoodie-brown-320usd-usdt":1,"mixed-emotion-paisley-denim-blue-shirt-150usd-usdt":1,"mixed-emotion-paisley-denim-black-shirt-150usd-usdt":1,"mixed-emotion-sweatpants-pearls-220usd-usdt":1,"casa-blanca-tee-casa-way-mountain-280usd-usdt":1,"kith-tee-doghouse-120usd-usdt":1,"tee-quinn-kith-120usd-usdt":1,"essentials-abbey-stone-tee-120usd-usdt":1,"essentials-fleece-hoodie-grey-150usd-usdt":1,"jogger-nike-65usd-usdt":1,"pant-michigan-jordan-80usd-usdt":1,"nike-polo-green-80usd-usdt":1,"supreme-small-box-zip-hoodie-300usd-usdt":1,"supreme-classic-logo-hoodie-300usd-usdt":1,"supreme-pilled-sweater-300usd-usdt":1,"jordan-hoodie-chimney-80usd-usdt":1,"tee-diesel-100usd-usdt":1,"supreme-tee-cartoon-100usd-usdt":1,"stussy-wourld-tour-crewneck-100usd-usdt":1,"casa-blanca-tee-nature-teacher-printed-280usd-usdt":1,"mixed-emotion-black-beanie-100usd-usdt":1,"mixed-emotion-black-end-tee-150usd-usdt":1,"mixed-emotion-dove-tee-150usd-usdt":1,"hellstar-moto-jersey-280usd-usdt":1};
   const MP_ACCESS_TOKEN = "APP_USR-4976263387719722-062614-c7a0aa96fc3bc2a8339c73537dd94708-1180952674";
-
-  document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
 
   const grid = document.getElementById("product-grid");
   const resultsCount = document.getElementById("results-count");
@@ -683,8 +707,23 @@
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
+  // Carga productos desde Google Sheets, fallback al array hardcodeado
+  fetch(SHEETS_CSV)
+    .then(r => r.ok ? r.text() : Promise.reject())
+    .then(text => {
+      const parsed = parseCSV(text);
+      if (parsed.length > 0) PRODUCTS = parsed;
+    })
+    .catch(() => {}) // usa fallback si falla
+    .finally(() => {
+      document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
+      render();
+      initCart();
+    });
+
   // ── CARRITO ──────────────────────────────────────────────────────────────
   let cart = [];
+  function initCart() {
 
   const cartFab = document.getElementById("cart-fab");
   const cartBadge = document.getElementById("cart-badge");
@@ -799,8 +838,8 @@
       btnMp.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.33c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.891z"/></svg> Pagar con Mercado Pago`;
     }
   });
+  } // end initCart
 
-  render();
 </script>
 </body>
 </html>
