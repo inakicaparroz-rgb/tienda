@@ -127,6 +127,32 @@
     .hero-grid{background-image:linear-gradient(to right,rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:80px 80px}
     .hero-glow{position:absolute;width:50vw;height:50vw;max-width:700px;max-height:700px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);filter:blur(60px);opacity:0.6;top:30%;right:-10%;pointer-events:none;animation:glowDrift 18s ease-in-out infinite}
     @keyframes glowDrift{0%,100%{transform:translate(0,0) scale(1);opacity:.55}50%{transform:translate(-40px,30px) scale(1.1);opacity:.7}}
+    /* Product modal */
+    #pdp-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);opacity:0;pointer-events:none;transition:opacity .3s ease}
+    #pdp-overlay.open{opacity:1;pointer-events:auto}
+    #pdp-modal{position:fixed;inset:0;z-index:201;display:flex;align-items:center;justify-content:center;padding:1rem;pointer-events:none}
+    #pdp-modal.open{pointer-events:auto}
+    #pdp-inner{background:var(--surface);border:1px solid var(--border);width:100%;max-width:960px;max-height:90vh;overflow-y:auto;display:grid;grid-template-columns:1fr;transform:translateY(24px);opacity:0;transition:transform .35s cubic-bezier(0.16,1,0.3,1),opacity .35s ease}
+    @media(min-width:640px){#pdp-inner{grid-template-columns:1fr 1fr}}
+    #pdp-modal.open #pdp-inner{transform:translateY(0);opacity:1}
+    #pdp-inner::-webkit-scrollbar{width:4px}
+    #pdp-inner::-webkit-scrollbar-thumb{background:var(--border)}
+    .pdp-gallery{position:relative;aspect-ratio:4/5;background:var(--bg);overflow:hidden}
+    @media(min-width:640px){.pdp-gallery{aspect-ratio:auto;height:100%;min-height:480px}}
+    .pdp-slides{display:flex;height:100%;transition:transform .4s cubic-bezier(0.16,1,0.3,1)}
+    .pdp-slide{min-width:100%;height:100%;position:relative}
+    .pdp-slide img{width:100%;height:100%;object-fit:cover}
+    .pdp-slide .ph{position:absolute;inset:0}
+    .pdp-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.6);border:1px solid var(--border);color:var(--ink);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1;transition:background .2s;z-index:2}
+    .pdp-nav:hover{background:rgba(0,0,0,.9)}
+    .pdp-nav-prev{left:.75rem}
+    .pdp-nav-next{right:.75rem}
+    .pdp-dots{position:absolute;bottom:.75rem;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
+    .pdp-dot{width:6px;height:6px;background:rgba(255,255,255,.3);cursor:pointer;transition:background .2s}
+    .pdp-dot.active{background:var(--accent)}
+    .pdp-info{padding:1.75rem;display:flex;flex-direction:column;gap:1.25rem}
+    .pdp-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:24px;line-height:1;z-index:5;transition:color .2s}
+    .pdp-close:hover{color:var(--ink)}
     .chip{border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:all .2s ease;white-space:nowrap}
     .chip:hover{border-color:var(--ink);color:var(--ink)}
     .chip.active{border-color:var(--accent);background:var(--accent);color:var(--bg)}
@@ -359,6 +385,22 @@
   </div>
 </section>
 </main>
+
+<!-- Product detail modal -->
+<div id="pdp-overlay"></div>
+<div id="pdp-modal" role="dialog" aria-modal="true" aria-label="Detalle de producto">
+  <div id="pdp-inner" style="position:relative">
+    <button class="pdp-close" id="pdp-close" aria-label="Cerrar">×</button>
+    <div class="pdp-gallery" id="pdp-gallery">
+      <div class="pdp-slides" id="pdp-slides"></div>
+      <button class="pdp-nav pdp-nav-prev hidden" id="pdp-prev">‹</button>
+      <button class="pdp-nav pdp-nav-next hidden" id="pdp-next">›</button>
+      <div class="pdp-dots hidden" id="pdp-dots"></div>
+    </div>
+    <div class="pdp-info" id="pdp-info"></div>
+  </div>
+</div>
+
 <footer class="border-t border-border">
   <div class="container-edge py-16 md:py-24">
     <div class="reveal overflow-hidden">
@@ -550,6 +592,7 @@
         priceUSD: parseFloat(obj.precioUSD)||0,
         priceARS: 0,
         status: obj.stock || "sin-stock",
+        description: obj.descripcion || "",
         w1: words[0]||"",
         w2: words[1]||words[0]||""
       };
@@ -592,7 +635,7 @@
       const inCart = cart.some(c => c.slug === p.slug);
       return `
       <div class="pcard fade-card">
-        <div class="pimg">
+        <div class="pimg" style="cursor:pointer" onclick="openPDP('${p.slug}')" role="button" aria-label="Ver detalle de ${p.name}">
           ${IMGS[p.slug]
             ? `<img src="img/${p.slug}.jpg" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">`
             : `<div class="ph ph-art">
@@ -839,6 +882,114 @@
     }
   });
   } // end initCart
+
+  // ── Product Detail Modal ─────────────────────────────────────────────
+  const pdpOverlay = document.getElementById("pdp-overlay");
+  const pdpModal   = document.getElementById("pdp-modal");
+  const pdpClose   = document.getElementById("pdp-close");
+  const pdpSlides  = document.getElementById("pdp-slides");
+  const pdpPrev    = document.getElementById("pdp-prev");
+  const pdpNext    = document.getElementById("pdp-next");
+  const pdpDotsEl  = document.getElementById("pdp-dots");
+  const pdpInfo    = document.getElementById("pdp-info");
+  let pdpIdx = 0;
+
+  function buildPlaceholder(p) {
+    return `<div class="ph ph-art" style="position:absolute;inset:0">
+      <div class="ph-brand">${p.brand.toUpperCase()}</div>
+      <div class="ph-cat">${p.category.toUpperCase()}</div>
+      <div class="flex flex-col items-center gap-2 relative z-[1]"><span class="ph-word ph-w1">${p.w1}</span><span class="ph-word ph-w2">${p.w2}</span></div>
+    </div>`;
+  }
+
+  function openPDP(slug) {
+    const p = PRODUCTS.find(x => x.slug === slug);
+    if (!p) return;
+    pdpIdx = 0;
+    const count = IMGS[slug] || 0;
+    const photos = count > 0
+      ? Array.from({length: count}, (_, i) => i === 0 ? `img/${slug}.jpg` : `img/${slug}-${i+1}.jpg`)
+      : [];
+
+    // Slides
+    if (photos.length > 0) {
+      pdpSlides.innerHTML = photos.map(src =>
+        `<div class="pdp-slide"><img src="${src}" alt="${p.name}" loading="lazy"></div>`
+      ).join("");
+    } else {
+      pdpSlides.innerHTML = `<div class="pdp-slide" style="position:relative;height:100%">${buildPlaceholder(p)}</div>`;
+    }
+    pdpSlides.style.transform = "translateX(0)";
+
+    // Nav arrows & dots
+    if (photos.length > 1) {
+      pdpPrev.classList.remove("hidden");
+      pdpNext.classList.remove("hidden");
+      pdpDotsEl.classList.remove("hidden");
+      pdpDotsEl.innerHTML = photos.map((_, i) =>
+        `<div class="pdp-dot${i===0?" active":""}" data-i="${i}"></div>`
+      ).join("");
+      pdpDotsEl.querySelectorAll(".pdp-dot").forEach(d =>
+        d.addEventListener("click", () => goSlide(+d.dataset.i))
+      );
+    } else {
+      pdpPrev.classList.add("hidden");
+      pdpNext.classList.add("hidden");
+      pdpDotsEl.classList.add("hidden");
+    }
+
+    // Info panel
+    const inCart = typeof cart !== "undefined" && cart.some(c => c.slug === slug);
+    pdpInfo.innerHTML = `
+      <div>
+        <span class="spec-label">${p.brand}</span>
+        <h2 class="display text-ink mt-1" style="font-size:clamp(1.75rem,4vw,2.75rem)">${p.name}</h2>
+      </div>
+      <span class="badge ${statusClass(p.status)}" style="width:fit-content"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>
+      <div class="flex flex-col gap-1">
+        <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
+      </div>
+      ${p.description ? `<p class="text-sm leading-relaxed text-muted border-t border-border pt-4">${p.description}</p>` : ""}
+      <div class="flex flex-col gap-2 mt-auto pt-4 border-t border-border">
+        <button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')">
+          ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
+        </button>
+      </div>
+    `;
+
+    pdpOverlay.classList.add("open");
+    pdpModal.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  window.openPDP = openPDP;
+
+  function closePDP() {
+    pdpOverlay.classList.remove("open");
+    pdpModal.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  function goSlide(i) {
+    const total = pdpSlides.children.length;
+    pdpIdx = (i + total) % total;
+    pdpSlides.style.transform = `translateX(-${pdpIdx * 100}%)`;
+    pdpDotsEl.querySelectorAll(".pdp-dot").forEach((d, j) => d.classList.toggle("active", j === pdpIdx));
+  }
+
+  function pdpCartToggle(slug) {
+    cartToggle(slug);
+    const inCart = cart.some(c => c.slug === slug);
+    const btn = document.getElementById("pdp-cart-btn");
+    if (btn) { btn.textContent = inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"; btn.classList.toggle("in-cart", inCart); }
+  }
+  window.pdpCartToggle = pdpCartToggle;
+
+  pdpClose.addEventListener("click", closePDP);
+  pdpOverlay.addEventListener("click", closePDP);
+  pdpPrev.addEventListener("click", () => goSlide(pdpIdx - 1));
+  pdpNext.addEventListener("click", () => goSlide(pdpIdx + 1));
+  document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("open")) return; if (e.key === "Escape") closePDP(); if (e.key === "ArrowLeft") goSlide(pdpIdx - 1); if (e.key === "ArrowRight") goSlide(pdpIdx + 1); });
 
 </script>
 </body>
