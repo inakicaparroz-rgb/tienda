@@ -1014,7 +1014,7 @@
     const itemSlug = hasTalles ? `${slug}__${pdpSelectedTalle}` : slug;
     const baseP = {...p, slug: itemSlug, talle: pdpSelectedTalle || null};
     const idx = cart.findIndex(c => c.slug === itemSlug);
-    if (idx >= 0) cart.splice(idx, 1); else cart.push(baseP);
+    if (idx >= 0) { cart.splice(idx, 1); } else { cart.push(baseP); closePDP(); }
     updateCart();
     render();
     const inCart = cart.some(c => c.slug === itemSlug);
