@@ -948,7 +948,11 @@
         <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
       </div>
-      ${p.description ? `<p class="text-sm leading-relaxed text-muted border-t border-border pt-4">${p.description}</p>` : ""}
+      <ul class="flex flex-col gap-2 border-t border-border pt-4">
+        ${["Producto 100% original y verificado","Envíos a todo el país","Asesoramiento personalizado","Disponible por encargo en todos los talles"].map(t =>
+          `<li class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.12em]"><span style="color:var(--accent)">✓</span><span class="text-muted">${t}</span></li>`
+        ).join("")}
+      </ul>
       <button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')">
         ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
       </button>
