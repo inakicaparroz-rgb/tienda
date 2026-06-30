@@ -653,7 +653,7 @@
           <h3>${p.name}</h3>
           <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
         </div>
-        <button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="cartToggle('${p.slug}')">
+        <button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">
           ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
         </button>
       </div>`;
