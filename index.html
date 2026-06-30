@@ -153,6 +153,9 @@
     .pdp-info{padding:1.75rem;display:flex;flex-direction:column;gap:1.25rem}
     .pdp-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:24px;line-height:1;z-index:5;transition:color .2s}
     .pdp-close:hover{color:var(--ink)}
+    .talle-chip{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:.35rem .7rem;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;transition:all .2s}
+    .talle-chip:hover{border-color:var(--ink);color:var(--ink)}
+    .talle-chip.selected{border-color:var(--accent);color:var(--accent);background:rgba(87,190,161,.08)}
     .chip{border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:all .2s ease;white-space:nowrap}
     .chip:hover{border-color:var(--ink);color:var(--ink)}
     .chip.active{border-color:var(--accent);background:var(--accent);color:var(--bg)}
@@ -591,6 +594,7 @@
         priceARS: 0,
         status: obj.stock || "sin-stock",
         description: obj.descripcion || "",
+        talles: obj.talles ? obj.talles.split(",").map(t => t.trim()).filter(Boolean) : [],
         w1: words[0]||"",
         w2: words[1]||words[0]||""
       };
@@ -829,7 +833,7 @@
       `).join("");
 
       // WhatsApp: mensaje pre-cargado con el carrito
-      const lines = cart.map(p => `• ${p.name} — USD ${p.priceUSD}`).join("\n");
+      const lines = cart.map(p => `• ${p.name}${p.talle ? ` (Talle ${p.talle})` : ""} — USD ${p.priceUSD}`).join("\n");
       const total_usd = cart.reduce((s, p) => s + p.priceUSD, 0);
       const total_line = `\nTOTAL: USD ${total_usd} (≈ ${formatARS(total)} ARS)`;
       const msg = encodeURIComponent(`Hola! Quiero comprar:\n${lines}${total_line}`);
@@ -948,16 +952,24 @@
         <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
       </div>
+      ${p.talles && p.talles.length > 0 ? `
+      <div class="flex flex-col gap-2 border-t border-border pt-4">
+        <span class="spec-label">Seleccioná tu talle</span>
+        <div class="flex flex-wrap gap-2" id="pdp-talles">
+          ${p.talles.map(t => `<button class="talle-chip" data-talle="${t}" onclick="selectTalle(this)">${t}</button>`).join("")}
+        </div>
+      </div>` : ""}
       <ul class="flex flex-col gap-2 border-t border-border pt-4">
         ${["Producto 100% original y verificado","Envíos a todo el país","Asesoramiento personalizado","Disponible por encargo en todos los talles"].map(t =>
           `<li class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.12em]"><span style="color:var(--accent)">✓</span><span class="text-muted">${t}</span></li>`
         ).join("")}
       </ul>
-      <button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')">
+      <button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>
         ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
       </button>
     `;
 
+    pdpSelectedTalle = null;
     pdpOverlay.classList.add("open");
     pdpModal.classList.add("open");
     document.body.style.overflow = "hidden";
@@ -977,9 +989,32 @@
     pdpDotsEl.querySelectorAll(".pdp-dot").forEach((d, j) => d.classList.toggle("active", j === pdpIdx));
   }
 
+  let pdpSelectedTalle = null;
+
+  function selectTalle(el) {
+    document.querySelectorAll("#pdp-talles .talle-chip").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    pdpSelectedTalle = el.dataset.talle;
+    const btn = document.getElementById("pdp-cart-btn");
+    if (btn && !cart.some(c => c.slug === btn.dataset.slug)) {
+      btn.disabled = false;
+      btn.style.opacity = "";
+      btn.style.cursor = "";
+    }
+  }
+  window.selectTalle = selectTalle;
+
   function pdpCartToggle(slug) {
-    cartToggle(slug);
-    const inCart = cart.some(c => c.slug === slug);
+    const p = PRODUCTS.find(x => x.slug === slug);
+    const hasTalles = p && p.talles && p.talles.length > 0;
+    if (hasTalles && !pdpSelectedTalle) return;
+    const itemSlug = hasTalles ? `${slug}__${pdpSelectedTalle}` : slug;
+    const baseP = {...p, slug: itemSlug, talle: pdpSelectedTalle || null};
+    const idx = cart.findIndex(c => c.slug === itemSlug);
+    if (idx >= 0) cart.splice(idx, 1); else cart.push(baseP);
+    updateCart();
+    render();
+    const inCart = cart.some(c => c.slug === itemSlug);
     const btn = document.getElementById("pdp-cart-btn");
     if (btn) { btn.textContent = inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"; btn.classList.toggle("in-cart", inCart); }
   }
