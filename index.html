@@ -160,6 +160,18 @@
     .chip:hover{border-color:var(--ink);color:var(--ink)}
     .chip.active{border-color:var(--accent);background:var(--accent);color:var(--bg)}
     .chip:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    /* Encargos modal */
+    #encargo-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);opacity:0;pointer-events:none;transition:opacity .3s ease}
+    #encargo-overlay.open{opacity:1;pointer-events:auto}
+    #encargo-modal{position:fixed;inset:0;z-index:201;display:flex;align-items:center;justify-content:center;padding:1rem;pointer-events:none}
+    #encargo-modal.open{pointer-events:auto}
+    #encargo-inner{background:var(--surface);border:1px solid var(--border);width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:2rem;position:relative;transform:translateY(24px);opacity:0;transition:transform .35s cubic-bezier(0.16,1,0.3,1),opacity .35s ease}
+    #encargo-modal.open #encargo-inner{transform:translateY(0);opacity:1}
+    .encargo-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:12px;padding:.75rem 1rem;outline:none;transition:border-color .2s;resize:none}
+    .encargo-input:focus{border-color:var(--accent)}
+    .encargo-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);display:block;margin-bottom:.4rem}
+    .encargo-file-label{display:flex;align-items:center;gap:.75rem;border:1px dashed var(--border);padding:.75rem 1rem;cursor:pointer;transition:border-color .2s}
+    .encargo-file-label:hover{border-color:var(--accent)}
     .faq-content{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(0.16,1,0.3,1)}
     .faq-icon{transition:transform .35s ease}
     .faq-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
@@ -181,6 +193,7 @@
     <a href="#top" class="display text-2xl md:text-[1.65rem] text-ink hover:text-accent transition-colors" aria-label="Cop or Drop — Inicio">COP&nbsp;OR&nbsp;DROP</a>
     <nav class="hidden md:flex items-center gap-10" aria-label="Navegación principal">
       <a href="#catalogo" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">CATÁLOGO</a>
+      <button onclick="openEncargo()" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors" style="background:none;border:none;cursor:pointer;padding:0">ENCARGOS</button>
       <a href="#categorias" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">CATEGORÍAS</a>
       <a href="#manifesto" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">MANIFIESTO</a>
       <a href="#faq" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">FAQ</a>
@@ -204,6 +217,7 @@
       </nav>
       <div class="flex flex-col gap-3">
         <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary w-full">WhatsApp →</a>
+        <button onclick="openEncargo()" class="btn-primary w-full">Encargos →</button>
         <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-ghost justify-center">Unirse a la comunidad →</a>
       </div>
     </div>
@@ -235,6 +249,7 @@
     <div class="hero-cta flex flex-col gap-6 opacity-0">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <a href="#catalogo" class="btn-primary">Ver catálogo →</a>
+        <button onclick="openEncargo()" class="btn-ghost">Encargos</button>
         <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-ghost">Unirse a la comunidad</a>
       </div>
       <div class="hairline"></div>
@@ -357,7 +372,7 @@
   </div>
   <div class="container-edge mt-10 flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
     <p class="reveal max-w-xl text-sm leading-relaxed text-muted">Curado preciso de marcas hype. Stüssy, Palace, Off-White y más por encargo. Si la querés, la conseguimos.</p>
-    <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary">Hacé tu encargo →</a>
+    <button onclick="openEncargo()" class="btn-primary">Hacé tu encargo →</button>
   </div>
 </section>
 <section id="faq" class="container-edge py-20 md:py-28">
@@ -387,6 +402,43 @@
   </div>
 </section>
 </main>
+
+<!-- Encargos modal -->
+<div id="encargo-overlay"></div>
+<div id="encargo-modal" role="dialog" aria-modal="true" aria-label="Formulario de encargo">
+  <div id="encargo-inner">
+    <button class="pdp-close" id="encargo-close" aria-label="Cerrar">×</button>
+    <div style="display:flex;flex-direction:column;gap:1.5rem">
+      <div>
+        <span class="spec-label" style="color:var(--accent)">ENCARGOS</span>
+        <h2 class="display text-ink mt-1" style="font-size:clamp(1.75rem,4vw,2.5rem)">Hacé tu pedido.</h2>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.5rem">
+        <p class="font-mono text-[11px] uppercase tracking-[.14em] text-accent">¿Qué es un encargo?</p>
+        <p class="text-sm text-muted leading-relaxed">Pedido personalizado del item que busques, con una demora de 5 a 15 días. Para cotizarlo completá el formulario — una vez que lo recibamos te pasamos el total, y con el 50% de seña queda confirmado.</p>
+      </div>
+      <form id="encargo-form" style="display:flex;flex-direction:column;gap:1.25rem">
+        <div>
+          <label class="encargo-label" for="encargo-producto">Describí o nombrá tu producto *</label>
+          <textarea id="encargo-producto" class="encargo-input" rows="3" placeholder="Ej: Supreme Box Logo Hoodie negra talle M, o Yeezy 350 V2 talle 42..."></textarea>
+        </div>
+        <div>
+          <label class="encargo-label" for="encargo-talle">Talle (si aplica)</label>
+          <input id="encargo-talle" class="encargo-input" type="text" placeholder="Ej: M, L, 42, 9US...">
+        </div>
+        <div>
+          <label class="encargo-label">Foto de referencia (opcional)</label>
+          <label class="encargo-file-label" for="encargo-foto">
+            <span style="font-size:18px;color:var(--muted)">📎</span>
+            <span class="font-mono text-[11px] uppercase tracking-[.14em] text-muted" id="encargo-foto-nombre">Adjuntar imagen</span>
+            <input id="encargo-foto" type="file" accept="image/*" style="display:none" onchange="document.getElementById('encargo-foto-nombre').textContent=this.files[0]?.name||'Adjuntar imagen'">
+          </label>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;justify-content:center">Enviar encargo por WhatsApp →</button>
+      </form>
+    </div>
+  </div>
+</div>
 
 <!-- Product detail modal -->
 <div id="pdp-overlay"></div>
@@ -653,9 +705,10 @@
           <h3>${p.name}</h3>
           <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
         </div>
-        <button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">
-          ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
-        </button>
+        ${p.status === "encargo"
+          ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
+          : `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
+        }
       </div>`;
     }).join("");
     if (typeof anime !== "undefined") {
@@ -1022,6 +1075,43 @@
     if (btn) { btn.textContent = inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"; btn.classList.toggle("in-cart", inCart); }
   }
   window.pdpCartToggle = pdpCartToggle;
+
+  // ── ENCARGOS ─────────────────────────────────────────────────────────────
+  const encargoOverlay = document.getElementById("encargo-overlay");
+  const encargoModal   = document.getElementById("encargo-modal");
+  const encargoClose   = document.getElementById("encargo-close");
+  const encargoForm    = document.getElementById("encargo-form");
+
+  function openEncargo(productoPreset) {
+    if (productoPreset) document.getElementById("encargo-producto").value = productoPreset;
+    encargoOverlay.classList.add("open");
+    encargoModal.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeEncargo() {
+    encargoOverlay.classList.remove("open");
+    encargoModal.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  window.openEncargo = openEncargo;
+
+  encargoClose.addEventListener("click", closeEncargo);
+  encargoOverlay.addEventListener("click", closeEncargo);
+
+  encargoForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const producto = document.getElementById("encargo-producto").value.trim();
+    if (!producto) { document.getElementById("encargo-producto").focus(); return; }
+    const talle    = document.getElementById("encargo-talle").value.trim();
+    const tieneFoto = document.getElementById("encargo-foto").files.length > 0;
+    let msg = `Hola! Quiero hacer un encargo:\n• Producto: ${producto}`;
+    if (talle) msg += `\n• Talle: ${talle}`;
+    if (tieneFoto) msg += `\n• Foto de referencia: te la mando por este chat`;
+    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
+    closeEncargo();
+    encargoForm.reset();
+    document.getElementById("encargo-foto-nombre").textContent = "Adjuntar imagen";
+  });
 
   pdpClose.addEventListener("click", closePDP);
   pdpOverlay.addEventListener("click", closePDP);
