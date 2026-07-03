@@ -13,6 +13,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='Barlow Condensed,sans-serif' font-weight='900' font-size='26' fill='%2357BEA1'%3EC%3C/text%3E%3C/svg%3E" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -516,7 +517,7 @@
       <div style="display:flex;gap:.75rem;margin-top:.5rem">
         <button onclick="submitCheckout()" class="btn-primary" style="flex:1">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:inline;margin-right:.4rem"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.116.55 4.103 1.51 5.829L.057 23.5l5.82-1.528A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.814 9.814 0 01-5.032-1.386l-.361-.214-3.733.979.997-3.642-.235-.374A9.818 9.818 0 012.182 12c0-5.42 4.398-9.818 9.818-9.818 5.42 0 9.818 4.398 9.818 9.818 0 5.42-4.398 9.818-9.818 9.818z"/></svg>
-          Confirmar y enviar por WhatsApp
+          Confirmar pedido
         </button>
       </div>
     </div>
@@ -777,6 +778,11 @@
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
   const WA_NUMBER = "541134435571";
+  const EMAILJS_SERVICE  = "service_323iemj";
+  const EMAILJS_TEMPLATE = "ctl6bnh";
+  const EMAILJS_PUBKEY   = "RkTdp6hovNqBxd2Kr_yfM";
+  const STORE_EMAIL      = "inakicaparroz@gmail.com";
+  emailjs.init({ publicKey: EMAILJS_PUBKEY });
   // Reemplazá con tu Access Token de Mercado Pago (Producción)
   // Obtenelo en: mercadopago.com.ar/developers/panel → Credenciales de producción
   const IMGS = {"essentials-jersey-sand-120usd-usdt":1,"essentials-hoodie-light-oatmeal-160usd-usdt":1,"kith-tee-doghouse-120usd-usdt":1,"tee-quinn-kith-120usd-usdt":1,"supreme-boxers-black-100usd-usdt":1,"supreme-boxers-white-100usd-usdt":1,"supreme-pilled-sweater-300usd-usdt":1,"supreme-classic-logo-hoodie-300usd-usdt":1,"supreme-small-box-zip-hoodie-300usd-usdt":1,"tee-diesel-100usd-usdt":1,"nike-polo-green-80usd-usdt":1,"pant-michigan-jordan-80usd-usdt":1,"jogger-nike-65usd-usdt":1,"casa-blanca-tee-montangne-280usd-usdt":1,"casa-blanca-tee-casa-way-mountain-280usd-usdt":1,"mixed-emotion-tee-rhinestone-cropped-150usd-usdt":1,"mixed-emotion-sweatpants-pearls-220usd-usdt":1,"mixed-emotion-paisley-denim-black-shirt-150usd-usdt":1,"supreme-zip-hoodie-collegiate-blue-usd-usdt-250":1,"denim-tears-crewneck-blue-usd-usdt-200":1,"mixed-emotion-paisley-denim-blue-shirt-150usd-usdt":1,"mixed-emotion-dove-tee-150usd-usdt":1,"mixed-emotion-black-beanie-100usd-usdt":1,"hellstar-moto-jersey-280usd-usdt":1,"syna-star-cap-black-120usd-usdt":1,"syna-world-menasyn-tee-navy-130usd-usdt":1,"syna-world-menasyn-tee-grey-130usd-usdt":1,"syna-college-tee-blue-100usd-usdt":1,"eric-emanuel-bagy-short-baby-blue-160usd-usdt":1,"nike-naos-short-80usd-usdt":1,"all-saints-underground-oversized-tee-olive-150usd-usdt":1,"eric-emanuel-cargo-short-black-160usd-usdt":1,"vale-forever-94-olympia-tee-white-120usd-usdt":1,"vale-forever-bling-tee-150usd-usdt":1,"jordan-diamond-real-tree-short-80usd-usdt":1,"vale-forever-dreams-futball-jersey-150usd-usdt":1,"essentials-abbey-stone-basket-short-1500usd-usdt":1,"vale-forever-techwood-pullover-red-250usd-usdt":1,"essentials-crewneck-heather-stone-150usd-usdt":1,"essentials-crewneck-timber-1500usd-usdt":1,"corteiz-alcatraz-grey-hoodie-240usd-usdt":1,"corteiz-tank-tee-black-80usd-usdt":1,"casa-blanca-tee-nature-teacher-printed-280usd-usdt":1,"off-white-helvetica-hoodie-white-350usd-usdt":1,"off-white-short-caravag-paint-250usd-usdt":1,"jordan-4-rare-air-330usd-usdt":1,"syna-track-jacket-blue-200usd-usdt":1,"corteiz-allstarz-tee-green-100usd-usdt":1,"sp5der-atlanta-jacket-white-330usd-usdt":1,"corteiz-gradient-jacket-black-270usd-usdt":1,"hoodie-denim-tears1":1,"syna-vortex-short-black-red-80usd-usdt":1,"denim-tears-hoodie-brown-320usd-usdt":1,"corteiz-gradient-pant-black-250usd-usdt":1,"syna-no-gimmicks-tee-black-100usd-usdt":1,"syna-x-psg-tee-black-130usd-usdt":1,"eme-studios-crewneck-brown-220usd-usdt":1,"mixed-emotion-end-tee-blue-150usd-usdt":1,"mixed-emotion-end-tee-white-150usd-usdt":1,"mixed-emotion-end-tee-black-150usd-usdt":1,"broken-planet-bp-sport-tee-grey-120usd-usdt":1,"syna-world-arc-tee-navy-100usd-usdt":1,"essentials-hoodie-cocoa-160usd-usdt":1,"supreme-tape-65usd-usdt":1,"corteiz-vs-everybody-tee-white-120usd-usdt":1,"essentials-hoodie-taupe-160usd-usdt":1,"essentials-hoodie-coral-160usd-usdt":1,"essentials-1977-hoodie-black-160usd-usdt":1,"essentials-hoodie-plum-160usd-usdt":1,"supreme-cap-arabic-black-125usd-usdt":1,"supreme-camp-cap-camo-125usd-usdt":1,"nike-club-cap-black-40usd-usdt":1,"nike-zip-hoodie-black-80usd-usdt":1,"jordan-jumpman-crewneck-black-50usd-usdt":1,"essentials-hoodie-sage-160usd-usdt":1,"corteiz-alcatraz-tee-orange-100usd-usdt":1,"supreme-fuckem-tee-navy-150usd-usdt":1,"yeezy-slides-black-120usd-usdt":1,"yeezy-slides-bone-120usd-usdt":1,"essentials-jogger-black-65usd-usdt":1,"eric-emanuel-short-floral-orange-100usd-usdt":1,"broken-planet-fast-boyz-tee-black-120usd-usdt":1,"prada-sunglasses-white-300usd-usdt":1,"broken-planet-sport-tee-grey-120usd-usdt":1,"prada-eyewear-sunglasses-bone-300usd-usdt":1};
@@ -1223,10 +1229,41 @@
       deliveryLines += horario ? `\nHorario de retiro: ${horario}` : "";
     }
 
-    const cartMsg = decodeURIComponent(window._cartWspMsg || "");
-    const fullMsg = `${cartMsg}\n\n---\n👤 Datos del cliente\nNombre: ${nombre}\nTeléfono: ${tel}\n${deliveryLines}`;
-    closeCheckout();
-    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(fullMsg)}`, "_blank");
+    const email = checkoutDelivery !== "retiro" ? (document.getElementById("co-email").value.trim() || "") : "";
+    const methodLabels = { correo: "Correo (Andreani)", moto: "Motomensajería", retiro: "Retiro por local" };
+    const orderSummary = cart.map(p => `• ${p.name}${p.talle ? ` (Talle ${p.talle})` : ""} — USD ${p.priceUSD}`).join("\n")
+      + `\n\nTOTAL: USD ${cart.reduce((s,p)=>s+p.priceUSD,0)}`;
+
+    const templateParams = {
+      to_email:        email || STORE_EMAIL,
+      customer_name:   nombre,
+      order_summary:   orderSummary,
+      delivery_method: methodLabels[checkoutDelivery],
+      delivery_details: deliveryLines.replace(/^\nMétodo:[^\n]*\n?/, ""),
+    };
+
+    const submitBtn = document.querySelector("#checkout-inner .btn-primary");
+    submitBtn.textContent = "Enviando...";
+    submitBtn.disabled = true;
+
+    const sends = [emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, templateParams)];
+    if (email && email !== STORE_EMAIL) {
+      sends.push(emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, { ...templateParams, to_email: STORE_EMAIL, customer_name: `[TIENDA] Nuevo pedido de ${nombre}` }));
+    }
+
+    Promise.all(sends).then(() => {
+      closeCheckout();
+      alert("¡Pedido recibido! Te mandamos un mail con el detalle.");
+      cart.length = 0;
+      updateCart();
+      render();
+    }).catch(err => {
+      console.error(err);
+      alert("Hubo un error al enviar. Intentá de nuevo.");
+    }).finally(() => {
+      submitBtn.textContent = "Confirmar y enviar por WhatsApp";
+      submitBtn.disabled = false;
+    });
   }
   window.submitCheckout = submitCheckout;
 
