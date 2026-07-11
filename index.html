@@ -1278,6 +1278,12 @@
         back_urls: { success: successUrl, failure: location.href, pending: location.href },
         auto_return: "approved",
         statement_descriptor: "COP OR DROP",
+        notification_url: "https://lively-pavlova-251852.netlify.app/.netlify/functions/mp-webhook",
+        metadata: {
+          order_summary:    window._pendingOrder?.templateParams?.order_summary   || "",
+          delivery_method:  window._pendingOrder?.templateParams?.delivery_method || "",
+          delivery_details: window._pendingOrder?.templateParams?.delivery_details|| "",
+        },
       }),
     })
     .then(r => r.json())
