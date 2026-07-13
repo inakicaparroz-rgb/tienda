@@ -74,6 +74,8 @@ exports.handler = async (event) => {
       process.env.MP_ACCESS_TOKEN
     );
 
+    console.log("payment status:", payment.status, "id:", paymentId);
+
     if (payment.status !== "approved") {
       return { statusCode: 200, body: "payment not approved" };
     }
@@ -90,19 +92,21 @@ exports.handler = async (event) => {
     const html = buildEmailHtml(emailData);
 
     // Email a la tienda
-    await sendEmail({
+    const r1 = await sendEmail({
       to: process.env.STORE_EMAIL,
       subject: `[NUEVO PEDIDO] ${customerName} — ${total}`,
       html,
     });
+    console.log("store email result:", r1);
 
     // Email al cliente
     if (customerEmail && customerEmail !== process.env.STORE_EMAIL) {
-      await sendEmail({
+      const r2 = await sendEmail({
         to: customerEmail,
         subject: "Cop or Drop — Confirmación de pedido",
         html,
       });
+      console.log("customer email result:", r2);
     }
 
     return { statusCode: 200, body: "emails sent" };
