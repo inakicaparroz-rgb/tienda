@@ -15,7 +15,7 @@ function httpGet(url, token) {
 
 function sendEmail({ to, subject, html }) {
   const body = JSON.stringify({
-    from: "Cop or Drop <onboarding@resend.dev>",
+    from: "Cop or Drop <noreply@copordropstore.com>",
     to,
     subject,
     html,
