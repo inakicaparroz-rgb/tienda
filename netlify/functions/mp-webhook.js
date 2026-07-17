@@ -75,6 +75,7 @@ exports.handler = async (event) => {
     );
 
     console.log("payment status:", payment.status, "id:", paymentId);
+    console.log("payer:", JSON.stringify(payment.payer));
 
     if (payment.status !== "approved") {
       return { statusCode: 200, body: "payment not approved" };
