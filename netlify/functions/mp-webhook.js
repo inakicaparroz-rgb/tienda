@@ -82,7 +82,7 @@ exports.handler = async (event) => {
     }
 
     const customerEmail = payment.payer?.email || "";
-    const customerName  = payment.payer?.first_name || "Cliente";
+    const customerName  = metadata.customer_name || payment.payer?.first_name || "Cliente";
     const total         = `${payment.currency_id} ${payment.transaction_amount}`;
     const metadata      = payment.metadata || {};
     const orderSummary   = metadata.order_summary   || "Ver detalle en MP";
