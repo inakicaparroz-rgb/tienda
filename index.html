@@ -218,7 +218,7 @@
       <div class="flex flex-col gap-3">
         <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary w-full">WhatsApp →</a>
         <button onclick="openEncargo()" class="btn-primary w-full">Encargos →</button>
-        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-ghost justify-center">Unirse a la comunidad →</a>
+        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary justify-center">Unirse a la comunidad →</a>
       </div>
     </div>
   </div>
@@ -250,7 +250,7 @@
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <a href="#catalogo" class="btn-primary">Ver catálogo →</a>
         <button onclick="openEncargo()" class="btn-primary">Encargos →</button>
-        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-ghost">Unirse a la comunidad</a>
+        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary">Unirse a la comunidad</a>
       </div>
       <div class="hairline"></div>
       <div class="flex flex-wrap items-center justify-between gap-4">
@@ -1096,6 +1096,7 @@
 
   encargoClose.addEventListener("click", closeEncargo);
   encargoOverlay.addEventListener("click", closeEncargo);
+  encargoModal.addEventListener("click", e => { if (e.target === encargoModal) closeEncargo(); });
 
   encargoForm.addEventListener("submit", e => {
     e.preventDefault();
@@ -1111,6 +1112,7 @@
 
   pdpClose.addEventListener("click", closePDP);
   pdpOverlay.addEventListener("click", closePDP);
+  pdpModal.addEventListener("click", e => { if (e.target === pdpModal) closePDP(); });
   pdpPrev.addEventListener("click", () => goSlide(pdpIdx - 1));
   pdpNext.addEventListener("click", () => goSlide(pdpIdx + 1));
   document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("open")) return; if (e.key === "Escape") closePDP(); if (e.key === "ArrowLeft") goSlide(pdpIdx - 1); if (e.key === "ArrowRight") goSlide(pdpIdx + 1); });
