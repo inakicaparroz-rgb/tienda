@@ -849,7 +849,10 @@
     });
   }
   bindFilter("cat-filters","cat",v => activeCat = v);
-  bindFilter("status-filters","status",v => activeStatus = v);
+  bindFilter("status-filters","status",v => {
+    activeStatus = v;
+    if (v === "encargo" && window.openEncargo) window.openEncargo();
+  });
 
   clearBtn.addEventListener("click", () => {
     activeCat = "todas"; activeStatus = "todos";
