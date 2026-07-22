@@ -126,6 +126,9 @@
     .marquee-track{display:flex;white-space:nowrap;animation:marquee 45s linear infinite;will-change:transform}
     .marquee-pause:hover .marquee-track{animation-play-state:paused}
     .hero-grid{background-image:linear-gradient(to right,rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:80px 80px}
+    #hero-slideshow{position:absolute;inset:0}
+    .hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0;transition:opacity 1.2s ease}
+    .hero-slide.active{opacity:1}
     .hero-glow{position:absolute;width:50vw;height:50vw;max-width:700px;max-height:700px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);filter:blur(60px);opacity:0.6;top:30%;right:-10%;pointer-events:none;animation:glowDrift 18s ease-in-out infinite}
     @keyframes glowDrift{0%,100%{transform:translate(0,0) scale(1);opacity:.55}50%{transform:translate(-40px,30px) scale(1.1);opacity:.7}}
     /* Product modal */
@@ -239,7 +242,14 @@
 </header>
 <main id="main">
 <section id="top" class="relative min-h-[100svh] overflow-hidden border-b border-border">
-  <div class="absolute inset-0" style="background-image:url('img/hero-bg.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;"></div>
+  <div id="hero-slideshow" class="absolute inset-0">
+    <div class="hero-slide active" style="background-image:url('img/slide1.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('img/slide2.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('img/slide3.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('img/slide4.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('img/slide5.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('img/slide6.jpg')"></div>
+  </div>
   <div class="absolute inset-0" style="background:rgba(0,0,0,0.72);"></div>
   <div class="hero-grid absolute inset-0 pointer-events-none"></div>
   <div class="hero-glow"></div>
@@ -781,6 +791,17 @@
   const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
+  // Slideshow
+  (function(){
+    const slides = document.querySelectorAll(".hero-slide");
+    let current = 0;
+    setInterval(() => {
+      slides[current].classList.remove("active");
+      current = (current + 1) % slides.length;
+      slides[current].classList.add("active");
+    }, 4000);
+  })();
+
   const WA_NUMBER = "541134435571";
   const EMAILJS_SERVICE  = "service_323iemj";
   const EMAILJS_TEMPLATE = "ctl6bnh";
