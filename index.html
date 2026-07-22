@@ -841,6 +841,7 @@
       btnWsp.href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
     }
   }
+  window.updateCart = updateCart;
 
   btnMp.addEventListener("click", async () => {
     if (!MP_ACCESS_TOKEN) {
