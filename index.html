@@ -427,12 +427,8 @@
           <input id="encargo-talle" class="encargo-input" type="text" placeholder="Ej: M, L, 42, 9US...">
         </div>
         <div>
-          <label class="encargo-label">Foto de referencia (opcional)</label>
-          <label class="encargo-file-label" for="encargo-foto">
-            <span style="font-size:18px;color:var(--muted)">📎</span>
-            <span class="font-mono text-[11px] uppercase tracking-[.14em] text-muted" id="encargo-foto-nombre">Adjuntar imagen</span>
-            <input id="encargo-foto" type="file" accept="image/*" style="display:none" onchange="document.getElementById('encargo-foto-nombre').textContent=this.files[0]?.name||'Adjuntar imagen'">
-          </label>
+          <label class="encargo-label">Foto de referencia</label>
+          <p class="font-mono text-[10px] uppercase tracking-[.14em] text-muted" style="margin-bottom:.6rem">Si tenés una foto del producto mandala directamente por WhatsApp una vez que enviés el formulario</p>
         </div>
         <button type="submit" class="btn-primary" style="width:100%;justify-content:center">Enviar encargo por WhatsApp →</button>
       </form>
@@ -1103,14 +1099,11 @@
     const producto = document.getElementById("encargo-producto").value.trim();
     if (!producto) { document.getElementById("encargo-producto").focus(); return; }
     const talle    = document.getElementById("encargo-talle").value.trim();
-    const tieneFoto = document.getElementById("encargo-foto").files.length > 0;
     let msg = `Hola! Quiero hacer un encargo:\n• Producto: ${producto}`;
     if (talle) msg += `\n• Talle: ${talle}`;
-    if (tieneFoto) msg += `\n• Foto de referencia: te la mando por este chat`;
     window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
     closeEncargo();
     encargoForm.reset();
-    document.getElementById("encargo-foto-nombre").textContent = "Adjuntar imagen";
   });
 
   pdpClose.addEventListener("click", closePDP);
