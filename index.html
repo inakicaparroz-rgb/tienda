@@ -436,6 +436,10 @@
         <label class="encargo-label" for="co-nombre">Nombre y apellido *</label>
         <input class="encargo-input" id="co-nombre" type="text" placeholder="Juan García" autocomplete="name">
       </div>
+      <div id="co-dni-row">
+        <label class="encargo-label" for="co-dni">DNI *</label>
+        <input class="encargo-input" id="co-dni" type="text" placeholder="12345678" inputmode="numeric">
+      </div>
       <div>
         <label class="encargo-label" for="co-tel">Teléfono / WhatsApp *</label>
         <input class="encargo-input" id="co-tel" type="tel" placeholder="+54 9 11 1234-5678" autocomplete="tel">
@@ -447,8 +451,30 @@
         <input class="encargo-input" id="co-email" type="email" placeholder="juan@email.com" autocomplete="email">
       </div>
 
-      <!-- Address fields — correo + moto -->
-      <div id="co-addr-group" style="display:flex;flex-direction:column;gap:1rem">
+      <!-- Correo (Andreani) fields -->
+      <div id="co-correo-group" style="display:flex;flex-direction:column;gap:1rem">
+        <div>
+          <label class="encargo-label" for="co-sucursal">Dirección sucursal Andreani *</label>
+          <input class="encargo-input" id="co-sucursal" type="text" placeholder="Av. Corrientes 1234, CABA">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+          <div>
+            <label class="encargo-label" for="co-provincia">Provincia *</label>
+            <input class="encargo-input" id="co-provincia" type="text" placeholder="Buenos Aires" autocomplete="address-level1">
+          </div>
+          <div>
+            <label class="encargo-label" for="co-localidad">Localidad *</label>
+            <input class="encargo-input" id="co-localidad" type="text" placeholder="Palermo" autocomplete="address-level2">
+          </div>
+        </div>
+        <div>
+          <label class="encargo-label" for="co-cp">Código postal *</label>
+          <input class="encargo-input" id="co-cp" type="text" placeholder="C1043" autocomplete="postal-code">
+        </div>
+      </div>
+
+      <!-- Moto fields -->
+      <div id="co-addr-group" style="display:none;flex-direction:column;gap:1rem">
         <div>
           <label class="encargo-label" for="co-calle">Calle y número *</label>
           <input class="encargo-input" id="co-calle" type="text" placeholder="Av. Corrientes 1234" autocomplete="address-line1">
@@ -457,26 +483,15 @@
           <label class="encargo-label" for="co-piso">Piso / Depto (opcional)</label>
           <input class="encargo-input" id="co-piso" type="text" placeholder="3° B" autocomplete="address-line2">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
-          <div>
-            <label class="encargo-label" for="co-ciudad">Ciudad / Localidad *</label>
-            <input class="encargo-input" id="co-ciudad" type="text" placeholder="Buenos Aires" autocomplete="address-level2">
-          </div>
-          <div id="co-provincia-col">
-            <label class="encargo-label" for="co-provincia">Provincia *</label>
-            <input class="encargo-input" id="co-provincia" type="text" placeholder="CABA" autocomplete="address-level1">
-          </div>
+        <div>
+          <label class="encargo-label" for="co-ciudad">Barrio / Ciudad *</label>
+          <input class="encargo-input" id="co-ciudad" type="text" placeholder="Palermo, CABA" autocomplete="address-level2">
         </div>
-        <div id="co-cp-row">
-          <label class="encargo-label" for="co-cp">Código postal *</label>
-          <input class="encargo-input" id="co-cp" type="text" placeholder="C1043" autocomplete="postal-code">
-        </div>
-        <!-- Moto-only -->
-        <div id="co-ref-row" style="display:none">
+        <div>
           <label class="encargo-label" for="co-ref">Referencias / indicaciones</label>
           <textarea class="encargo-input" id="co-ref" rows="2" placeholder="Casa con portón azul, tocar timbre 2"></textarea>
         </div>
-        <div id="co-horario-row" style="display:none">
+        <div>
           <label class="encargo-label" for="co-horario">Franja horaria preferida *</label>
           <select class="encargo-input" id="co-horario">
             <option value="">— Elegir —</option>
@@ -1162,28 +1177,17 @@
   function selectDelivery(method) {
     checkoutDelivery = method;
     document.querySelectorAll(".checkout-radio-btn").forEach(b => b.classList.toggle("selected", b.dataset.method === method));
+    const correoGroup = document.getElementById("co-correo-group");
     const addrGroup   = document.getElementById("co-addr-group");
     const retiroGroup = document.getElementById("co-retiro-group");
     const emailRow    = document.getElementById("co-email-row");
-    const cpRow       = document.getElementById("co-cp-row");
-    const provinciaCol= document.getElementById("co-provincia-col");
-    const refRow      = document.getElementById("co-ref-row");
-    const horarioRow  = document.getElementById("co-horario-row");
+    const dniRow      = document.getElementById("co-dni-row");
 
-    addrGroup.style.display   = method === "retiro" ? "none" : "flex";
+    correoGroup.style.display = method === "correo" ? "flex" : "none";
+    addrGroup.style.display   = method === "moto"   ? "flex" : "none";
     retiroGroup.style.display = method === "retiro" ? "block" : "none";
-    emailRow.style.display    = method === "retiro" ? "none" : "block";
-    if (method === "correo") {
-      cpRow.style.display        = "block";
-      provinciaCol.style.display = "block";
-      refRow.style.display       = "none";
-      horarioRow.style.display   = "none";
-    } else if (method === "moto") {
-      cpRow.style.display        = "none";
-      provinciaCol.style.display = "none";
-      refRow.style.display       = "block";
-      horarioRow.style.display   = "block";
-    }
+    emailRow.style.display    = method === "retiro" ? "none"  : "block";
+    dniRow.style.display      = method === "retiro" ? "none"  : "block";
   }
   window.selectDelivery = selectDelivery;
 
@@ -1196,15 +1200,16 @@
     let deliveryLines = `Método: ${methodLabels[checkoutDelivery]}`;
 
     if (checkoutDelivery === "correo") {
-      const email = document.getElementById("co-email").value.trim();
-      const calle = document.getElementById("co-calle").value.trim();
-      const piso  = document.getElementById("co-piso").value.trim();
-      const ciudad= document.getElementById("co-ciudad").value.trim();
-      const prov  = document.getElementById("co-provincia").value.trim();
-      const cp    = document.getElementById("co-cp").value.trim();
-      if (!calle || !ciudad || !prov || !cp) { alert("Completá la dirección completa."); return; }
-      deliveryLines += `\nEmail: ${email || "-"}\nDirección: ${calle}${piso ? ", " + piso : ""}\nCiudad: ${ciudad}\nProvincia: ${prov}\nCP: ${cp}`;
+      const dni      = document.getElementById("co-dni").value.trim();
+      const email    = document.getElementById("co-email").value.trim();
+      const sucursal = document.getElementById("co-sucursal").value.trim();
+      const prov     = document.getElementById("co-provincia").value.trim();
+      const localidad= document.getElementById("co-localidad").value.trim();
+      const cp       = document.getElementById("co-cp").value.trim();
+      if (!dni || !sucursal || !prov || !localidad || !cp) { alert("Completá todos los datos de envío por correo."); return; }
+      deliveryLines += `\nDNI: ${dni}\nEmail: ${email || "-"}\nSucursal Andreani: ${sucursal}\nProvincia: ${prov}\nLocalidad: ${localidad}\nCP: ${cp}`;
     } else if (checkoutDelivery === "moto") {
+      const dni    = document.getElementById("co-dni").value.trim();
       const email  = document.getElementById("co-email").value.trim();
       const calle  = document.getElementById("co-calle").value.trim();
       const piso   = document.getElementById("co-piso").value.trim();
@@ -1212,7 +1217,7 @@
       const ref    = document.getElementById("co-ref").value.trim();
       const horario= document.getElementById("co-horario").value;
       if (!calle || !ciudad) { alert("Completá la dirección."); return; }
-      deliveryLines += `\nEmail: ${email || "-"}\nDirección: ${calle}${piso ? ", " + piso : ""}\nBarrio/Ciudad: ${ciudad}${ref ? "\nReferencias: " + ref : ""}${horario ? "\nHorario: " + horario : ""}`;
+      deliveryLines += `${dni ? "\nDNI: " + dni : ""}\nEmail: ${email || "-"}\nDirección: ${calle}${piso ? ", " + piso : ""}\nBarrio/Ciudad: ${ciudad}${ref ? "\nReferencias: " + ref : ""}${horario ? "\nHorario: " + horario : ""}`;
     } else {
       const horario = document.getElementById("co-horario-retiro").value;
       deliveryLines += horario ? `\nHorario de retiro: ${horario}` : "";
