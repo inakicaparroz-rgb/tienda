@@ -154,6 +154,10 @@
     .pdp-dot{width:6px;height:6px;background:rgba(255,255,255,.3);cursor:pointer;transition:background .2s}
     .pdp-dot.active{background:var(--accent)}
     .pdp-info{padding:1.75rem;display:flex;flex-direction:column;gap:1.25rem;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .badge-condition{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;padding:.25rem .6rem;border:1px solid;display:inline-flex;align-items:center;gap:.35rem}
+    .badge-condition--new{color:#57BEA1;border-color:#57BEA1}
+    .badge-condition--vnds{color:#f59e0b;border-color:#f59e0b}
+    .badge-condition--used{color:#9ca3af;border-color:#9ca3af}
     .pdp-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:24px;line-height:1;z-index:5;transition:color .2s}
     .pdp-close:hover{color:var(--ink)}
     .talle-chip{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:.6rem 1rem;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;transition:all .2s;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
@@ -763,6 +767,7 @@
         priceUSD: parseFloat(obj.precioUSD)||0,
         priceARS: 0,
         status: obj.stock || "sin-stock",
+        condition: obj.estado ? obj.estado.toLowerCase().trim() : "",
         description: obj.descripcion || "",
         talles: obj.talles ? obj.talles.split(/[,/]/).map(t => t.trim()).filter(Boolean) : [],
         fit: obj.fit ? obj.fit.trim() : "",
@@ -1091,7 +1096,10 @@ const WA_NUMBER = "541134435571";
         <span class="spec-label">${p.brand}</span>
         <h2 class="display text-ink mt-1" style="font-size:clamp(1.75rem,4vw,2.75rem)">${p.name}</h2>
       </div>
-      <span class="badge ${statusClass(p.status)}" style="width:fit-content"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="badge ${statusClass(p.status)}" style="width:fit-content"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>
+        ${p.condition ? `<span class="badge-condition badge-condition--${p.condition}">${p.condition.toUpperCase()}</span>` : ""}
+      </div>
       <div class="flex flex-col gap-1">
         <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
