@@ -594,7 +594,7 @@
         priceARS: 0,
         status: obj.stock || "sin-stock",
         description: obj.descripcion || "",
-        talles: obj.talles ? obj.talles.split(",").map(t => t.trim()).filter(Boolean) : [],
+        talles: obj.talles ? obj.talles.split(/[,/]/).map(t => t.trim()).filter(Boolean) : [],
         fit: obj.fit ? obj.fit.trim() : "",
         w1: words[0]||"",
         w2: words[1]||words[0]||""
