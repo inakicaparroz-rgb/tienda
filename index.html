@@ -634,7 +634,7 @@
       return;
     }
     grid.innerHTML = filtered.map((p, i) => {
-      const inCart = cart.some(c => c.slug === p.slug);
+      const inCart = cart.some(c => c.slug === p.slug || c.slug.startsWith(p.slug + '__'));
       return `
       <div class="pcard fade-card">
         <div class="pimg" style="cursor:pointer" onclick="openPDP('${p.slug}')" role="button" aria-label="Ver detalle de ${p.name}">
@@ -942,7 +942,7 @@
     }
 
     // Info panel
-    const inCart = cart.some(c => c.slug === slug);
+    const inCart = cart.some(c => c.slug === slug || c.slug.startsWith(slug + '__'));
     pdpInfo.innerHTML = `
       <div>
         <span class="spec-label">${p.brand}</span>
