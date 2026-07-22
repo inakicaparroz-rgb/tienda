@@ -144,7 +144,7 @@
     @media(min-width:640px){.pdp-gallery{aspect-ratio:auto;height:100%;min-height:0}}
     .pdp-slides{display:flex;height:100%;transition:transform .4s cubic-bezier(0.16,1,0.3,1)}
     .pdp-slide{min-width:100%;height:100%;position:relative}
-    .pdp-slide img{width:100%;height:100%;object-fit:cover}
+    .pdp-slide img{width:100%;height:100%;object-fit:cover;object-position:center top}
     .pdp-slide .ph{position:absolute;inset:0}
     .pdp-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.6);border:1px solid var(--border);color:var(--ink);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1;transition:background .2s;z-index:2}
     .pdp-nav:hover{background:rgba(0,0,0,.9)}
@@ -814,7 +814,7 @@ const WA_NUMBER = "541134435571";
       <div class="pcard fade-card">
         <div class="pimg" style="cursor:pointer" onclick="openPDP('${p.slug}')" role="button" aria-label="Ver detalle de ${p.name}">
           ${IMGS[p.slug]
-            ? `<img src="img/${p.slug}.jpg" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">`
+            ? `<img src="img/${p.slug}.jpg" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;">`
             : `<div class="ph ph-art">
             <div class="ph-brand">${p.brand.toUpperCase()}</div>
             <div class="ph-num">${String(i+1).padStart(2,"0")} / ${String(filtered.length).padStart(2,"0")}</div>
