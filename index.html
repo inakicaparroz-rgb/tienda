@@ -846,14 +846,14 @@ const WA_NUMBER = "541134435571";
             : `<span class="badge ${statusClass(p.status)}" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>`
           }</div>
         </div>
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-0.5">
           <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
           <h3>${p.name}</h3>
-          <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
+          <span class="font-mono text-muted" style="font-size:9px;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">3 CSI · ${formatARS(effectiveARS(p))} ARS</span>
         </div>
         ${p.status === "encargo"
-          ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
-          : `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
+          ? `<button class="btn-add-cart" style="margin-top:.35rem" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
+          : `<button class="btn-add-cart${inCart?" in-cart":""}" style="margin-top:.35rem" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
         }
       </div>`;
     }).join("");
