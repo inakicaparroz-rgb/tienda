@@ -927,12 +927,11 @@ const WA_NUMBER = "541134435571";
   document.querySelectorAll("[data-counter]").forEach(el => counterIO.observe(el));
 
   const nav = document.getElementById("nav");
-  const onScroll = () => { if (menuOpen || window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.background="rgba(0,0,0,0.78)"; } else { nav.classList.remove("border-border","nav-blur"); nav.style.background="transparent"; } };
-  window.addEventListener("scroll",onScroll,{passive:true}); onScroll();
-
   const menuToggle = document.getElementById("menu-toggle");
   const mobileMenu = document.getElementById("mobile-menu");
   let menuOpen = false;
+  const onScroll = () => { if (menuOpen || window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.background="rgba(0,0,0,0.78)"; } else { nav.classList.remove("border-border","nav-blur"); nav.style.background="transparent"; } };
+  window.addEventListener("scroll",onScroll,{passive:true}); onScroll();
   function toggleMenu(force) {
     menuOpen = typeof force==="boolean" ? force : !menuOpen;
     document.body.classList.toggle("menu-open",menuOpen);
