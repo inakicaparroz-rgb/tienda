@@ -84,6 +84,8 @@
     .pcard .pimg .ph{position:absolute;inset:0;transition:transform .8s cubic-bezier(0.16,1,0.3,1);will-change:transform}
     .pcard:hover .pimg .ph{transform:scale(1.045)}
     .pcard h3{font-family:'Archivo',sans-serif;font-weight:500;text-transform:uppercase;line-height:1.2;letter-spacing:-0.005em;color:var(--ink);font-size:14px;min-height:2.4em;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+    .pcard-cuotas{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+    @media(max-width:480px){.pcard-cuotas{font-size:7px}}
     .btn-add-cart{width:100%;margin-top:.25rem;padding:.55rem;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;border:1px solid var(--accent);color:var(--accent);background:transparent;transition:background .2s ease,color .2s ease;cursor:pointer}
     .btn-add-cart:hover{background:var(--accent);color:var(--bg)}
     .btn-add-cart.in-cart{background:var(--accent);color:var(--bg)}
@@ -849,7 +851,7 @@ const WA_NUMBER = "541134435571";
         <div class="flex flex-col gap-0.5">
           <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
           <h3>${p.name}</h3>
-          <span class="font-mono text-muted" style="font-size:9px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">3 cuotas sin interés · ${formatARS(effectiveARS(p))}</span>
+          <span class="pcard-cuotas">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
         </div>
         ${p.status === "encargo"
           ? `<button class="btn-add-cart" style="margin-top:.35rem" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
