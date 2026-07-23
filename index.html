@@ -147,6 +147,7 @@
     .pdp-slides{display:flex;height:100%;transition:transform .4s cubic-bezier(0.16,1,0.3,1)}
     .pdp-slide{min-width:100%;height:100%;position:relative}
     .pdp-slide img{width:100%;height:100%;object-fit:cover;object-position:center;} /* v6 */
+    @media(max-width:639px){.pdp-slide img{object-fit:contain;}}
     .pdp-slide .ph{position:absolute;inset:0}
     .pcard-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);transition:background .2s}
     .pcard-dot-active{background:#fff}
