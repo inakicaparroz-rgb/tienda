@@ -824,7 +824,7 @@ const WA_NUMBER = "541134435571";
             ontouchstart="var el=this.querySelector('img');el.src=el.src.includes('-2')?'img/${p.slug}.jpg':'img/${p.slug}-2.jpg'"
           ` : ''}>
           ${IMGS[p.slug]
-            ? `<img src="img/${p.slug}.jpg" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;">
+            ? `<img src="img/${p.slug}.jpg" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center top;">
                ${IMGS[p.slug] >= 2 ? `<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2;pointer-events:none">
                  <div class="pcard-dot pcard-dot-active"></div><div class="pcard-dot"></div>
                </div>` : ''}`
