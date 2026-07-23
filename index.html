@@ -146,13 +146,9 @@
     .pdp-slide{min-width:100%;height:100%;position:relative}
     .pdp-slide img{width:100%;height:100%;object-fit:contain;background:var(--bg);}
     .pdp-slide .ph{position:absolute;inset:0}
-    .pdp-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.6);border:1px solid var(--border);color:var(--ink);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1;transition:background .2s;z-index:2}
-    .pdp-nav:hover{background:rgba(0,0,0,.9)}
-    .pdp-nav-prev{left:.75rem}
-    .pdp-nav-next{right:.75rem}
-    .pdp-dots{position:absolute;bottom:.75rem;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
-    .pdp-dot{width:6px;height:6px;background:rgba(255,255,255,.3);cursor:pointer;transition:background .2s}
-    .pdp-dot.active{background:var(--accent)}
+    .pdp-dots{position:absolute;bottom:.75rem;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2;pointer-events:none}
+    .pdp-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);transition:background .2s}
+    .pdp-dot.active{background:#fff}
     .pdp-info{padding:1.75rem;display:flex;flex-direction:column;gap:1.25rem;overflow-y:auto;-webkit-overflow-scrolling:touch}
     .badge-condition{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;padding:.25rem .6rem;border:1px solid;display:inline-flex;align-items:center;gap:.35rem;position:relative;cursor:default}
     .badge-condition--new{color:#57BEA1;border-color:#57BEA1}
@@ -572,8 +568,6 @@
     <button class="pdp-close" id="pdp-close" aria-label="Cerrar">×</button>
     <div class="pdp-gallery" id="pdp-gallery">
       <div class="pdp-slides" id="pdp-slides"></div>
-      <button class="pdp-nav pdp-nav-prev hidden" id="pdp-prev">‹</button>
-      <button class="pdp-nav pdp-nav-next hidden" id="pdp-next">›</button>
       <div class="pdp-dots hidden" id="pdp-dots"></div>
     </div>
     <div class="pdp-info" id="pdp-info"></div>
@@ -1041,8 +1035,6 @@ const WA_NUMBER = "541134435571";
   const pdpModal   = document.getElementById("pdp-modal");
   const pdpClose   = document.getElementById("pdp-close");
   const pdpSlides  = document.getElementById("pdp-slides");
-  const pdpPrev    = document.getElementById("pdp-prev");
-  const pdpNext    = document.getElementById("pdp-next");
   const pdpDotsEl  = document.getElementById("pdp-dots");
   const pdpInfo    = document.getElementById("pdp-info");
   let pdpIdx = 0;
@@ -1074,20 +1066,17 @@ const WA_NUMBER = "541134435571";
     }
     pdpSlides.style.transform = "translateX(0)";
 
-    // Nav arrows & dots
+    // Dots + hover/tap to advance
     if (photos.length > 1) {
-      pdpPrev.classList.remove("hidden");
-      pdpNext.classList.remove("hidden");
       pdpDotsEl.classList.remove("hidden");
       pdpDotsEl.innerHTML = photos.map((_, i) =>
-        `<div class="pdp-dot${i===0?" active":""}" data-i="${i}"></div>`
+        `<div class="pdp-dot${i===0?" active":""}"></div>`
       ).join("");
-      pdpDotsEl.querySelectorAll(".pdp-dot").forEach(d =>
-        d.addEventListener("click", () => goSlide(+d.dataset.i))
-      );
+      const gallery = document.getElementById("pdp-gallery");
+      gallery.addEventListener("mouseenter", () => goSlide(pdpIdx + 1));
+      gallery.addEventListener("mouseleave", () => goSlide(0));
+      gallery.addEventListener("click", () => goSlide(pdpIdx + 1));
     } else {
-      pdpPrev.classList.add("hidden");
-      pdpNext.classList.add("hidden");
       pdpDotsEl.classList.add("hidden");
     }
 
@@ -1367,9 +1356,7 @@ const WA_NUMBER = "541134435571";
   pdpClose.addEventListener("click", closePDP);
   pdpOverlay.addEventListener("click", closePDP);
   pdpModal.addEventListener("click", e => { if (e.target === pdpModal) closePDP(); });
-  pdpPrev.addEventListener("click", () => goSlide(pdpIdx - 1));
-  pdpNext.addEventListener("click", () => goSlide(pdpIdx + 1));
-  document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("open")) return; if (e.key === "Escape") closePDP(); if (e.key === "ArrowLeft") goSlide(pdpIdx - 1); if (e.key === "ArrowRight") goSlide(pdpIdx + 1); });
+document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("open")) return; if (e.key === "Escape") closePDP(); if (e.key === "ArrowLeft") goSlide(pdpIdx - 1); if (e.key === "ArrowRight") goSlide(pdpIdx + 1); });
 
 </script>
 </body>
