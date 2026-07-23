@@ -228,9 +228,12 @@
       <button onclick="document.getElementById('search-input').closest('section')?.scrollIntoView({behavior:'smooth'});setTimeout(()=>document.getElementById('search-input').focus(),400)" aria-label="Buscar" style="background:none;border:none;padding:6px;color:var(--ink);display:flex;align-items:center;cursor:pointer;opacity:.7;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
       <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary">WhatsApp →</a>
     </div>
-    <button id="menu-toggle" class="md:hidden w-10 h-10 flex items-center justify-center burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu">
-      <div class="flex flex-col items-end gap-[6px]"><span></span><span></span><span></span></div>
-    </button>
+    <div class="md:hidden flex items-center gap-1">
+      <button onclick="document.getElementById('search-input').closest('section')?.scrollIntoView({behavior:'smooth'});setTimeout(()=>document.getElementById('search-input').focus(),400)" aria-label="Buscar" style="background:none;border:none;padding:8px;color:var(--ink);display:flex;align-items:center;cursor:pointer;opacity:.7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+      <button id="menu-toggle" class="w-10 h-10 flex items-center justify-center burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu">
+        <div class="flex flex-col items-end gap-[6px]"><span></span><span></span><span></span></div>
+      </button>
+    </div>
   </div>
   <div id="mobile-menu" class="fixed inset-x-0 top-16 bottom-0 z-40 bg-bg opacity-0 pointer-events-none transition-opacity duration-300 md:hidden" aria-hidden="true">
     <div class="container-edge h-full flex flex-col justify-between py-10">
@@ -294,7 +297,7 @@
 </section>
 <section class="border-b border-border">
   <div class="container-edge grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
-    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 pr-6 pl-0 md:pl-0 md:pr-10"><span class="display text-4xl md:text-6xl text-accent" data-counter="100" data-suffix="%">0%</span><span class="spec-label">ORIGINAL</span></div>
+    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:pl-0 md:pr-10"><span class="display text-4xl md:text-6xl text-accent" data-counter="100" data-suffix="%">0%</span><span class="spec-label">ORIGINAL</span></div>
     <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink" data-counter="500" data-suffix="+">0+</span><span class="spec-label">PIEZAS VENDIDAS</span></div>
     <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink" data-counter="24" data-suffix="H">0H</span><span class="spec-label">RESPUESTA WHATSAPP</span></div>
     <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink">GRATIS</span><span class="spec-label">ENVÍOS A TODO EL PAÍS</span></div>
@@ -924,7 +927,7 @@ const WA_NUMBER = "541134435571";
   document.querySelectorAll("[data-counter]").forEach(el => counterIO.observe(el));
 
   const nav = document.getElementById("nav");
-  const onScroll = () => { if (window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.background="rgba(0,0,0,0.78)"; } else { nav.classList.remove("border-border","nav-blur"); nav.style.background="transparent"; } };
+  const onScroll = () => { if (menuOpen || window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.background="rgba(0,0,0,0.78)"; } else { nav.classList.remove("border-border","nav-blur"); nav.style.background="transparent"; } };
   window.addEventListener("scroll",onScroll,{passive:true}); onScroll();
 
   const menuToggle = document.getElementById("menu-toggle");
@@ -933,8 +936,8 @@ const WA_NUMBER = "541134435571";
   function toggleMenu(force) {
     menuOpen = typeof force==="boolean" ? force : !menuOpen;
     document.body.classList.toggle("menu-open",menuOpen);
-    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; }
-    else { mobileMenu.classList.add("opacity-0","pointer-events-none"); mobileMenu.classList.remove("opacity-100"); mobileMenu.setAttribute("aria-hidden","true"); menuToggle.setAttribute("aria-expanded","false"); document.body.style.overflow=""; }
+    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; nav.classList.add("border-border","nav-blur"); nav.style.background="rgba(0,0,0,0.78)"; }
+    else { mobileMenu.classList.add("opacity-0","pointer-events-none"); mobileMenu.classList.remove("opacity-100"); mobileMenu.setAttribute("aria-hidden","true"); menuToggle.setAttribute("aria-expanded","false"); document.body.style.overflow=""; onScroll(); }
   }
   menuToggle.addEventListener("click",()=>toggleMenu());
   document.querySelectorAll(".menu-link").forEach(a=>a.addEventListener("click",()=>toggleMenu(false)));
