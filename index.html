@@ -776,7 +776,7 @@
         slug: obj.slug,
         name: obj.nombre,
         brand: obj.marca,
-        category: obj.categoria,
+        category: (obj.categoria||"").toLowerCase().trim(),
         priceUSD: parseFloat(obj.precioUSD)||0,
         priceARS: 0,
         status: obj.stock || "sin-stock",
