@@ -6,6 +6,23 @@
   <title>Cop or Drop — Únicamente Productos Originales</title>
   <meta name="description" content="Cop or Drop. Streetwear y sneakers 100% originales en CABA. Hellstar, Supreme, Corteiz, Denim Tears, Casablanca, Bape, Adidas y más. Envíos a todo el país." />
   <meta name="theme-color" content="#000000" />
+  <!-- Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '1023940523964047');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1023940523964047&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- End Meta Pixel Code -->
   <meta property="og:title" content="Cop or Drop — Únicamente Productos Originales" />
   <meta property="og:description" content="Streetwear y sneakers hype, 100% originales. Envíos a toda Argentina." />
   <meta property="og:type" content="website" />
@@ -248,7 +265,7 @@
       <div class="flex flex-col gap-3">
         <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary w-full">WhatsApp →</a>
         <button onclick="openEncargo()" class="btn-primary w-full">Encargos →</button>
-        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary justify-center">Unirse a la comunidad →</a>
+        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary justify-center" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Unirse a la comunidad →</a>
       </div>
     </div>
   </div>
@@ -282,7 +299,7 @@
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <a href="#catalogo" class="btn-primary">Ver catálogo →</a>
         <button onclick="openEncargo()" class="btn-primary">Encargos →</button>
-        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary">Unirse a la comunidad</a>
+        <a id="comunidad" href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Unirse a la comunidad</a>
       </div>
       <div class="hairline"></div>
       <div class="flex flex-wrap items-center justify-between gap-4">
@@ -430,7 +447,7 @@
   </div>
   <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border border-y border-border">
     <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">01</span><span class="spec-label">WHATSAPP</span></div><h3 class="display text-3xl md:text-4xl text-ink">Hablá con nosotros.</h3><p class="flex-1 text-sm leading-relaxed text-muted">Respondemos rápido. Consultas, encargos y coordinación de envíos.</p><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Abrir chat →</a></div>
-    <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">02</span><span class="spec-label">COMUNIDAD</span></div><h3 class="display text-3xl md:text-4xl text-ink">Sumate al grupo.</h3><p class="flex-1 text-sm leading-relaxed text-muted">Grupo privado, encargos diarios, drops exclusivos y acceso anticipado. Contacto directo con nosotros en todo momento.</p><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Unirme →</a></div>
+    <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">02</span><span class="spec-label">COMUNIDAD</span></div><h3 class="display text-3xl md:text-4xl text-ink">Sumate al grupo.</h3><p class="flex-1 text-sm leading-relaxed text-muted">Grupo privado, encargos diarios, drops exclusivos y acceso anticipado. Contacto directo con nosotros en todo momento.</p><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary self-start" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Unirme →</a></div>
     <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">03</span><span class="spec-label">INSTAGRAM</span></div><h3 class="display text-3xl md:text-4xl text-ink">@copordrop_ar</h3><p class="flex-1 text-sm leading-relaxed text-muted">Cada pieza nueva, restocks y previews. DM para consultas rápidas.</p><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Seguinos →</a></div>
   </div>
   <div class="reveal mt-20 md:mt-28 border-t border-border pt-10 md:pt-14">
@@ -599,7 +616,7 @@
     <div class="hairline mt-12"></div>
     <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-10">
       <div class="flex flex-col gap-3"><span class="spec-label">/01 NAVEGACIÓN</span><a href="#top" class="text-sm text-ink hover:text-accent transition-colors">Inicio</a><a href="#catalogo" class="text-sm text-ink hover:text-accent transition-colors">Catálogo</a><a href="#manifesto" class="text-sm text-ink hover:text-accent transition-colors">Manifiesto</a><a href="#faq" class="text-sm text-ink hover:text-accent transition-colors">FAQ</a></div>
-      <div class="flex flex-col gap-3"><span class="spec-label">/02 COMUNIDAD</span><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">WhatsApp directo</a><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">Grupo WhatsApp</a><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">@copordrop_ar</a></div>
+      <div class="flex flex-col gap-3"><span class="spec-label">/02 COMUNIDAD</span><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">WhatsApp directo</a><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Grupo WhatsApp</a><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">@copordrop_ar</a></div>
       <div class="flex flex-col gap-3"><span class="spec-label">/03 UBICACIÓN</span><p class="text-sm text-ink">CABA, Argentina</p><p class="text-xs text-muted">Operamos desde CABA y enviamos GRATIS a toda la Argentina. Coordinamos por WhatsApp e Instagram para confirmar dirección y tiempos (24-72 hs en AMBA, 2-7 días al interior).</p></div>
       <div class="flex flex-col gap-3"><span class="spec-label">/04 PAGOS</span><p class="text-sm text-ink">Efectivo · Transferencia</p><p class="text-sm text-ink">3 cuotas sin interés</p><p class="text-xs text-muted">Coordiná por WhatsApp.</p></div>
     </div>
