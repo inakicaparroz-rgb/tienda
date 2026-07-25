@@ -955,13 +955,13 @@ const WA_NUMBER = "541134435571";
   const menuToggle = document.getElementById("menu-toggle");
   const mobileMenu = document.getElementById("mobile-menu");
   let menuOpen = false;
-  const onScroll = () => { if (document.body.classList.contains("menu-open")) return; if (window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.background="rgba(0,0,0,0.78)"; } else { nav.classList.remove("border-border","nav-blur"); nav.style.background=""; } };
+  const onScroll = () => { if (document.body.classList.contains("menu-open")) return; if (window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.setProperty("background","rgba(0,0,0,0.78)","important"); } else { nav.classList.remove("border-border","nav-blur"); nav.style.removeProperty("background"); } };
   window.addEventListener("scroll",onScroll,{passive:true}); onScroll();
   function toggleMenu(force) {
     menuOpen = typeof force==="boolean" ? force : !menuOpen;
     document.body.classList.toggle("menu-open",menuOpen);
-    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; nav.classList.add("border-border","nav-blur"); nav.style.background=""; }
-    else { mobileMenu.classList.add("opacity-0","pointer-events-none"); mobileMenu.classList.remove("opacity-100"); mobileMenu.setAttribute("aria-hidden","true"); menuToggle.setAttribute("aria-expanded","false"); document.body.style.overflow=""; onScroll(); }
+    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; nav.classList.add("border-border","nav-blur"); nav.style.setProperty("background","#000000","important"); }
+    else { mobileMenu.classList.add("opacity-0","pointer-events-none"); mobileMenu.classList.remove("opacity-100"); mobileMenu.setAttribute("aria-hidden","true"); menuToggle.setAttribute("aria-expanded","false"); document.body.style.overflow=""; nav.style.removeProperty("background"); onScroll(); }
   }
   menuToggle.addEventListener("click",()=>toggleMenu());
   document.querySelectorAll(".menu-link").forEach(a=>a.addEventListener("click",()=>toggleMenu(false)));
