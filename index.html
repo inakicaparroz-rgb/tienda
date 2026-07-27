@@ -803,7 +803,7 @@
       headers.forEach((h,i) => { obj[h] = (vals[i]||"").replace(/^"|"$/g,"").trim(); });
       const words = obj.nombre ? obj.nombre.split(" ") : ["",""];
       return {
-        slug: obj.slug,
+        slug: (obj.slug||"").toLowerCase().trim(),
         name: obj.nombre,
         brand: obj.marca,
         category: (obj.categoria||"").toLowerCase().trim(),
