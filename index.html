@@ -807,7 +807,7 @@
         category: (obj.categoria||"").toLowerCase().trim(),
         priceUSD: parseFloat(obj.precioUSD)||0,
         priceARS: 0,
-        status: obj.stock || "sin-stock",
+        status: (obj.stock||"sin-stock").toLowerCase().trim().replace(/\s+/g,"-"),
         condition: obj.estado ? obj.estado.toLowerCase().trim() : "",
         description: obj.descripcion || "",
         talles: obj.talles ? obj.talles.split(/[,/]/).map(t => t.trim()).filter(Boolean) : [],
