@@ -1160,9 +1160,10 @@ const WA_NUMBER = "541134435571";
           `<li class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.1em]"><span style="color:var(--accent)">✓</span><span class="text-muted">${t}</span></li>`
         ).join("")}
       </ul>
-      <button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>
-        ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
-      </button>
+      ${p.status === "encargo"
+        ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
+        : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
+      }
     `;
 
     pdpSelectedTalle = null;
