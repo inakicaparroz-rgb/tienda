@@ -894,7 +894,7 @@ const WA_NUMBER = "541134435571";
         ${p.status === "encargo"
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
           : p.status === "sin-stock"
-            ? `<button class="btn-add-cart" disabled style="opacity:.4;cursor:not-allowed">SIN STOCK</button>`
+            ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
             : (!p.talles || p.talles.length === 0)
               ? `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="event.stopPropagation();cartToggle('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
               : `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
@@ -1171,7 +1171,7 @@ const WA_NUMBER = "541134435571";
       ${p.status === "encargo"
         ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
         : p.status === "sin-stock"
-          ? `<button class="btn-add-cart" disabled style="opacity:.4;cursor:not-allowed">SIN STOCK</button>`
+          ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
           : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
       }
     `;
