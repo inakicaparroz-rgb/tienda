@@ -218,7 +218,7 @@
     .faq-icon{transition:transform .35s ease}
     .faq-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
     .nav-blur{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-    body.menu-open #nav{background:#000000!important;border-color:var(--border)}
+    body.menu-open #nav{background:#000000!important;border-color:var(--border);backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
     .burger span{display:block;width:24px;height:1px;background:var(--ink);transition:transform .3s ease,opacity .25s ease}
     .burger span:nth-child(2){width:16px;margin-left:auto}
     .menu-open .burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
@@ -968,7 +968,7 @@ const WA_NUMBER = "541134435571";
   function toggleMenu(force) {
     menuOpen = typeof force==="boolean" ? force : !menuOpen;
     document.body.classList.toggle("menu-open",menuOpen);
-    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; nav.classList.add("border-border","nav-blur"); nav.style.setProperty("background","#000000","important"); }
+    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; nav.classList.remove("nav-blur"); nav.classList.add("border-border"); nav.style.setProperty("background","#000000","important"); }
     else { mobileMenu.classList.add("opacity-0","pointer-events-none"); mobileMenu.classList.remove("opacity-100"); mobileMenu.setAttribute("aria-hidden","true"); menuToggle.setAttribute("aria-expanded","false"); document.body.style.overflow=""; nav.style.removeProperty("background"); onScroll(); }
   }
   menuToggle.addEventListener("click",()=>toggleMenu());
