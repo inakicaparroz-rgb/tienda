@@ -1043,6 +1043,12 @@ const WA_NUMBER = "541134435571";
   document.getElementById("cart-close").addEventListener("click", closeCart);
   cartOverlay.addEventListener("click", closeCart);
 
+  function cartRemove(slug) {
+    const idx = cart.findIndex(c => c.slug === slug);
+    if (idx >= 0) { cart.splice(idx, 1); updateCart(); render(); }
+  }
+  window.cartRemove = cartRemove;
+
   function cartToggle(slug) {
     const p = PRODUCTS.find(x => x.slug === slug);
     if (!p) return;
@@ -1076,7 +1082,7 @@ const WA_NUMBER = "541134435571";
             <div class="cart-item-name">${p.name}</div>
             <div class="cart-item-price">${formatARS(effectiveARS(p))} · USD ${p.priceUSD}</div>
           </div>
-          <button class="cart-item-remove" onclick="cartToggle('${p.slug}')" aria-label="Quitar ${p.name}">×</button>
+          <button class="cart-item-remove" onclick="cartRemove('${p.slug}')" aria-label="Quitar ${p.name}">×</button>
         </div>
       `).join("");
 
