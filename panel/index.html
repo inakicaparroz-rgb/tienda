@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cop or Drop — Sistema interno</title>
+<meta name="robots" content="noindex, nofollow" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: {
+      colors: {
+        bg: '#000000', ink: '#FFFFFF', surface: '#0E0E0E',
+        'surface-elevated': '#141416', border: '#242424',
+        muted: '#7A7A7A', accent: '#57BEA1',
+      },
+      fontFamily: { sans: ['Archivo', 'Helvetica Neue', 'Arial', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+    }}
+  };
+</script>
+<style>
+  body { background: #000; color: #fff; }
+  ::placeholder { color: #7A7A7A; }
+  input, select { background: #141416; border: 1px solid #242424; color: #fff; }
+  table { border-collapse: collapse; }
+  th, td { border-bottom: 1px solid #242424; }
+</style>
+</head>
+<body class="font-sans min-h-screen">
+
+<!-- ─── LOGIN ─────────────────────────────────────────────────────────── -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-sm border border-border bg-surface p-8">
+    <h1 class="text-xl font-bold mb-1">Cop or Drop</h1>
+    <p class="text-muted text-sm mb-6 font-mono uppercase tracking-wide">Sistema interno</p>
+    <div class="space-y-3">
+      <input id="login-email" type="email" placeholder="Email" class="w-full px-3 py-2 text-sm" />
+      <input id="login-password" type="password" placeholder="Contraseña" class="w-full px-3 py-2 text-sm" />
+      <button id="login-btn" class="w-full bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">
+        Entrar
+      </button>
+      <p id="login-error" class="text-red-400 text-xs font-mono hidden"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── APP ───────────────────────────────────────────────────────────── -->
+<div id="app-screen" class="hidden min-h-screen">
+  <header class="border-b border-border px-6 py-4 flex items-center justify-between">
+    <h1 class="font-bold">Cop or Drop <span class="text-muted font-normal">/ sistema interno</span></h1>
+    <button id="logout-btn" class="text-muted text-xs font-mono uppercase hover:text-white">Salir</button>
+  </header>
+
+  <nav class="border-b border-border px-6 flex gap-1 overflow-x-auto">
+    <button data-tab="stock" class="tab-btn px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-accent text-white">Stock</button>
+    <button data-tab="ventas" class="tab-btn px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted">Ventas</button>
+    <button data-tab="caja" class="tab-btn px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted">Flujo de caja</button>
+    <button data-tab="reportes" class="tab-btn px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted">Reportes</button>
+    <button data-tab="deudas" class="tab-btn px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted">Deudas y deudores</button>
+  </nav>
+
+  <main class="p-6">
+
+    <!-- STOCK -->
+    <section id="tab-stock" class="tab-section">
+      <div class="flex flex-col sm:flex-row gap-3 mb-4">
+        <input id="stock-search" type="text" placeholder="Buscar por nombre, marca, categoría o código de barra…"
+          class="flex-1 px-3 py-2 text-sm" autofocus />
+        <button id="btn-nuevo-producto" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
+          + Nuevo producto
+        </button>
+      </div>
+
+      <div class="border border-border overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-muted font-mono text-xs uppercase">
+              <th class="p-2">Imagen</th>
+              <th class="p-2">Nombre</th>
+              <th class="p-2">Marca</th>
+              <th class="p-2">Categoría</th>
+              <th class="p-2">Costo USD</th>
+              <th class="p-2">Precio venta USD</th>
+              <th class="p-2">Precio promo USD</th>
+              <th class="p-2">Stock</th>
+            </tr>
+          </thead>
+          <tbody id="productos-tbody"></tbody>
+        </table>
+        <p id="productos-empty" class="p-6 text-center text-muted text-sm hidden">No hay productos todavía.</p>
+      </div>
+
+      <!-- Detalle de producto: talles / unidades -->
+      <div id="producto-detalle" class="hidden mt-6 border border-border bg-surface p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="detalle-nombre" class="font-bold"></h3>
+          <button id="cerrar-detalle" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+        </div>
+        <div id="detalle-talles" class="flex flex-wrap gap-2 mb-4"></div>
+        <div id="detalle-unidades"></div>
+        <button id="btn-agregar-unidad" class="mt-3 bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
+          + Agregar unidad a stock
+        </button>
+      </div>
+    </section>
+
+    <!-- placeholders -->
+    <section id="tab-ventas" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
+    <section id="tab-caja" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
+    <section id="tab-reportes" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
+    <section id="tab-deudas" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
+
+  </main>
+</div>
+
+<!-- Modal: nuevo producto -->
+<div id="modal-producto" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
+    <h3 class="font-bold mb-4">Nuevo producto</h3>
+    <div class="space-y-3 text-sm">
+      <input id="p-nombre" placeholder="Nombre" class="w-full px-3 py-2" />
+      <input id="p-marca" placeholder="Marca" class="w-full px-3 py-2" />
+      <input id="p-categoria" placeholder="Categoría" class="w-full px-3 py-2" />
+      <textarea id="p-descripcion" placeholder="Descripción" class="w-full px-3 py-2" rows="2"></textarea>
+      <input id="p-imagen" placeholder="URL de imagen" class="w-full px-3 py-2" />
+      <div class="grid grid-cols-2 gap-3">
+        <input id="p-costo" type="number" step="0.01" placeholder="Costo USD" class="w-full px-3 py-2" />
+        <input id="p-precio" type="number" step="0.01" placeholder="Precio venta USD" class="w-full px-3 py-2" />
+      </div>
+      <input id="p-promo" type="number" step="0.01" placeholder="Precio promocional USD (opcional)" class="w-full px-3 py-2" />
+      <label class="flex items-center gap-2 text-muted font-mono text-xs uppercase">
+        <input id="p-tiene-talles" type="checkbox" checked /> Tiene talles
+      </label>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="p-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="p-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────────
+// TODO: completar con los datos del proyecto de Supabase (Project Settings → API).
+const SUPABASE_URL = 'TODO_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'TODO_SUPABASE_ANON_KEY';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── LOGIN ──────────────────────────────────────────────────────────────
+const loginScreen = document.getElementById('login-screen');
+const appScreen = document.getElementById('app-screen');
+const loginError = document.getElementById('login-error');
+
+async function checkSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    loginScreen.classList.add('hidden');
+    appScreen.classList.remove('hidden');
+    cargarProductos();
+  } else {
+    loginScreen.classList.remove('hidden');
+    appScreen.classList.add('hidden');
+  }
+}
+
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  loginError.classList.add('hidden');
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    loginError.textContent = 'Email o contraseña incorrectos.';
+    loginError.classList.remove('hidden');
+    return;
+  }
+  checkSession();
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  checkSession();
+});
+
+checkSession();
+
+// ── TABS ───────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('border-accent', 'text-white');
+      b.classList.add('border-transparent', 'text-muted');
+    });
+    btn.classList.add('border-accent', 'text-white');
+    btn.classList.remove('border-transparent', 'text-muted');
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+  });
+});
+
+// ── STOCK: listado + búsqueda ──────────────────────────────────────────
+let PRODUCTOS = [];
+
+async function cargarProductos() {
+  const { data, error } = await supabase
+    .from('productos')
+    .select('*, unidades(id, estado)')
+    .order('created_at', { ascending: false });
+  if (error) { console.error(error); return; }
+  PRODUCTOS = data || [];
+  renderProductos(PRODUCTOS);
+}
+
+function renderProductos(lista) {
+  const tbody = document.getElementById('productos-tbody');
+  const empty = document.getElementById('productos-empty');
+  tbody.innerHTML = '';
+  empty.classList.toggle('hidden', lista.length > 0);
+
+  lista.forEach(p => {
+    const disponibles = (p.unidades || []).filter(u => u.estado === 'disponible').length;
+    const tr = document.createElement('tr');
+    tr.className = 'cursor-pointer hover:bg-surface-elevated';
+    tr.innerHTML = `
+      <td class="p-2"><img src="${p.imagen_url || ''}" class="w-10 h-10 object-cover bg-surface-elevated" onerror="this.style.opacity=0"/></td>
+      <td class="p-2">${p.nombre}</td>
+      <td class="p-2 text-muted">${p.marca || '-'}</td>
+      <td class="p-2 text-muted">${p.categoria || '-'}</td>
+      <td class="p-2">USD ${Number(p.costo_usd).toFixed(2)}</td>
+      <td class="p-2">USD ${Number(p.precio_venta_usd).toFixed(2)}</td>
+      <td class="p-2 text-accent">${p.precio_promocional_usd ? 'USD ' + Number(p.precio_promocional_usd).toFixed(2) : '-'}</td>
+      <td class="p-2">${disponibles}</td>
+    `;
+    tr.addEventListener('click', () => abrirDetalle(p));
+    tbody.appendChild(tr);
+  });
+}
+
+function filtrar(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) { renderProductos(PRODUCTOS); return; }
+  const filtrado = PRODUCTOS.filter(p => {
+    const codigos = (p.unidades || []).map(u => u.codigo_barra || '').join(' ');
+    return [p.nombre, p.marca, p.categoria, p.descripcion, codigos]
+      .join(' ').toLowerCase().includes(q);
+  });
+  renderProductos(filtrado);
+}
+
+document.getElementById('stock-search').addEventListener('input', e => filtrar(e.target.value));
+
+// ── STOCK: detalle de producto (talles / unidades) ─────────────────────
+let PRODUCTO_ACTUAL = null;
+let TALLE_ACTUAL = null;
+
+async function abrirDetalle(producto) {
+  PRODUCTO_ACTUAL = producto;
+  document.getElementById('detalle-nombre').textContent = producto.nombre;
+  document.getElementById('producto-detalle').classList.remove('hidden');
+
+  const { data: unidades } = await supabase
+    .from('unidades')
+    .select('*')
+    .eq('producto_id', producto.id)
+    .order('created_at', { ascending: true });
+
+  PRODUCTO_ACTUAL._unidades = unidades || [];
+
+  if (producto.tiene_talles) {
+    const talles = [...new Set(PRODUCTO_ACTUAL._unidades.map(u => u.talle).filter(Boolean))];
+    const cont = document.getElementById('detalle-talles');
+    cont.innerHTML = '';
+    talles.forEach(t => {
+      const disponibles = PRODUCTO_ACTUAL._unidades.filter(u => u.talle === t && u.estado === 'disponible').length;
+      const btn = document.createElement('button');
+      btn.className = 'border border-border px-3 py-1.5 text-xs font-mono uppercase hover:border-accent';
+      btn.textContent = `${t} (${disponibles})`;
+      btn.addEventListener('click', () => mostrarUnidadesDeTalle(t));
+      cont.appendChild(btn);
+    });
+    document.getElementById('detalle-unidades').innerHTML = '<p class="text-muted text-sm">Elegí un talle.</p>';
+  } else {
+    document.getElementById('detalle-talles').innerHTML = '';
+    mostrarUnidadesDeTalle(null);
+  }
+}
+
+function mostrarUnidadesDeTalle(talle) {
+  TALLE_ACTUAL = talle;
+  const unidades = PRODUCTO_ACTUAL._unidades.filter(u => u.talle === talle);
+  const cont = document.getElementById('detalle-unidades');
+  if (unidades.length === 0) {
+    cont.innerHTML = '<p class="text-muted text-sm">Sin unidades cargadas.</p>';
+    return;
+  }
+  cont.innerHTML = `
+    <table class="w-full text-sm">
+      <thead><tr class="text-left text-muted font-mono text-xs uppercase">
+        <th class="p-2">Código</th><th class="p-2">Estado</th><th class="p-2">Ingreso</th>
+      </tr></thead>
+      <tbody>
+        ${unidades.map(u => `
+          <tr>
+            <td class="p-2 font-mono">${u.codigo_barra}</td>
+            <td class="p-2">${u.estado}</td>
+            <td class="p-2 text-muted">${new Date(u.created_at).toLocaleDateString('es-AR')}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+document.getElementById('cerrar-detalle').addEventListener('click', () => {
+  document.getElementById('producto-detalle').classList.add('hidden');
+  PRODUCTO_ACTUAL = null;
+});
+
+document.getElementById('btn-agregar-unidad').addEventListener('click', async () => {
+  if (!PRODUCTO_ACTUAL) return;
+  if (PRODUCTO_ACTUAL.tiene_talles && !TALLE_ACTUAL) {
+    alert('Elegí un talle antes de agregar una unidad.');
+    return;
+  }
+  const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
+  const { error } = await supabase.from('unidades').insert({
+    producto_id: PRODUCTO_ACTUAL.id,
+    talle: TALLE_ACTUAL,
+    codigo_barra: codigoData,
+  });
+  if (error) { alert('Error al agregar la unidad.'); console.error(error); return; }
+  await cargarProductos();
+  const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
+  abrirDetalle(actualizado);
+});
+
+// ── STOCK: nuevo producto ───────────────────────────────────────────────
+const modalProducto = document.getElementById('modal-producto');
+document.getElementById('btn-nuevo-producto').addEventListener('click', () => modalProducto.classList.remove('hidden'));
+document.getElementById('p-cancelar').addEventListener('click', () => modalProducto.classList.add('hidden'));
+
+function slugify(texto) {
+  return texto.toLowerCase().trim()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+document.getElementById('p-guardar').addEventListener('click', async () => {
+  const nombre = document.getElementById('p-nombre').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+
+  const producto = {
+    slug: slugify(nombre) + '-' + Date.now().toString(36),
+    nombre,
+    marca: document.getElementById('p-marca').value.trim() || null,
+    categoria: document.getElementById('p-categoria').value.trim() || null,
+    descripcion: document.getElementById('p-descripcion').value.trim() || null,
+    imagen_url: document.getElementById('p-imagen').value.trim() || null,
+    costo_usd: parseFloat(document.getElementById('p-costo').value) || 0,
+    precio_venta_usd: parseFloat(document.getElementById('p-precio').value) || 0,
+    precio_promocional_usd: document.getElementById('p-promo').value ? parseFloat(document.getElementById('p-promo').value) : null,
+    tiene_talles: document.getElementById('p-tiene-talles').checked,
+  };
+
+  const { error } = await supabase.from('productos').insert(producto);
+  if (error) { alert('Error al guardar el producto.'); console.error(error); return; }
+
+  modalProducto.classList.add('hidden');
+  document.querySelectorAll('#modal-producto input, #modal-producto textarea').forEach(el => {
+    if (el.type === 'checkbox') el.checked = true; else el.value = '';
+  });
+  cargarProductos();
+});
+</script>
+</body>
+</html>
