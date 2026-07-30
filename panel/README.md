@@ -12,7 +12,7 @@ Sistema de stock/ventas/caja de uso interno. Separado de la web pública (`/inde
 
    Estos dos valores son seguros de tener en el código — no son secretos, están pensados para viajar al navegador. Lo único que nunca va acá es la `service_role key`.
 
-4. **Deploy:** crear un segundo sitio en Netlify apuntando a este mismo repo, con `Base directory` = `panel`. Agregar el subdominio elegido (DNS) apuntando a ese sitio.
+4. **Deploy:** el panel se despliega en Vercel (proyecto `copordrop-panel`), separado de la web pública que sigue en Netlify. Root Directory configurado en `panel`.
 
 ## Estado actual
 
