@@ -96,9 +96,13 @@
           <h3 id="detalle-nombre" class="font-bold"></h3>
           <button id="cerrar-detalle" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
         </div>
-        <div id="detalle-talles" class="flex flex-wrap gap-2 mb-4"></div>
+        <div id="detalle-resumen-talles" class="flex flex-wrap gap-2 mb-4 font-mono text-xs uppercase text-muted"></div>
         <div id="detalle-unidades"></div>
         <div class="flex flex-wrap items-end gap-2 mt-4">
+          <div id="nueva-unidad-talle-wrap">
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Talle</label>
+            <input id="nueva-unidad-talle" placeholder="Ej: M" class="w-20 px-3 py-2 text-sm" />
+          </div>
           <div>
             <label class="block text-muted font-mono text-xs uppercase mb-1">Costo compra USD</label>
             <input id="nueva-unidad-costo-compra" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
@@ -258,45 +262,40 @@ function filtrar(query) {
 
 document.getElementById('stock-search').addEventListener('input', e => filtrar(e.target.value));
 
-// ── STOCK: detalle de producto (talles / unidades) ─────────────────────
+// ── STOCK: detalle de producto (lista plana de unidades) ────────────────
 let PRODUCTO_ACTUAL = null;
-let TALLE_ACTUAL = null;
 
 async function abrirDetalle(producto) {
   PRODUCTO_ACTUAL = producto;
   document.getElementById('detalle-nombre').textContent = producto.nombre;
   document.getElementById('producto-detalle').classList.remove('hidden');
+  document.getElementById('nueva-unidad-talle-wrap').classList.toggle('hidden', !producto.tiene_talles);
 
   const { data: unidades } = await supabase
     .from('unidades')
     .select('*')
     .eq('producto_id', producto.id)
+    .order('talle', { ascending: true })
     .order('created_at', { ascending: true });
 
   PRODUCTO_ACTUAL._unidades = unidades || [];
-
-  if (producto.tiene_talles) {
-    const talles = [...new Set(PRODUCTO_ACTUAL._unidades.map(u => u.talle).filter(Boolean))];
-    const cont = document.getElementById('detalle-talles');
-    cont.innerHTML = '';
-    talles.forEach(t => {
-      const disponibles = PRODUCTO_ACTUAL._unidades.filter(u => u.talle === t && u.estado === 'disponible').length;
-      const btn = document.createElement('button');
-      btn.className = 'border border-border px-3 py-1.5 text-xs font-mono uppercase hover:border-accent';
-      btn.textContent = `${t} (${disponibles})`;
-      btn.addEventListener('click', () => mostrarUnidadesDeTalle(t));
-      cont.appendChild(btn);
-    });
-    document.getElementById('detalle-unidades').innerHTML = '<p class="text-muted text-sm">Elegí un talle.</p>';
-  } else {
-    document.getElementById('detalle-talles').innerHTML = '';
-    mostrarUnidadesDeTalle(null);
-  }
+  renderUnidades();
 }
 
-function mostrarUnidadesDeTalle(talle) {
-  TALLE_ACTUAL = talle;
-  const unidades = PRODUCTO_ACTUAL._unidades.filter(u => u.talle === talle);
+function renderUnidades() {
+  const unidades = PRODUCTO_ACTUAL._unidades;
+
+  // Resumen de disponibilidad por talle (informativo, no requiere click)
+  const resumenCont = document.getElementById('detalle-resumen-talles');
+  if (PRODUCTO_ACTUAL.tiene_talles) {
+    const talles = [...new Set(unidades.map(u => u.talle).filter(Boolean))];
+    resumenCont.innerHTML = talles
+      .map(t => `${t}: ${unidades.filter(u => u.talle === t && u.estado === 'disponible').length}`)
+      .join(' · ');
+  } else {
+    resumenCont.innerHTML = '';
+  }
+
   const cont = document.getElementById('detalle-unidades');
   if (unidades.length === 0) {
     cont.innerHTML = '<p class="text-muted text-sm">Sin unidades cargadas.</p>';
@@ -305,17 +304,15 @@ function mostrarUnidadesDeTalle(talle) {
   cont.innerHTML = `
     <table class="w-full text-sm">
       <thead><tr class="text-left text-muted font-mono text-xs uppercase">
-        <th class="p-2">Código</th><th class="p-2">Estado</th>
-        <th class="p-2">Costo compra</th><th class="p-2">Costo envío</th><th class="p-2">Costo total</th>
-        <th class="p-2">Ingreso</th>
+        <th class="p-2">Producto</th><th class="p-2">Código</th><th class="p-2">Estado</th>
+        <th class="p-2">Costo</th><th class="p-2">Ingreso</th>
       </tr></thead>
       <tbody>
         ${unidades.map(u => `
           <tr>
+            <td class="p-2">${PRODUCTO_ACTUAL.nombre}${u.talle ? ' ' + u.talle : ''}</td>
             <td class="p-2 font-mono">${u.codigo_barra}</td>
             <td class="p-2">${u.estado}</td>
-            <td class="p-2 text-muted">USD ${Number(u.costo_compra_usd).toFixed(2)}</td>
-            <td class="p-2 text-muted">USD ${Number(u.costo_envio_usd).toFixed(2)}</td>
             <td class="p-2">USD ${Number(u.costo_usd).toFixed(2)}</td>
             <td class="p-2 text-muted">${new Date(u.created_at).toLocaleDateString('es-AR')}</td>
           </tr>
@@ -332,8 +329,10 @@ document.getElementById('cerrar-detalle').addEventListener('click', () => {
 
 document.getElementById('btn-agregar-unidad').addEventListener('click', async () => {
   if (!PRODUCTO_ACTUAL) return;
-  if (PRODUCTO_ACTUAL.tiene_talles && !TALLE_ACTUAL) {
-    alert('Elegí un talle antes de agregar una unidad.');
+
+  const talle = document.getElementById('nueva-unidad-talle').value.trim();
+  if (PRODUCTO_ACTUAL.tiene_talles && !talle) {
+    alert('Completá el talle de la unidad que estás agregando.');
     return;
   }
   const costoCompra = parseFloat(document.getElementById('nueva-unidad-costo-compra').value) || 0;
@@ -342,12 +341,13 @@ document.getElementById('btn-agregar-unidad').addEventListener('click', async ()
   const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
   const { error } = await supabase.from('unidades').insert({
     producto_id: PRODUCTO_ACTUAL.id,
-    talle: TALLE_ACTUAL,
+    talle: PRODUCTO_ACTUAL.tiene_talles ? talle : null,
     codigo_barra: codigoData,
     costo_compra_usd: costoCompra,
     costo_envio_usd: costoEnvio,
   });
   if (error) { alert('Error al agregar la unidad.'); console.error(error); return; }
+  document.getElementById('nueva-unidad-talle').value = '';
   document.getElementById('nueva-unidad-costo-compra').value = '';
   document.getElementById('nueva-unidad-costo-envio').value = '';
   await cargarProductos();
