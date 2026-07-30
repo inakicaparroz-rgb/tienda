@@ -14,7 +14,6 @@ create table if not exists productos (
   categoria text,
   descripcion text,
   imagen_url text,
-  costo_usd numeric(10,2) not null default 0,
   precio_venta_usd numeric(10,2) not null default 0,
   precio_promocional_usd numeric(10,2),
   tiene_talles boolean not null default true,
@@ -22,18 +21,30 @@ create table if not exists productos (
   created_at timestamptz not null default now()
 );
 
--- ─── UNIDADES (cada prenda física, con su propio código de barra) ──────────
+-- El costo vive en la unidad, no en el producto: cada prenda física puede
+-- haber costado distinto según cuándo/cómo se compró.
+alter table productos drop column if exists costo_usd;
+
+-- ─── UNIDADES (cada prenda física, con su propio código de barra y costo) ──
 
 create table if not exists unidades (
   id uuid primary key default gen_random_uuid(),
   producto_id uuid not null references productos(id) on delete cascade,
   talle text,
   codigo_barra text unique not null,
+  costo_compra_usd numeric(10,2) not null default 0,
+  costo_envio_usd numeric(10,2) not null default 0,
   estado text not null default 'disponible'
     check (estado in ('disponible', 'reservado', 'vendido')),
   created_at timestamptz not null default now(),
   vendido_at timestamptz
 );
+
+alter table unidades add column if not exists costo_compra_usd numeric(10,2) not null default 0;
+alter table unidades add column if not exists costo_envio_usd numeric(10,2) not null default 0;
+alter table unidades drop column if exists costo_usd;
+alter table unidades add column costo_usd numeric(10,2)
+  generated always as (costo_compra_usd + costo_envio_usd) stored;
 
 create index if not exists idx_unidades_producto on unidades(producto_id);
 create index if not exists idx_unidades_codigo on unidades(codigo_barra);

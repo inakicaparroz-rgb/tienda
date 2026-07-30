@@ -80,7 +80,6 @@
               <th class="p-2">Nombre</th>
               <th class="p-2">Marca</th>
               <th class="p-2">Categoría</th>
-              <th class="p-2">Costo USD</th>
               <th class="p-2">Precio venta USD</th>
               <th class="p-2">Precio promo USD</th>
               <th class="p-2">Stock</th>
@@ -99,9 +98,19 @@
         </div>
         <div id="detalle-talles" class="flex flex-wrap gap-2 mb-4"></div>
         <div id="detalle-unidades"></div>
-        <button id="btn-agregar-unidad" class="mt-3 bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
-          + Agregar unidad a stock
-        </button>
+        <div class="flex flex-wrap items-end gap-2 mt-4">
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Costo compra USD</label>
+            <input id="nueva-unidad-costo-compra" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Costo envío USD</label>
+            <input id="nueva-unidad-costo-envio" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+          </div>
+          <button id="btn-agregar-unidad" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2.5">
+            + Agregar unidad a stock
+          </button>
+        </div>
       </div>
     </section>
 
@@ -125,10 +134,9 @@
       <textarea id="p-descripcion" placeholder="Descripción" class="w-full px-3 py-2" rows="2"></textarea>
       <input id="p-imagen" placeholder="URL de imagen" class="w-full px-3 py-2" />
       <div class="grid grid-cols-2 gap-3">
-        <input id="p-costo" type="number" step="0.01" placeholder="Costo USD" class="w-full px-3 py-2" />
         <input id="p-precio" type="number" step="0.01" placeholder="Precio venta USD" class="w-full px-3 py-2" />
+        <input id="p-promo" type="number" step="0.01" placeholder="Precio promo USD (opcional)" class="w-full px-3 py-2" />
       </div>
-      <input id="p-promo" type="number" step="0.01" placeholder="Precio promocional USD (opcional)" class="w-full px-3 py-2" />
       <label class="flex items-center gap-2 text-muted font-mono text-xs uppercase">
         <input id="p-tiene-talles" type="checkbox" checked /> Tiene talles
       </label>
@@ -228,7 +236,6 @@ function renderProductos(lista) {
       <td class="p-2">${p.nombre}</td>
       <td class="p-2 text-muted">${p.marca || '-'}</td>
       <td class="p-2 text-muted">${p.categoria || '-'}</td>
-      <td class="p-2">USD ${Number(p.costo_usd).toFixed(2)}</td>
       <td class="p-2">USD ${Number(p.precio_venta_usd).toFixed(2)}</td>
       <td class="p-2 text-accent">${p.precio_promocional_usd ? 'USD ' + Number(p.precio_promocional_usd).toFixed(2) : '-'}</td>
       <td class="p-2">${disponibles}</td>
@@ -298,13 +305,18 @@ function mostrarUnidadesDeTalle(talle) {
   cont.innerHTML = `
     <table class="w-full text-sm">
       <thead><tr class="text-left text-muted font-mono text-xs uppercase">
-        <th class="p-2">Código</th><th class="p-2">Estado</th><th class="p-2">Ingreso</th>
+        <th class="p-2">Código</th><th class="p-2">Estado</th>
+        <th class="p-2">Costo compra</th><th class="p-2">Costo envío</th><th class="p-2">Costo total</th>
+        <th class="p-2">Ingreso</th>
       </tr></thead>
       <tbody>
         ${unidades.map(u => `
           <tr>
             <td class="p-2 font-mono">${u.codigo_barra}</td>
             <td class="p-2">${u.estado}</td>
+            <td class="p-2 text-muted">USD ${Number(u.costo_compra_usd).toFixed(2)}</td>
+            <td class="p-2 text-muted">USD ${Number(u.costo_envio_usd).toFixed(2)}</td>
+            <td class="p-2">USD ${Number(u.costo_usd).toFixed(2)}</td>
             <td class="p-2 text-muted">${new Date(u.created_at).toLocaleDateString('es-AR')}</td>
           </tr>
         `).join('')}
@@ -324,13 +336,20 @@ document.getElementById('btn-agregar-unidad').addEventListener('click', async ()
     alert('Elegí un talle antes de agregar una unidad.');
     return;
   }
+  const costoCompra = parseFloat(document.getElementById('nueva-unidad-costo-compra').value) || 0;
+  const costoEnvio = parseFloat(document.getElementById('nueva-unidad-costo-envio').value) || 0;
+
   const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
   const { error } = await supabase.from('unidades').insert({
     producto_id: PRODUCTO_ACTUAL.id,
     talle: TALLE_ACTUAL,
     codigo_barra: codigoData,
+    costo_compra_usd: costoCompra,
+    costo_envio_usd: costoEnvio,
   });
   if (error) { alert('Error al agregar la unidad.'); console.error(error); return; }
+  document.getElementById('nueva-unidad-costo-compra').value = '';
+  document.getElementById('nueva-unidad-costo-envio').value = '';
   await cargarProductos();
   const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
   abrirDetalle(actualizado);
@@ -358,7 +377,6 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
     categoria: document.getElementById('p-categoria').value.trim() || null,
     descripcion: document.getElementById('p-descripcion').value.trim() || null,
     imagen_url: document.getElementById('p-imagen').value.trim() || null,
-    costo_usd: parseFloat(document.getElementById('p-costo').value) || 0,
     precio_venta_usd: parseFloat(document.getElementById('p-precio').value) || 0,
     precio_promocional_usd: document.getElementById('p-promo').value ? parseFloat(document.getElementById('p-promo').value) : null,
     tiene_talles: document.getElementById('p-tiene-talles').checked,
