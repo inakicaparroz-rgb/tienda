@@ -16,6 +16,10 @@ Sistema de stock/ventas/caja de uso interno. Separado de la web pública (`/inde
 
 ## Estado actual
 
-- ✅ Stock: alta de productos, unidades con código de barra autogenerado, listado con búsqueda/filtro (compatible con lector de código de barra USB), detalle por talle.
+- ✅ Stock: alta de productos, unidades con código de barra autogenerado (con costo por unidad: compra + envío), listado plano de unidades por producto, búsqueda/filtro (compatible con lector de código de barra USB).
 - ⏳ Ventas, Flujo de caja, Reportes, Deudas y deudores: pendientes.
 - ⏳ Conexión con la web pública (para que index.html lea `productos_publicos` / `stock_publico` en vez del CSV de Google Sheets): pendiente.
+
+## Pendientes puntuales de Stock
+
+- Subir foto de producto directo desde el celu/compu (a Supabase Storage), en vez de tener que pegar una URL de imagen a mano.
