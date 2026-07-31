@@ -236,6 +236,16 @@
     a,button{cursor:pointer}
     a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}.marquee-track{animation:none!important}.hero-glow{animation:none!important}}
+    /* Mobile PDP full-screen page */
+    #mobile-pdp{position:fixed;inset:0;z-index:250;background:var(--bg);transform:translateX(100%);transition:transform .35s cubic-bezier(0.16,1,0.3,1);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+    #mobile-pdp.open{transform:translateX(0)}
+    #mpdp-bar{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0}
+    #mpdp-gallery{width:100%;aspect-ratio:4/5;position:relative;overflow:hidden;background:var(--surface);flex-shrink:0}
+    #mpdp-slides{display:flex;height:100%;transition:transform .4s cubic-bezier(0.16,1,0.3,1);will-change:transform}
+    .mpdp-slide{min-width:100%;height:100%;position:relative;flex-shrink:0}
+    .mpdp-slide img{width:100%;height:100%;object-fit:cover;object-position:center}
+    #mpdp-dots{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:10;pointer-events:none}
+    #mpdp-info{padding:1.25rem 1rem;display:flex;flex-direction:column;gap:.875rem;flex:1;padding-bottom:2.5rem}
   </style>
 </head>
 <body class="min-h-screen bg-bg text-ink">
@@ -615,6 +625,21 @@
     </div>
     <div class="pdp-info" id="pdp-info"></div>
   </div>
+</div>
+
+<!-- Mobile PDP full-screen page (only on mobile) -->
+<div id="mobile-pdp" role="dialog" aria-modal="true" aria-label="Detalle de producto">
+  <div id="mpdp-bar">
+    <button id="mpdp-back" style="background:none;border:none;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;display:flex;align-items:center;gap:.5rem;padding:0">← VOLVER</button>
+    <button id="mpdp-cart-bar-btn" aria-label="Ver carrito" style="background:none;border:none;color:var(--ink);cursor:pointer;display:flex;align-items:center;padding:8px;opacity:.8">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/></svg>
+    </button>
+  </div>
+  <div id="mpdp-gallery">
+    <div id="mpdp-slides"></div>
+    <div id="mpdp-dots"></div>
+  </div>
+  <div id="mpdp-info"></div>
 </div>
 
 <footer class="border-t border-border">
@@ -1116,6 +1141,7 @@ const WA_NUMBER = "541134435571";
   const pdpDotsEl  = document.getElementById("pdp-dots");
   const pdpInfo    = document.getElementById("pdp-info");
   let pdpIdx = 0;
+  let mpdpOpen = false;
 
   function buildPlaceholder(p) {
     return `<div class="ph ph-art" style="position:absolute;inset:0">
@@ -1125,7 +1151,10 @@ const WA_NUMBER = "541134435571";
     </div>`;
   }
 
+  function isMobile() { return window.innerWidth < 640; }
+
   function openPDP(slug) {
+    if (isMobile()) { openMobilePDP(slug); return; }
     const p = PRODUCTS.find(x => x.slug === slug);
     if (!p) return;
     pdpIdx = 0;
@@ -1232,7 +1261,7 @@ const WA_NUMBER = "541134435571";
     const itemSlug = hasTalles ? `${slug}__${pdpSelectedTalle}` : slug;
     const baseP = {...p, slug: itemSlug, talle: pdpSelectedTalle || null};
     const idx = cart.findIndex(c => c.slug === itemSlug);
-    if (idx >= 0) { cart.splice(idx, 1); } else { cart.push(baseP); closePDP(); }
+    if (idx >= 0) { cart.splice(idx, 1); } else { cart.push(baseP); closePDP(); closeMobilePDP(false); }
     updateCart();
     render();
     const inCart = cart.some(c => c.slug === itemSlug);
@@ -1438,6 +1467,124 @@ const WA_NUMBER = "541134435571";
   pdpOverlay.addEventListener("click", closePDP);
   pdpModal.addEventListener("click", e => { if (e.target === pdpModal) closePDP(); });
 document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("open")) return; if (e.key === "Escape") closePDP(); if (e.key === "ArrowLeft") goSlide(pdpIdx - 1); if (e.key === "ArrowRight") goSlide(pdpIdx + 1); });
+
+  // ── MOBILE PDP PAGE ─────────────────────────────────────────────────────
+  const mobilePDP      = document.getElementById("mobile-pdp");
+  const mpdpBack       = document.getElementById("mpdp-back");
+  const mpdpSlidesEl   = document.getElementById("mpdp-slides");
+  const mpdpDotsEl2    = document.getElementById("mpdp-dots");
+  const mpdpInfoEl     = document.getElementById("mpdp-info");
+  const mpdpCartBarBtn = document.getElementById("mpdp-cart-bar-btn");
+  let mpdpSlideIdx = 0;
+  let mpdpTouchX = 0;
+
+  function goMpdpSlide(i) {
+    const total = mpdpSlidesEl.children.length;
+    if (total <= 1) return;
+    mpdpSlideIdx = (i + total) % total;
+    mpdpSlidesEl.style.transform = `translateX(-${mpdpSlideIdx * 100}%)`;
+    mpdpDotsEl2.querySelectorAll(".pdp-dot").forEach((d, j) => d.classList.toggle("active", j === mpdpSlideIdx));
+  }
+
+  function openMobilePDP(slug) {
+    const p = PRODUCTS.find(x => x.slug === slug);
+    if (!p) return;
+    mpdpSlideIdx = 0;
+    pdpSelectedTalle = null;
+
+    const count = IMGS[slug] || 0;
+    const photos = count > 0 ? Array.from({length: count}, (_, i) => i === 0 ? `img/${slug}.jpg` : `img/${slug}-${i+1}.jpg`) : [];
+
+    if (photos.length > 0) {
+      mpdpSlidesEl.innerHTML = photos.map(src => `<div class="mpdp-slide"><img src="${src}" alt="${p.name}" loading="lazy"></div>`).join("");
+    } else {
+      mpdpSlidesEl.innerHTML = `<div class="mpdp-slide" style="position:relative;height:100%">${buildPlaceholder(p)}</div>`;
+    }
+    mpdpSlidesEl.style.transform = "translateX(0)";
+
+    if (photos.length > 1) {
+      mpdpDotsEl2.innerHTML = photos.map((_, i) => `<div class="pdp-dot${i===0?" active":""}"></div>`).join("");
+      mpdpDotsEl2.style.display = "flex";
+    } else {
+      mpdpDotsEl2.innerHTML = "";
+      mpdpDotsEl2.style.display = "none";
+    }
+
+    const inCart = cart.some(c => c.slug === slug || c.slug.startsWith(slug + '__'));
+    mpdpInfoEl.innerHTML = `
+      <div>
+        <span class="spec-label">${p.brand}</span>
+        <h2 class="display text-ink mt-1" style="font-size:clamp(1.6rem,7vw,2.5rem);line-height:1.1">${p.name}</h2>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="badge ${statusClass(p.status)}" style="width:fit-content"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>
+        ${p.condition ? `<span class="badge-condition badge-condition--${p.condition}">${p.condition.toUpperCase()}</span>` : ""}
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
+        ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
+      </div>
+      ${p.status !== "encargo" && p.status !== "sin-stock" && p.talles && p.talles.length > 0 ? `
+      <div class="flex flex-col gap-2 border-t border-border pt-3">
+        <span class="spec-label">Seleccioná tu talle</span>
+        <div class="flex flex-wrap gap-2" id="pdp-talles">
+          ${p.talles.map(t => `<button class="talle-chip" data-talle="${t}" onclick="selectTalle(this)">${t}</button>`).join("")}
+        </div>
+      </div>` : ""}
+      <ul class="flex flex-col gap-2 border-t border-border pt-3">
+        ${["Producto 100% original y verificado","Envíos a todo el país","Asesoramiento personalizado","Disponible por encargo en todos los talles"].map(t =>
+          `<li class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.1em]"><span style="color:var(--accent)">✓</span><span class="text-muted">${t}</span></li>`
+        ).join("")}
+      </ul>
+      <div class="border-t border-border pt-3">
+        ${p.status === "encargo" || p.status === "sin-stock"
+          ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
+          : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
+        }
+      </div>
+    `;
+
+    history.pushState({mpdpSlug: slug}, '', '#p/' + slug);
+    mpdpOpen = true;
+    mobilePDP.classList.add("open");
+    mobilePDP.scrollTop = 0;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+  }
+  window.openMobilePDP = openMobilePDP;
+
+  function closeMobilePDP(fromPopstate) {
+    if (!mpdpOpen) return;
+    mpdpOpen = false;
+    mobilePDP.classList.remove("open");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    if (!fromPopstate && location.hash.startsWith('#p/')) history.back();
+  }
+  window.closeMobilePDP = closeMobilePDP;
+
+  mpdpBack.addEventListener("click", () => closeMobilePDP(false));
+  mpdpCartBarBtn.addEventListener("click", () => {
+    closeMobilePDP(false);
+    setTimeout(() => document.getElementById("cart-fab").click(), 380);
+  });
+
+  window.addEventListener("popstate", () => {
+    if (mpdpOpen && !location.hash.startsWith('#p/')) closeMobilePDP(true);
+  });
+
+  // Swipe gallery
+  document.getElementById("mpdp-gallery").addEventListener("touchstart", e => {
+    mpdpTouchX = e.touches[0].clientX;
+  }, {passive: true});
+  document.getElementById("mpdp-gallery").addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - mpdpTouchX;
+    if (Math.abs(dx) > 40) dx < 0 ? goMpdpSlide(mpdpSlideIdx + 1) : goMpdpSlide(mpdpSlideIdx - 1);
+  }, {passive: true});
+  document.getElementById("mpdp-gallery").addEventListener("click", () => {
+    if (mpdpSlidesEl.children.length > 1) goMpdpSlide(mpdpSlideIdx + 1);
+  });
 
 </script>
 </body>
