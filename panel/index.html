@@ -114,6 +114,10 @@
             <label class="block text-muted font-mono text-xs uppercase mb-1">Costo envío USD</label>
             <input id="nueva-unidad-costo-envio" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
           </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha ingreso</label>
+            <input id="nueva-unidad-fecha" type="date" class="w-40 px-3 py-2 text-sm" />
+          </div>
           <button id="btn-agregar-unidad" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2.5">
             + Agregar unidad a stock
           </button>
@@ -143,6 +147,21 @@
       <div class="grid grid-cols-2 gap-3">
         <input id="p-precio" type="number" step="0.01" placeholder="Precio venta USD" class="w-full px-3 py-2" />
         <input id="p-promo" type="number" step="0.01" placeholder="Precio promo USD (opcional)" class="w-full px-3 py-2" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <select id="p-fit" class="w-full px-3 py-2">
+          <option value="">Fit…</option>
+          <option value="Regular">Regular</option>
+          <option value="Oversize">Oversize</option>
+          <option value="Small">Small</option>
+          <option value="Boxy">Boxy</option>
+        </select>
+        <select id="p-estado" class="w-full px-3 py-2">
+          <option value="">Estado…</option>
+          <option value="New">New</option>
+          <option value="VNDS">VNDS</option>
+          <option value="Used">Used</option>
+        </select>
       </div>
       <label class="flex items-center gap-2 text-muted font-mono text-xs uppercase">
         <input id="p-tiene-talles" type="checkbox" checked /> Tiene talles
@@ -273,13 +292,14 @@ async function abrirDetalle(producto) {
   document.getElementById('detalle-nombre').textContent = producto.nombre;
   document.getElementById('producto-detalle').classList.remove('hidden');
   document.getElementById('nueva-unidad-talle-wrap').classList.toggle('hidden', !producto.tiene_talles);
+  document.getElementById('nueva-unidad-fecha').value = new Date().toISOString().slice(0, 10);
 
   const { data: unidades } = await supabase
     .from('unidades')
     .select('*')
     .eq('producto_id', producto.id)
     .order('talle', { ascending: true })
-    .order('created_at', { ascending: true });
+    .order('fecha_ingreso', { ascending: true });
 
   PRODUCTO_ACTUAL._unidades = unidades || [];
   renderUnidades();
@@ -304,22 +324,28 @@ function renderUnidades() {
     cont.innerHTML = '<p class="text-muted text-sm">Sin unidades cargadas.</p>';
     return;
   }
+  const hoy = new Date();
   cont.innerHTML = `
     <table class="w-full text-sm">
       <thead><tr class="text-left text-muted font-mono text-xs uppercase">
-        <th class="p-2">Producto</th><th class="p-2">Código</th><th class="p-2">Estado</th>
-        <th class="p-2">Costo</th><th class="p-2">Ingreso</th>
+        <th class="p-2">Producto</th><th class="p-2">Código</th><th class="p-2">Disponibilidad</th>
+        <th class="p-2">Costo</th><th class="p-2">Fecha ingreso</th><th class="p-2">Días en stock</th>
       </tr></thead>
       <tbody>
-        ${unidades.map(u => `
+        ${unidades.map(u => {
+          const fechaIngreso = new Date(u.fecha_ingreso + 'T00:00:00');
+          const diasEnStock = Math.floor((hoy - fechaIngreso) / 86400000);
+          return `
           <tr>
             <td class="p-2">${PRODUCTO_ACTUAL.nombre}${u.talle ? ' ' + u.talle : ''}</td>
             <td class="p-2 font-mono">${u.codigo_barra}</td>
             <td class="p-2">${u.estado}</td>
             <td class="p-2">USD ${Number(u.costo_usd).toFixed(2)}</td>
-            <td class="p-2 text-muted">${new Date(u.created_at).toLocaleDateString('es-AR')}</td>
+            <td class="p-2 text-muted">${fechaIngreso.toLocaleDateString('es-AR')}</td>
+            <td class="p-2 text-muted">${diasEnStock}</td>
           </tr>
-        `).join('')}
+        `;
+        }).join('')}
       </tbody>
     </table>
   `;
@@ -340,6 +366,7 @@ document.getElementById('btn-agregar-unidad').addEventListener('click', async ()
   }
   const costoCompra = parseFloat(document.getElementById('nueva-unidad-costo-compra').value) || 0;
   const costoEnvio = parseFloat(document.getElementById('nueva-unidad-costo-envio').value) || 0;
+  const fechaIngreso = document.getElementById('nueva-unidad-fecha').value || new Date().toISOString().slice(0, 10);
 
   const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
   const { error } = await supabase.from('unidades').insert({
@@ -348,11 +375,13 @@ document.getElementById('btn-agregar-unidad').addEventListener('click', async ()
     codigo_barra: codigoData,
     costo_compra_usd: costoCompra,
     costo_envio_usd: costoEnvio,
+    fecha_ingreso: fechaIngreso,
   });
   if (error) { alert('Error al agregar la unidad.'); console.error(error); return; }
   document.getElementById('nueva-unidad-talle').value = '';
   document.getElementById('nueva-unidad-costo-compra').value = '';
   document.getElementById('nueva-unidad-costo-envio').value = '';
+  document.getElementById('nueva-unidad-fecha').value = new Date().toISOString().slice(0, 10);
   await cargarProductos();
   const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
   abrirDetalle(actualizado);
@@ -382,6 +411,8 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
     imagen_url: document.getElementById('p-imagen').value.trim() || null,
     precio_venta_usd: parseFloat(document.getElementById('p-precio').value) || 0,
     precio_promocional_usd: document.getElementById('p-promo').value ? parseFloat(document.getElementById('p-promo').value) : null,
+    fit: document.getElementById('p-fit').value || null,
+    estado: document.getElementById('p-estado').value || null,
     tiene_talles: document.getElementById('p-tiene-talles').checked,
   };
 
@@ -392,6 +423,7 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
   document.querySelectorAll('#modal-producto input, #modal-producto textarea').forEach(el => {
     if (el.type === 'checkbox') el.checked = true; else el.value = '';
   });
+  document.querySelectorAll('#modal-producto select').forEach(el => { el.value = ''; });
   cargarProductos();
 });
 </script>

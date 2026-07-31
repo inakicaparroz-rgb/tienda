@@ -25,6 +25,11 @@ create table if not exists productos (
 -- haber costado distinto según cuándo/cómo se compró.
 alter table productos drop column if exists costo_usd;
 
+alter table productos add column if not exists fit text
+  check (fit in ('Regular', 'Oversize', 'Small', 'Boxy'));
+alter table productos add column if not exists estado text
+  check (estado in ('New', 'VNDS', 'Used'));
+
 -- ─── UNIDADES (cada prenda física, con su propio código de barra y costo) ──
 
 create table if not exists unidades (
@@ -45,6 +50,10 @@ alter table unidades add column if not exists costo_envio_usd numeric(10,2) not 
 alter table unidades drop column if exists costo_usd;
 alter table unidades add column costo_usd numeric(10,2)
   generated always as (costo_compra_usd + costo_envio_usd) stored;
+
+-- Fecha real en que la prenda entró a stock (editable — no siempre coincide
+-- con el día que se carga en el sistema).
+alter table unidades add column if not exists fecha_ingreso date not null default current_date;
 
 create index if not exists idx_unidades_producto on unidades(producto_id);
 create index if not exists idx_unidades_codigo on unidades(codigo_barra);
@@ -95,7 +104,8 @@ select
   imagen_url,
   precio_venta_usd,
   precio_promocional_usd,
-  tiene_talles
+  tiene_talles,
+  fit
 from productos
 where activo = true;
 

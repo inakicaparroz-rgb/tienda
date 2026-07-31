@@ -16,7 +16,7 @@ Sistema de stock/ventas/caja de uso interno. Separado de la web pública (`/inde
 
 ## Estado actual
 
-- ✅ Stock: alta de productos, unidades con código de barra autogenerado (con costo por unidad: compra + envío), listado plano de unidades por producto, búsqueda/filtro (compatible con lector de código de barra USB).
+- ✅ Stock: alta de productos (con fit y estado New/VNDS/Used), unidades con código de barra autogenerado (con costo por unidad: compra + envío, y fecha de ingreso editable + días en stock calculados), listado plano de unidades por producto, búsqueda/filtro (compatible con lector de código de barra USB).
 - ⏳ Ventas, Flujo de caja, Reportes, Deudas y deudores: pendientes.
 - ⏳ Conexión con la web pública (para que index.html lea `productos_publicos` / `stock_publico` en vez del CSV de Google Sheets): pendiente.
 
