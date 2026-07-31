@@ -241,9 +241,9 @@
     #mobile-pdp.open{transform:translateX(0)}
     #mpdp-bar{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0}
     #mpdp-gallery{width:100%;aspect-ratio:4/5;position:relative;overflow:hidden;background:var(--surface);flex-shrink:0}
-    #mpdp-slides{display:flex;height:100%;transition:transform .4s cubic-bezier(0.16,1,0.3,1);will-change:transform}
-    .mpdp-slide{min-width:100%;height:100%;position:relative;flex-shrink:0}
-    .mpdp-slide img{width:100%;height:100%;object-fit:cover;object-position:center}
+    #mpdp-slides{position:absolute;inset:0;display:flex;transition:transform .4s cubic-bezier(0.16,1,0.3,1);will-change:transform}
+    .mpdp-slide{min-width:100%;height:100%;position:relative;flex-shrink:0;overflow:hidden}
+    .mpdp-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
     #mpdp-dots{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:10;pointer-events:none}
     #mpdp-info{padding:1.25rem 1rem;display:flex;flex-direction:column;gap:.875rem;flex:1;padding-bottom:2.5rem}
   </style>
