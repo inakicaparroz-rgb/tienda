@@ -75,6 +75,12 @@ drop policy if exists "unidades_authenticated_all" on unidades;
 create policy "unidades_authenticated_all" on unidades
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
+-- Las políticas de RLS no alcanzan solas: además hace falta el permiso de
+-- base sobre la tabla, si no Postgres rechaza todo con "permission denied".
+grant select, insert, update, delete on productos to authenticated;
+grant select, insert, update, delete on unidades to authenticated;
+grant usage, select on sequence unidades_codigo_seq to authenticated;
+
 -- ─── Vistas públicas (lo único que la web puede leer) ──────────────────────
 -- Nunca exponen costo_usd ni el código de barra individual.
 
