@@ -638,7 +638,9 @@
     <a href="#top" onclick="closeMobilePDP(false)" style="position:absolute;left:50%;transform:translateX(-50%)">
       <img src="img/logo.png" alt="Cop or Drop" style="height:52px;width:auto;display:block;">
     </a>
-    <button id="mpdp-menu-btn" aria-label="Menú" style="justify-content:flex-end;font-size:20px;letter-spacing:.1em">···</button>
+    <button id="mpdp-menu-btn" aria-label="Menú" class="burger" style="justify-content:flex-end;width:40px;height:40px">
+      <div class="flex flex-col items-end gap-[6px]"><span></span><span></span><span></span></div>
+    </button>
     <div id="mpdp-dropdown">
       <nav class="flex flex-col gap-5">
         <a href="#catalogo" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);document.getElementById('mpdp-dropdown').classList.remove('open')"><span class="font-mono text-xs text-muted">01</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATÁLOGO</span></a>
@@ -1590,10 +1592,14 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
   mpdpBack.addEventListener("click", () => { mpdpDropdown.classList.remove("open"); closeMobilePDP(false); });
   mpdpCartBarBtn.addEventListener("click", e => {
     e.stopPropagation();
-    mpdpDropdown.classList.toggle("open");
+    const isOpen = mpdpDropdown.classList.toggle("open");
+    mpdpCartBarBtn.classList.toggle("menu-open", isOpen);
   });
   mobilePDP.addEventListener("click", e => {
-    if (!mpdpDropdown.contains(e.target) && e.target !== mpdpCartBarBtn) mpdpDropdown.classList.remove("open");
+    if (!mpdpDropdown.contains(e.target) && e.target !== mpdpCartBarBtn) {
+      mpdpDropdown.classList.remove("open");
+      mpdpCartBarBtn.classList.remove("menu-open");
+    }
   });
 
   window.addEventListener("popstate", () => {
