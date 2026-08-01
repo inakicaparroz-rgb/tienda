@@ -230,9 +230,9 @@
     body.menu-open #nav{background:#000000!important;border-color:var(--border);backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
     .burger span{display:block;width:24px;height:1px;background:var(--ink);transition:transform .3s ease,opacity .25s ease}
     .burger span:nth-child(2){width:16px;margin-left:auto}
-    .menu-open .burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
-    .menu-open .burger span:nth-child(2){opacity:0}
-    .menu-open .burger span:nth-child(3){transform:translateY(-5px) rotate(-45deg);width:24px}
+    .menu-open .burger span:nth-child(1),.burger.menu-open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .menu-open .burger span:nth-child(2),.burger.menu-open span:nth-child(2){opacity:0}
+    .menu-open .burger span:nth-child(3),.burger.menu-open span:nth-child(3){transform:translateY(-5px) rotate(-45deg);width:24px}
     a,button{cursor:pointer}
     a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}.marquee-track{animation:none!important}.hero-glow{animation:none!important}}
