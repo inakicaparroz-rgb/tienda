@@ -1610,6 +1610,17 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
     if (mpdpOpen && !location.hash.startsWith('#p/')) closeMobilePDP(true);
   });
 
+  // Deep link: open product on page load if URL has #p/slug
+  (function() {
+    const hash = location.hash;
+    if (hash.startsWith('#p/')) {
+      const slug = hash.slice(3);
+      if (PRODUCTS.find(p => p.slug === slug)) {
+        setTimeout(() => openPDP(slug), 100);
+      }
+    }
+  })();
+
   // Swipe gallery
   document.getElementById("mpdp-gallery").addEventListener("touchstart", e => {
     mpdpTouchX = e.touches[0].clientX;
