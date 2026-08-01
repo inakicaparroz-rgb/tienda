@@ -1565,11 +1565,15 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
           `<li class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.1em]"><span style="color:var(--accent)">✓</span><span class="text-muted">${t}</span></li>`
         ).join("")}
       </ul>
-      <div class="border-t border-border pt-3">
+      <div class="border-t border-border pt-3 flex flex-col gap-3">
         ${p.status === "encargo" || p.status === "sin-stock"
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
           : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
         }
+        <button onclick="shareMpdp('${slug}','${p.name.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;padding:.6rem 1rem;width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          COMPARTIR PRODUCTO
+        </button>
       </div>
     `;
 
@@ -1609,6 +1613,16 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
   window.addEventListener("popstate", () => {
     if (mpdpOpen && !location.hash.startsWith('#p/')) closeMobilePDP(true);
   });
+
+  function shareMpdp(slug, name) {
+    const url = location.origin + location.pathname + '#p/' + slug;
+    if (navigator.share) {
+      navigator.share({ title: name + ' · Cop or Drop', url });
+    } else {
+      navigator.clipboard.writeText(url).then(() => alert('Link copiado al portapapeles'));
+    }
+  }
+  window.shareMpdp = shareMpdp;
 
   // Deep link: open product on page load if URL has #p/slug
   (function() {
