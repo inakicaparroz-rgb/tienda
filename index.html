@@ -242,9 +242,8 @@
     #mpdp-bar{position:sticky;top:0;z-index:20;background:#000;border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0}
     #mpdp-bar button{background:none;border:none;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;display:flex;align-items:center;gap:.4rem;padding:4px;min-width:64px}
     #mpdp-title-block{padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0}
-    #mpdp-dropdown{position:absolute;top:64px;left:0;right:0;bottom:0;background:rgba(0,0,0,0.80);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:30;display:none;flex-direction:column;justify-content:space-between;padding:2.5rem 1.25rem 2.5rem}
+    #mpdp-dropdown{position:fixed;inset:0;background:rgba(0,0,0,0.80);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:300;display:none;flex-direction:column;justify-content:space-between;padding:2.5rem 1.25rem 2.5rem;padding-top:calc(64px + 1.5rem)}
     #mpdp-dropdown.open{display:flex}
-    #mobile-pdp.dd-open{overflow:hidden}
     #mpdp-gallery{width:100%;aspect-ratio:4/5;position:relative;overflow:hidden;background:var(--surface);flex-shrink:0}
     #mpdp-slides{position:absolute;inset:0;display:flex;transition:transform .4s cubic-bezier(0.16,1,0.3,1);will-change:transform}
     .mpdp-slide{min-width:100%;height:100%;position:relative;flex-shrink:0;overflow:hidden}
@@ -642,27 +641,30 @@
     <button id="mpdp-menu-btn" aria-label="Menú" class="burger" style="justify-content:flex-end;width:40px;height:40px">
       <div class="flex flex-col items-end gap-[6px]"><span></span><span></span><span></span></div>
     </button>
-    <div id="mpdp-dropdown">
-      <nav class="flex flex-col gap-5">
-        <a href="#catalogo" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);document.getElementById('mpdp-dropdown').classList.remove('open')"><span class="font-mono text-xs text-muted">01</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATÁLOGO</span></a>
-        <a href="#categorias" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);document.getElementById('mpdp-dropdown').classList.remove('open')"><span class="font-mono text-xs text-muted">02</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATEGORÍAS</span></a>
-        <a href="#manifesto" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);document.getElementById('mpdp-dropdown').classList.remove('open')"><span class="font-mono text-xs text-muted">03</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">MANIFIESTO</span></a>
-        <a href="#faq" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);document.getElementById('mpdp-dropdown').classList.remove('open')"><span class="font-mono text-xs text-muted">04</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">FAQ</span></a>
-        <a href="#contacto" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);document.getElementById('mpdp-dropdown').classList.remove('open')"><span class="font-mono text-xs text-muted">05</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CONTACTO</span></a>
-      </nav>
-      <div class="flex flex-col gap-3">
-        <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary w-full">WhatsApp →</a>
-        <button onclick="openEncargo();document.getElementById('mpdp-dropdown').classList.remove('open')" class="btn-primary w-full">Encargos →</button>
-        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary justify-center">Unirse a la comunidad →</a>
-      </div>
-    </div>
   </div>
   <div id="mpdp-title-block"></div>
+
   <div id="mpdp-gallery">
     <div id="mpdp-slides"></div>
     <div id="mpdp-dots"></div>
   </div>
   <div id="mpdp-info"></div>
+</div>
+
+<!-- Mobile PDP nav dropdown (outside #mobile-pdp to avoid transform clipping) -->
+<div id="mpdp-dropdown">
+  <nav class="flex flex-col gap-5">
+    <a href="#catalogo" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">01</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATÁLOGO</span></a>
+    <a href="#categorias" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">02</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATEGORÍAS</span></a>
+    <a href="#manifesto" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">03</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">MANIFIESTO</span></a>
+    <a href="#faq" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">04</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">FAQ</span></a>
+    <a href="#contacto" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">05</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CONTACTO</span></a>
+  </nav>
+  <div class="flex flex-col gap-3">
+    <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary w-full">WhatsApp →</a>
+    <button onclick="openEncargo();closeMpdpDropdown()" class="btn-primary w-full">Encargos →</button>
+    <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary justify-center">Unirse a la comunidad →</a>
+  </div>
 </div>
 
 <footer class="border-t border-border">
@@ -1594,16 +1596,14 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
   function closeMpdpDropdown() {
     mpdpDropdown.classList.remove("open");
     mpdpCartBarBtn.classList.remove("menu-open");
-    mobilePDP.classList.remove("dd-open");
   }
   mpdpCartBarBtn.addEventListener("click", e => {
     e.stopPropagation();
     const isOpen = mpdpDropdown.classList.toggle("open");
     mpdpCartBarBtn.classList.toggle("menu-open", isOpen);
-    mobilePDP.classList.toggle("dd-open", isOpen);
   });
-  mobilePDP.addEventListener("click", e => {
-    if (!mpdpDropdown.contains(e.target) && e.target !== mpdpCartBarBtn) closeMpdpDropdown();
+  document.addEventListener("click", e => {
+    if (mpdpDropdown.classList.contains("open") && !mpdpDropdown.contains(e.target) && e.target !== mpdpCartBarBtn) closeMpdpDropdown();
   });
 
   window.addEventListener("popstate", () => {
