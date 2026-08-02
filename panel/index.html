@@ -140,6 +140,9 @@
         <button id="btn-nueva-venta" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nueva venta
         </button>
+        <button id="btn-importar-ventas" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Importar historial (CSV)
+        </button>
       </div>
 
       <div class="border border-border overflow-x-auto">
@@ -261,13 +264,29 @@
     <p class="text-muted text-xs mb-4 leading-relaxed">
       El archivo tiene que tener estas columnas (con esos nombres, en la primera fila):
       <span class="font-mono block mt-1 text-white">MODELO, TALLE, PRECIO COMPRA, FECHA COMPRA, PRECIO VENTA, FECHA VENTA</span>
-      Las fechas en formato DD/MM/AAAA. Si una prenda ya está vendida (tiene FECHA VENTA), se carga igual pero marcada como vendida, sin sumar al stock disponible. Marca y Categoría quedan vacías — se completan a mano después si hace falta.
+      Las fechas en formato DD/MM/AAAA. Este importador es el mismo archivo, pero solo trae las filas <strong>sin</strong> FECHA VENTA (lo que sigue en stock). Lo ya vendido se carga desde "Importar historial (CSV)" en la pestaña Ventas. Marca y Categoría quedan vacías — se completan a mano después si hace falta.
     </p>
     <input id="importar-file" type="file" accept=".csv" class="w-full text-sm mb-4" />
     <div id="importar-log" class="font-mono text-xs text-muted space-y-1 max-h-48 overflow-y-auto mb-4"></div>
     <div class="flex gap-2">
       <button id="importar-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Importar</button>
       <button id="importar-cerrar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: importar historial de ventas desde CSV -->
+<div id="modal-importar-ventas" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[85vh] overflow-y-auto">
+    <h3 class="font-bold mb-3">Importar historial de ventas desde CSV</h3>
+    <p class="text-muted text-xs mb-4 leading-relaxed">
+      Mismo archivo que en Stock, mismas columnas. Acá solo se procesan las filas <strong>con</strong> FECHA VENTA. Por cada una se crea la prenda y la venta juntas (quedan ligadas sin ambigüedad), con cliente <span class="font-mono text-white">XXX</span> (no hay forma de saber quién compró cada una), precio de venta en USD, y cada fila como una venta separada.
+    </p>
+    <input id="importar-ventas-file" type="file" accept=".csv" class="w-full text-sm mb-4" />
+    <div id="importar-ventas-log" class="font-mono text-xs text-muted space-y-1 max-h-48 overflow-y-auto mb-4"></div>
+    <div class="flex gap-2">
+      <button id="importar-ventas-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Importar</button>
+      <button id="importar-ventas-cerrar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
     </div>
   </div>
 </div>
@@ -835,8 +854,12 @@ document.getElementById('importar-confirmar').addEventListener('click', async ()
   logImportar('Leyendo archivo…');
 
   const texto = await file.text();
-  const filas = parsearCSV(texto);
-  logImportar(`${filas.length} filas encontradas.`);
+  const todasLasFilas = parsearCSV(texto);
+  // Este importador es solo para lo que sigue en stock — lo ya vendido se
+  // carga desde "Importar historial de ventas" en la pestaña Ventas, que
+  // crea la unidad y la venta juntas para que queden ligadas bien.
+  const filas = todasLasFilas.filter(f => !parsearFechaArg(f['FECHA VENTA']));
+  logImportar(`${todasLasFilas.length} filas en el archivo, ${filas.length} sin vender (se importan acá).`);
 
   // Mapa de nombre de producto (en minúscula) → id, para no duplicar
   const productoIdPorNombre = new Map();
@@ -883,7 +906,6 @@ document.getElementById('importar-confirmar').addEventListener('click', async ()
     for (const fila of filasProducto) {
       const talleTexto = (fila['TALLE'] || '').trim();
       const talle = (talleTexto && talleTexto !== '-') ? talleTexto : null;
-      const fechaVenta = parsearFechaArg(fila['FECHA VENTA']);
       const fechaCompra = parsearFechaArg(fila['FECHA COMPRA']) || new Date().toISOString().slice(0, 10);
 
       const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
@@ -894,8 +916,7 @@ document.getElementById('importar-confirmar').addEventListener('click', async ()
         costo_compra_usd: parsearPrecioArg(fila['PRECIO COMPRA']),
         costo_envio_usd: 0,
         fecha_ingreso: fechaCompra,
-        estado: fechaVenta ? 'vendido' : 'disponible',
-        vendido_at: fechaVenta ? fechaVenta + 'T00:00:00' : null,
+        estado: 'disponible',
       });
 
       if (error) { logImportar(`✗ Error en unidad de "${nombre}" (${talle || 'sin talle'}): ${error.message}`); errores++; }
@@ -1290,6 +1311,145 @@ function abrirDetalleVenta(venta) {
 
 document.getElementById('venta-cerrar-detalle').addEventListener('click', () => {
   document.getElementById('venta-detalle').classList.add('hidden');
+});
+
+// ── VENTAS: importar historial desde CSV (crea unidad + venta juntas) ────
+const modalImportarVentas = document.getElementById('modal-importar-ventas');
+const importarVentasLog = document.getElementById('importar-ventas-log');
+
+document.getElementById('btn-importar-ventas').addEventListener('click', () => {
+  importarVentasLog.innerHTML = '';
+  document.getElementById('importar-ventas-file').value = '';
+  modalImportarVentas.classList.remove('hidden');
+});
+document.getElementById('importar-ventas-cerrar').addEventListener('click', () => modalImportarVentas.classList.add('hidden'));
+
+function logImportarVentas(texto) {
+  const linea = document.createElement('div');
+  linea.textContent = texto;
+  importarVentasLog.appendChild(linea);
+  importarVentasLog.scrollTop = importarVentasLog.scrollHeight;
+}
+
+document.getElementById('importar-ventas-confirmar').addEventListener('click', async () => {
+  const file = document.getElementById('importar-ventas-file').files[0];
+  if (!file) { alert('Elegí un archivo CSV primero.'); return; }
+
+  const boton = document.getElementById('importar-ventas-confirmar');
+  boton.disabled = true;
+  importarVentasLog.innerHTML = '';
+  logImportarVentas('Leyendo archivo…');
+
+  const texto = await file.text();
+  const todasLasFilas = parsearCSV(texto);
+  const filas = todasLasFilas.filter(f => parsearFechaArg(f['FECHA VENTA']));
+  logImportarVentas(`${todasLasFilas.length} filas en el archivo, ${filas.length} vendidas (se importan acá).`);
+
+  if (filas.length === 0) {
+    logImportarVentas('Nada para importar.');
+    boton.disabled = false;
+    return;
+  }
+
+  // Cliente placeholder único, reutilizado para todas las filas de este import
+  await cargarClientes();
+  let clienteXXX = CLIENTES.find(c => c.nombre.trim().toUpperCase() === 'XXX');
+  if (!clienteXXX) {
+    const { data, error } = await supabase.from('clientes').insert({ nombre: 'XXX' }).select().single();
+    if (error) { logImportarVentas(`✗ Error creando cliente XXX: ${error.message}`); boton.disabled = false; return; }
+    clienteXXX = data;
+  }
+
+  const productoIdPorNombre = new Map();
+  const precioListaPorId = new Map();
+  PRODUCTOS.forEach(p => {
+    productoIdPorNombre.set(p.nombre.trim().toLowerCase(), p.id);
+    precioListaPorId.set(p.id, p.precio_venta_usd);
+  });
+
+  let productosCreados = 0, ventasCreadas = 0, errores = 0;
+
+  for (const fila of filas) {
+    const nombre = (fila['MODELO'] || '').trim();
+    if (!nombre) continue;
+    const clave = nombre.toLowerCase();
+    const talleTexto = (fila['TALLE'] || '').trim();
+    const talle = (talleTexto && talleTexto !== '-') ? talleTexto : null;
+    const costoCompra = parsearPrecioArg(fila['PRECIO COMPRA']);
+    const precioVenta = parsearPrecioArg(fila['PRECIO VENTA']);
+    const fechaVenta = parsearFechaArg(fila['FECHA VENTA']);
+    const fechaCompra = parsearFechaArg(fila['FECHA COMPRA']) || fechaVenta;
+
+    let productoId = productoIdPorNombre.get(clave);
+    let precioListaProducto = null;
+    if (!productoId) {
+      const { data, error } = await supabase.from('productos').insert({
+        slug: slugify(nombre) + '-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000),
+        nombre,
+        precio_venta_usd: precioVenta,
+        tiene_talles: !!talle,
+      }).select('id, precio_venta_usd').single();
+      if (error) { logImportarVentas(`✗ Error creando producto "${nombre}": ${error.message}`); errores++; continue; }
+      productoId = data.id;
+      precioListaProducto = data.precio_venta_usd;
+      productoIdPorNombre.set(clave, productoId);
+      precioListaPorId.set(productoId, precioListaProducto);
+      productosCreados++;
+    } else {
+      precioListaProducto = precioListaPorId.get(productoId) ?? precioVenta;
+    }
+
+    const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
+    const { data: unidad, error: errorUnidad } = await supabase.from('unidades').insert({
+      producto_id: productoId,
+      talle,
+      codigo_barra: codigoData,
+      costo_compra_usd: costoCompra,
+      costo_envio_usd: 0,
+      fecha_ingreso: fechaCompra,
+      estado: 'disponible',
+    }).select().single();
+    if (errorUnidad) { logImportarVentas(`✗ Error creando unidad de "${nombre}": ${errorUnidad.message}`); errores++; continue; }
+
+    const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
+      cliente_id: clienteXXX.id,
+      canal: 'local',
+      fecha: fechaVenta,
+    }).select().single();
+    if (errorVenta) { logImportarVentas(`✗ Error creando venta de "${nombre}": ${errorVenta.message}`); errores++; continue; }
+
+    const { error: errorItem } = await supabase.from('venta_items').insert({
+      venta_id: venta.id,
+      unidad_id: unidad.id,
+      precio_venta: precioVenta,
+      moneda: 'USD',
+      costo_usd_snapshot: costoCompra,
+      precio_lista_usd_snapshot: precioListaProducto || 0,
+    });
+    if (errorItem) { logImportarVentas(`✗ Error creando ítem de venta de "${nombre}": ${errorItem.message}`); errores++; continue; }
+
+    // El trigger marca la unidad vendida "ahora" — la corregimos a la fecha real
+    await supabase.from('unidades').update({ vendido_at: fechaVenta + 'T00:00:00' }).eq('id', unidad.id);
+
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'ingreso',
+      fecha: fechaVenta,
+      motivo: 'XXX',
+      categoria: 'venta',
+      monto: precioVenta,
+      moneda: 'USD',
+      venta_id: venta.id,
+    });
+
+    ventasCreadas++;
+  }
+
+  logImportarVentas('—');
+  logImportarVentas(`Listo: ${productosCreados} productos nuevos, ${ventasCreadas} ventas cargadas, ${errores} errores.`);
+  boton.disabled = false;
+  await cargarProductos();
+  await cargarClientes();
+  await cargarVentas();
 });
 </script>
 </body>
