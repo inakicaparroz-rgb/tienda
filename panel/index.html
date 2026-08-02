@@ -151,6 +151,7 @@
               <th class="p-2">Ítems</th>
               <th class="p-2">Total USD</th>
               <th class="p-2">Canal</th>
+              <th class="p-2"></th>
             </tr>
           </thead>
           <tbody id="ventas-tbody"></tbody>
@@ -221,7 +222,7 @@
 <!-- Modal: nueva venta -->
 <div id="modal-venta" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-2xl bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
-    <h3 class="font-bold mb-4">Nueva venta</h3>
+    <h3 id="modal-venta-titulo" class="font-bold mb-4">Nueva venta</h3>
 
     <div class="relative mb-3">
       <label class="block text-muted font-mono text-xs uppercase mb-1">Cliente</label>
@@ -653,24 +654,39 @@ document.addEventListener('click', (e) => {
   }
 });
 
+const TABLA_POR_TIPO = { producto: 'productos', unidad: 'unidades', venta: 'ventas' };
+
 document.getElementById('accion-editar').addEventListener('click', () => {
   if (!MENU_CONTEXTO) return;
   accionMenu.classList.add('hidden');
-  if (MENU_CONTEXTO.tipo === 'producto') {
-    abrirModalProducto(MENU_CONTEXTO.obj);
-  } else {
-    abrirModalUnidad(MENU_CONTEXTO.obj);
-  }
+  if (MENU_CONTEXTO.tipo === 'producto') abrirModalProducto(MENU_CONTEXTO.obj);
+  else if (MENU_CONTEXTO.tipo === 'unidad') abrirModalUnidad(MENU_CONTEXTO.obj);
+  else if (MENU_CONTEXTO.tipo === 'venta') abrirModalVenta(MENU_CONTEXTO.obj);
 });
 
 document.getElementById('accion-eliminar').addEventListener('click', async () => {
   if (!MENU_CONTEXTO) return;
   accionMenu.classList.add('hidden');
   const { tipo, obj } = MENU_CONTEXTO;
+
+  if (tipo === 'venta') {
+    if (!confirm(`¿Eliminar la venta de "${obj.clientes?.nombre}"? Las prendas vuelven a stock disponible. Esta acción no se puede deshacer.`)) return;
+    for (const item of (obj.venta_items || [])) {
+      await supabase.from('unidades').update({ estado: 'disponible', vendido_at: null }).eq('id', item.unidad_id);
+    }
+    await supabase.from('caja_movimientos').delete().eq('venta_id', obj.id);
+    const { error } = await supabase.from('ventas').delete().eq('id', obj.id);
+    if (error) { alert('Error al eliminar la venta.'); console.error(error); return; }
+    document.getElementById('venta-detalle').classList.add('hidden');
+    await cargarProductos();
+    await cargarVentas();
+    return;
+  }
+
   const etiqueta = tipo === 'producto' ? `el producto "${obj.nombre}" (y todas sus unidades)` : `la unidad ${obj.codigo_barra}`;
   if (!confirm(`¿Eliminar ${etiqueta}? Esta acción no se puede deshacer.`)) return;
 
-  const tabla = tipo === 'producto' ? 'productos' : 'unidades';
+  const tabla = TABLA_POR_TIPO[tipo];
   const { error } = await supabase.from(tabla).delete().eq('id', obj.id);
   if (error) { alert('Error al eliminar.'); console.error(error); return; }
 
@@ -688,7 +704,7 @@ document.getElementById('accion-historial').addEventListener('click', async () =
   if (!MENU_CONTEXTO) return;
   accionMenu.classList.add('hidden');
   const { tipo, obj } = MENU_CONTEXTO;
-  const tabla = tipo === 'producto' ? 'productos' : 'unidades';
+  const tabla = TABLA_POR_TIPO[tipo];
 
   const { data, error } = await supabase
     .from('historial')
@@ -956,8 +972,9 @@ async function obtenerCotizacionSugerida() {
 
 // ── Nueva venta: ítems dinámicos ─────────────────────────────────────────
 let ITEM_VENTA_SEQ = 0;
+let EDITANDO_VENTA = null; // null = venta nueva; objeto = edición
 
-function agregarItemVenta() {
+function agregarItemVenta(existente) {
   const idx = ITEM_VENTA_SEQ++;
   const div = document.createElement('div');
   div.className = 'v-item border border-border p-3 grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2 sm:items-end';
@@ -983,10 +1000,12 @@ function agregarItemVenta() {
   `;
   div._unidad = null;
   div._producto = null;
+  div._ventaItemId = null;
 
   const inputCodigo = div.querySelector('.v-item-codigo');
   const info = div.querySelector('.v-item-info');
   const inputPrecio = div.querySelector('.v-item-precio');
+  const selectMoneda = div.querySelector('.v-item-moneda');
 
   async function buscarCodigo() {
     const codigo = inputCodigo.value.trim();
@@ -1011,32 +1030,69 @@ function agregarItemVenta() {
     inputPrecio.value = data.productos.precio_promocional_usd || data.productos.precio_venta_usd || '';
   }
 
-  inputCodigo.addEventListener('blur', buscarCodigo);
-  inputCodigo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); buscarCodigo(); } });
+  if (existente) {
+    div._ventaItemId = existente.id;
+    div._unidad = { id: existente.unidad_id, costo_usd: existente.costo_usd_snapshot };
+    div._producto = { precio_venta_usd: existente.precio_lista_usd_snapshot };
+    inputCodigo.value = existente.unidades?.codigo_barra || '';
+    inputCodigo.disabled = true;
+    inputCodigo.classList.add('opacity-50');
+    info.textContent = `${existente.unidades?.productos?.nombre || ''}${existente.unidades?.talle ? ' — talle ' + existente.unidades.talle : ''}`;
+    info.className = 'v-item-info text-xs text-accent mt-1';
+    inputPrecio.value = existente.precio_venta;
+    selectMoneda.value = existente.moneda;
+  } else {
+    inputCodigo.addEventListener('blur', buscarCodigo);
+    inputCodigo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); buscarCodigo(); } });
+  }
+
   div.querySelector('.v-item-quitar').addEventListener('click', () => div.remove());
 
   document.getElementById('v-items').appendChild(div);
-  inputCodigo.focus();
+  if (!existente) inputCodigo.focus();
 }
 
-document.getElementById('v-agregar-item').addEventListener('click', agregarItemVenta);
+document.getElementById('v-agregar-item').addEventListener('click', () => agregarItemVenta());
 
 const modalVenta = document.getElementById('modal-venta');
 
-async function abrirModalVenta() {
-  vClienteNombre.value = '';
-  document.getElementById('v-cliente-telefono').value = '';
-  document.getElementById('v-cliente-email').value = '';
+async function abrirModalVenta(venta) {
+  EDITANDO_VENTA = venta || null;
+  document.getElementById('modal-venta-titulo').textContent = venta ? 'Editar venta' : 'Nueva venta';
+  vClienteNombre.value = venta?.clientes?.nombre || '';
+  document.getElementById('v-cliente-telefono').value = venta?.clientes?.telefono || '';
+  document.getElementById('v-cliente-email').value = venta?.clientes?.email || '';
   CLIENTE_SELECCIONADO = null;
   document.getElementById('v-items').innerHTML = '';
   modalVenta.classList.remove('hidden');
-  document.getElementById('v-cotizacion').value = 'Buscando…';
-  document.getElementById('v-cotizacion').value = await obtenerCotizacionSugerida();
-  agregarItemVenta();
+
+  if (venta) {
+    const itemArs = (venta.venta_items || []).find(i => i.moneda === 'ARS');
+    document.getElementById('v-cotizacion').value = itemArs?.cotizacion_usada || await obtenerCotizacionSugerida();
+    (venta.venta_items || []).forEach(item => agregarItemVenta(item));
+    if ((venta.venta_items || []).length === 0) agregarItemVenta();
+  } else {
+    document.getElementById('v-cotizacion').value = 'Buscando…';
+    document.getElementById('v-cotizacion').value = await obtenerCotizacionSugerida();
+    agregarItemVenta();
+  }
 }
 
-document.getElementById('btn-nueva-venta').addEventListener('click', abrirModalVenta);
+document.getElementById('btn-nueva-venta').addEventListener('click', () => abrirModalVenta());
 document.getElementById('v-cancelar').addEventListener('click', () => modalVenta.classList.add('hidden'));
+
+async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales) {
+  await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
+  const totalesPorMoneda = {};
+  itemsFinales.forEach(({ moneda, monto }) => {
+    totalesPorMoneda[moneda] = (totalesPorMoneda[moneda] || 0) + monto;
+  });
+  for (const [moneda, monto] of Object.entries(totalesPorMoneda)) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
+    });
+  }
+}
 
 document.getElementById('v-confirmar').addEventListener('click', async () => {
   const nombreCliente = vClienteNombre.value.trim();
@@ -1054,7 +1110,7 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   boton.disabled = true;
 
   // Cliente: usar el seleccionado, o buscar por nombre exacto, o crear nuevo
-  let cliente = CLIENTE_SELECCIONADO;
+  let cliente = CLIENTE_SELECCIONADO || (EDITANDO_VENTA ? { id: EDITANDO_VENTA.cliente_id } : null);
   if (!cliente) {
     cliente = CLIENTES.find(c => c.nombre.toLowerCase() === nombreCliente.toLowerCase());
   }
@@ -1066,46 +1122,74 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     }).select().single();
     if (error) { alert('Error al crear el cliente.'); console.error(error); boton.disabled = false; return; }
     cliente = data;
+  } else if (EDITANDO_VENTA) {
+    await supabase.from('clientes').update({
+      nombre: nombreCliente,
+      telefono: document.getElementById('v-cliente-telefono').value.trim() || null,
+      email: document.getElementById('v-cliente-email').value.trim() || null,
+    }).eq('id', cliente.id);
   }
 
-  const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
-    cliente_id: cliente.id,
-    canal: 'local',
-  }).select().single();
-  if (errorVenta) { alert('Error al crear la venta.'); console.error(errorVenta); boton.disabled = false; return; }
+  let ventaId;
+  if (EDITANDO_VENTA) {
+    ventaId = EDITANDO_VENTA.id;
+    if (cliente.id !== EDITANDO_VENTA.cliente_id) {
+      await supabase.from('ventas').update({ cliente_id: cliente.id }).eq('id', ventaId);
+    }
 
-  const totalesPorMoneda = {};
+    // Ítems que estaban antes y ya no están: se sacan y su unidad vuelve a disponible
+    const idsActuales = new Set(items.filter(f => f._ventaItemId).map(f => f._ventaItemId));
+    for (const itemViejo of (EDITANDO_VENTA.venta_items || [])) {
+      if (!idsActuales.has(itemViejo.id)) {
+        await supabase.from('venta_items').delete().eq('id', itemViejo.id);
+        await supabase.from('unidades').update({ estado: 'disponible', vendido_at: null }).eq('id', itemViejo.unidad_id);
+      }
+    }
+  } else {
+    const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
+      cliente_id: cliente.id,
+      canal: 'local',
+    }).select().single();
+    if (errorVenta) { alert('Error al crear la venta.'); console.error(errorVenta); boton.disabled = false; return; }
+    ventaId = venta.id;
+  }
+
+  const itemsFinales = [];
 
   for (const fila of items) {
     const moneda = fila.querySelector('.v-item-moneda').value;
     const precioVenta = parseFloat(fila.querySelector('.v-item-precio').value) || 0;
-    const { error } = await supabase.from('venta_items').insert({
-      venta_id: venta.id,
-      unidad_id: fila._unidad.id,
-      precio_venta: precioVenta,
-      moneda,
-      cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
-      costo_usd_snapshot: fila._unidad.costo_usd,
-      precio_lista_usd_snapshot: fila._producto.precio_venta_usd || 0,
-    });
-    if (error) { console.error(error); continue; }
-    totalesPorMoneda[moneda] = (totalesPorMoneda[moneda] || 0) + precioVenta;
+    const cotizacionUsada = moneda === 'ARS' ? cotizacion : null;
+
+    if (fila._ventaItemId) {
+      const { error } = await supabase.from('venta_items').update({
+        precio_venta: precioVenta,
+        moneda,
+        cotizacion_usada: cotizacionUsada,
+      }).eq('id', fila._ventaItemId);
+      if (error) { console.error(error); continue; }
+    } else {
+      const { error } = await supabase.from('venta_items').insert({
+        venta_id: ventaId,
+        unidad_id: fila._unidad.id,
+        precio_venta: precioVenta,
+        moneda,
+        cotizacion_usada: cotizacionUsada,
+        costo_usd_snapshot: fila._unidad.costo_usd,
+        precio_lista_usd_snapshot: fila._producto.precio_venta_usd || 0,
+      });
+      if (error) { console.error(error); continue; }
+    }
+    itemsFinales.push({ moneda, monto: precioVenta });
   }
 
-  for (const [moneda, monto] of Object.entries(totalesPorMoneda)) {
-    await supabase.from('caja_movimientos').insert({
-      tipo: 'ingreso',
-      motivo: cliente.nombre,
-      categoria: 'venta',
-      monto,
-      moneda,
-      venta_id: venta.id,
-    });
-  }
+  await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales);
 
   boton.disabled = false;
   modalVenta.classList.add('hidden');
+  EDITANDO_VENTA = null;
   await cargarClientes();
+  await cargarProductos();
   await cargarVentas();
 });
 
@@ -1146,8 +1230,13 @@ function renderVentas(lista) {
       <td class="p-2">${(v.venta_items || []).length}</td>
       <td class="p-2">USD ${totalUsdVenta(v).toFixed(2)}</td>
       <td class="p-2 ${v.canal === 'web' ? 'text-accent' : 'text-muted'}">${v.canal === 'web' ? 'Web' : 'Local'}</td>
+      <td class="p-2 text-right"><button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button></td>
     `;
     tr.addEventListener('click', () => abrirDetalleVenta(v));
+    tr.querySelector('.btn-acciones').addEventListener('click', (e) => {
+      e.stopPropagation();
+      abrirMenuAcciones(e.currentTarget, 'venta', v);
+    });
     tbody.appendChild(tr);
   });
 }

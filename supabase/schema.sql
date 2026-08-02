@@ -323,3 +323,8 @@ drop trigger if exists trg_marcar_unidad_vendida on venta_items;
 create trigger trg_marcar_unidad_vendida
   after insert on venta_items
   for each row execute function marcar_unidad_vendida();
+
+drop trigger if exists trg_historial_ventas on ventas;
+create trigger trg_historial_ventas
+  after update on ventas
+  for each row execute function registrar_historial();
