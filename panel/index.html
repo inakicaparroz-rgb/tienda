@@ -39,7 +39,10 @@
     <p class="text-muted text-sm mb-6 font-mono uppercase tracking-wide">Sistema interno</p>
     <div class="space-y-3">
       <input id="login-email" type="email" placeholder="Email" class="w-full px-3 py-2 text-sm" />
-      <input id="login-password" type="password" placeholder="Contraseña" class="w-full px-3 py-2 text-sm" />
+      <div class="relative">
+        <input id="login-password" type="password" placeholder="Contraseña" class="w-full px-3 py-2 text-sm pr-14" />
+        <button id="login-password-toggle" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted text-xs font-mono uppercase hover:text-white">Ver</button>
+      </div>
       <button id="login-btn" class="w-full bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">
         Entrar
       </button>
@@ -86,6 +89,7 @@
               <th class="p-2">Precio venta USD</th>
               <th class="p-2">Precio promo USD</th>
               <th class="p-2">Stock</th>
+              <th class="p-2"></th>
             </tr>
           </thead>
           <tbody id="productos-tbody"></tbody>
@@ -137,7 +141,7 @@
 <!-- Modal: nuevo producto -->
 <div id="modal-producto" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
-    <h3 class="font-bold mb-4">Nuevo producto</h3>
+    <h3 id="modal-producto-titulo" class="font-bold mb-4">Nuevo producto</h3>
     <div class="space-y-3 text-sm">
       <input id="p-nombre" placeholder="Nombre" class="w-full px-3 py-2" />
       <input id="p-marca" placeholder="Marca" class="w-full px-3 py-2" />
@@ -177,6 +181,57 @@
   </div>
 </div>
 
+<!-- Modal: editar unidad -->
+<div id="modal-unidad" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-surface border border-border p-6">
+    <h3 class="font-bold mb-4">Editar unidad</h3>
+    <div class="space-y-3 text-sm">
+      <div id="u-talle-wrap">
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Talle</label>
+        <input id="u-talle" class="w-full px-3 py-2" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="u-costo-compra" type="number" step="0.01" placeholder="Costo compra USD" class="w-full px-3 py-2" />
+        <input id="u-costo-envio" type="number" step="0.01" placeholder="Costo envío USD" class="w-full px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha ingreso</label>
+        <input id="u-fecha" type="date" class="w-full px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Disponibilidad</label>
+        <select id="u-disponibilidad" class="w-full px-3 py-2">
+          <option value="disponible">Disponible</option>
+          <option value="reservado">Reservado</option>
+          <option value="vendido">Vendido</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="u-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="u-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: historial de modificaciones -->
+<div id="modal-historial" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold">Historial de modificaciones</h3>
+      <button id="historial-cerrar" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+    </div>
+    <div id="historial-contenido" class="text-sm space-y-3"></div>
+  </div>
+</div>
+
+<!-- Menú flotante de acciones (⋮) ─ reutilizado para productos y unidades -->
+<div id="accion-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-48">
+  <button id="accion-editar" class="block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">Editar</button>
+  <button id="accion-historial" class="block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">Historial de modificaciones</button>
+  <button id="accion-eliminar" class="block w-full text-left px-4 py-2.5 hover:bg-surface-elevated text-red-400">Eliminar</button>
+</div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -214,6 +269,14 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     return;
   }
   checkSession();
+});
+
+document.getElementById('login-password-toggle').addEventListener('click', () => {
+  const input = document.getElementById('login-password');
+  const btn = document.getElementById('login-password-toggle');
+  const oculta = input.type === 'password';
+  input.type = oculta ? 'text' : 'password';
+  btn.textContent = oculta ? 'Ocultar' : 'Ver';
 });
 
 document.getElementById('logout-btn').addEventListener('click', async () => {
@@ -268,8 +331,13 @@ function renderProductos(lista) {
       <td class="p-2">USD ${Number(p.precio_venta_usd).toFixed(2)}</td>
       <td class="p-2 text-accent">${p.precio_promocional_usd ? 'USD ' + Number(p.precio_promocional_usd).toFixed(2) : '-'}</td>
       <td class="p-2">${disponibles}</td>
+      <td class="p-2 text-right"><button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button></td>
     `;
     tr.addEventListener('click', () => abrirDetalle(p));
+    tr.querySelector('.btn-acciones').addEventListener('click', (e) => {
+      e.stopPropagation();
+      abrirMenuAcciones(e.currentTarget, 'producto', p);
+    });
     tbody.appendChild(tr);
   });
 }
@@ -332,7 +400,7 @@ function renderUnidades() {
     <table class="w-full text-sm">
       <thead><tr class="text-left text-muted font-mono text-xs uppercase">
         <th class="p-2">Producto</th><th class="p-2">Código</th><th class="p-2">Disponibilidad</th>
-        <th class="p-2">Costo</th><th class="p-2">Fecha ingreso</th><th class="p-2">Días en stock</th>
+        <th class="p-2">Costo</th><th class="p-2">Fecha ingreso</th><th class="p-2">Días en stock</th><th class="p-2"></th>
       </tr></thead>
       <tbody>
         ${unidades.map(u => {
@@ -346,12 +414,20 @@ function renderUnidades() {
             <td class="p-2">USD ${Number(u.costo_usd).toFixed(2)}</td>
             <td class="p-2 text-muted">${fechaIngreso.toLocaleDateString('es-AR')}</td>
             <td class="p-2 text-muted">${diasEnStock}</td>
+            <td class="p-2 text-right"><button class="btn-acciones-unidad text-muted hover:text-white px-2 text-base" data-id="${u.id}">⋮</button></td>
           </tr>
         `;
         }).join('')}
       </tbody>
     </table>
   `;
+  cont.querySelectorAll('.btn-acciones-unidad').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const unidad = unidades.find(u => u.id === btn.dataset.id);
+      abrirMenuAcciones(e.currentTarget, 'unidad', unidad);
+    });
+  });
 }
 
 document.getElementById('cerrar-detalle').addEventListener('click', () => {
@@ -390,9 +466,29 @@ document.getElementById('btn-agregar-unidad').addEventListener('click', async ()
   abrirDetalle(actualizado);
 });
 
-// ── STOCK: nuevo producto ───────────────────────────────────────────────
+// ── STOCK: nuevo producto / editar producto ─────────────────────────────
 const modalProducto = document.getElementById('modal-producto');
-document.getElementById('btn-nuevo-producto').addEventListener('click', () => modalProducto.classList.remove('hidden'));
+let EDITANDO_PRODUCTO = null; // null = alta nueva; objeto = edición
+
+function abrirModalProducto(producto) {
+  EDITANDO_PRODUCTO = producto || null;
+  document.getElementById('modal-producto-titulo').textContent = producto ? 'Editar producto' : 'Nuevo producto';
+  document.getElementById('p-nombre').value = producto?.nombre || '';
+  document.getElementById('p-marca').value = producto?.marca || '';
+  document.getElementById('p-categoria').value = producto?.categoria || '';
+  document.getElementById('p-precio').value = producto?.precio_venta_usd ?? '';
+  document.getElementById('p-promo').value = producto?.precio_promocional_usd ?? '';
+  document.getElementById('p-fit').value = producto?.fit || '';
+  document.getElementById('p-estado').value = producto?.estado || '';
+  document.getElementById('p-tiene-talles').checked = producto ? producto.tiene_talles : true;
+  document.getElementById('p-imagen-file').value = '';
+  const preview = document.getElementById('p-imagen-preview');
+  if (producto?.imagen_url) { preview.src = producto.imagen_url; preview.classList.remove('hidden'); }
+  else { preview.classList.add('hidden'); }
+  modalProducto.classList.remove('hidden');
+}
+
+document.getElementById('btn-nuevo-producto').addEventListener('click', () => abrirModalProducto(null));
 document.getElementById('p-cancelar').addEventListener('click', () => modalProducto.classList.add('hidden'));
 
 function slugify(texto) {
@@ -413,7 +509,7 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
   const nombre = document.getElementById('p-nombre').value.trim();
   if (!nombre) { alert('El nombre es obligatorio.'); return; }
 
-  let imagenUrl = null;
+  let imagenUrl = EDITANDO_PRODUCTO?.imagen_url || null;
   const file = document.getElementById('p-imagen-file').files[0];
   if (file) {
     const ruta = `${Date.now()}-${file.name}`;
@@ -423,7 +519,6 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
   }
 
   const producto = {
-    slug: slugify(nombre) + '-' + Date.now().toString(36),
     nombre,
     marca: document.getElementById('p-marca').value.trim() || null,
     categoria: document.getElementById('p-categoria').value.trim() || null,
@@ -435,18 +530,145 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
     tiene_talles: document.getElementById('p-tiene-talles').checked,
   };
 
-  const { error } = await supabase.from('productos').insert(producto);
+  let error;
+  if (EDITANDO_PRODUCTO) {
+    ({ error } = await supabase.from('productos').update(producto).eq('id', EDITANDO_PRODUCTO.id));
+  } else {
+    producto.slug = slugify(nombre) + '-' + Date.now().toString(36);
+    ({ error } = await supabase.from('productos').insert(producto));
+  }
   if (error) { alert('Error al guardar el producto.'); console.error(error); return; }
 
   modalProducto.classList.add('hidden');
-  document.querySelectorAll('#modal-producto input').forEach(el => {
-    if (el.type === 'checkbox') el.checked = true;
-    else if (el.type === 'file') el.value = '';
-    else el.value = '';
-  });
-  document.getElementById('p-imagen-preview').classList.add('hidden');
-  document.querySelectorAll('#modal-producto select').forEach(el => { el.value = ''; });
+  EDITANDO_PRODUCTO = null;
   cargarProductos();
+});
+
+// ── STOCK: menú de acciones (⋮) — editar / historial / eliminar ─────────
+const accionMenu = document.getElementById('accion-menu');
+let MENU_CONTEXTO = null; // { tipo: 'producto' | 'unidad', obj }
+
+function abrirMenuAcciones(boton, tipo, obj) {
+  MENU_CONTEXTO = { tipo, obj };
+  const rect = boton.getBoundingClientRect();
+  accionMenu.style.top = `${rect.bottom + 4}px`;
+  accionMenu.style.left = `${Math.max(8, rect.right - 192)}px`;
+  accionMenu.classList.remove('hidden');
+}
+
+document.addEventListener('click', (e) => {
+  if (!accionMenu.classList.contains('hidden') && !accionMenu.contains(e.target)) {
+    accionMenu.classList.add('hidden');
+  }
+});
+
+document.getElementById('accion-editar').addEventListener('click', () => {
+  if (!MENU_CONTEXTO) return;
+  accionMenu.classList.add('hidden');
+  if (MENU_CONTEXTO.tipo === 'producto') {
+    abrirModalProducto(MENU_CONTEXTO.obj);
+  } else {
+    abrirModalUnidad(MENU_CONTEXTO.obj);
+  }
+});
+
+document.getElementById('accion-eliminar').addEventListener('click', async () => {
+  if (!MENU_CONTEXTO) return;
+  accionMenu.classList.add('hidden');
+  const { tipo, obj } = MENU_CONTEXTO;
+  const etiqueta = tipo === 'producto' ? `el producto "${obj.nombre}" (y todas sus unidades)` : `la unidad ${obj.codigo_barra}`;
+  if (!confirm(`¿Eliminar ${etiqueta}? Esta acción no se puede deshacer.`)) return;
+
+  const tabla = tipo === 'producto' ? 'productos' : 'unidades';
+  const { error } = await supabase.from(tabla).delete().eq('id', obj.id);
+  if (error) { alert('Error al eliminar.'); console.error(error); return; }
+
+  if (tipo === 'producto') {
+    document.getElementById('producto-detalle').classList.add('hidden');
+    cargarProductos();
+  } else {
+    await cargarProductos();
+    const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
+    abrirDetalle(actualizado);
+  }
+});
+
+document.getElementById('accion-historial').addEventListener('click', async () => {
+  if (!MENU_CONTEXTO) return;
+  accionMenu.classList.add('hidden');
+  const { tipo, obj } = MENU_CONTEXTO;
+  const tabla = tipo === 'producto' ? 'productos' : 'unidades';
+
+  const { data, error } = await supabase
+    .from('historial')
+    .select('*')
+    .eq('tabla', tabla)
+    .eq('registro_id', obj.id)
+    .order('modificado_at', { ascending: false });
+
+  const cont = document.getElementById('historial-contenido');
+  if (error) { cont.innerHTML = '<p class="text-red-400">Error al cargar el historial.</p>'; }
+  else if (!data || data.length === 0) {
+    cont.innerHTML = '<p class="text-muted">Todavía no se modificó nada.</p>';
+  } else {
+    cont.innerHTML = data.map(h => {
+      const antes = h.datos_anteriores || {};
+      const despues = h.datos_nuevos || {};
+      const campos = Object.keys(despues).filter(k =>
+        k !== 'created_at' && JSON.stringify(antes[k]) !== JSON.stringify(despues[k])
+      );
+      const cambios = campos.length
+        ? campos.map(k => `<div><span class="text-muted">${k}:</span> ${antes[k] ?? '—'} → <span class="text-accent">${despues[k] ?? '—'}</span></div>`).join('')
+        : '<div class="text-muted">Sin cambios de datos.</div>';
+      return `
+        <div class="border border-border p-3">
+          <div class="text-muted font-mono text-xs uppercase mb-2">${new Date(h.modificado_at).toLocaleString('es-AR')}</div>
+          ${cambios}
+        </div>
+      `;
+    }).join('');
+  }
+  document.getElementById('modal-historial').classList.remove('hidden');
+});
+
+document.getElementById('historial-cerrar').addEventListener('click', () => {
+  document.getElementById('modal-historial').classList.add('hidden');
+});
+
+// ── STOCK: editar unidad ─────────────────────────────────────────────────
+const modalUnidad = document.getElementById('modal-unidad');
+let EDITANDO_UNIDAD = null;
+
+function abrirModalUnidad(unidad) {
+  EDITANDO_UNIDAD = unidad;
+  document.getElementById('u-talle-wrap').classList.toggle('hidden', !PRODUCTO_ACTUAL.tiene_talles);
+  document.getElementById('u-talle').value = unidad.talle || '';
+  document.getElementById('u-costo-compra').value = unidad.costo_compra_usd;
+  document.getElementById('u-costo-envio').value = unidad.costo_envio_usd;
+  document.getElementById('u-fecha').value = unidad.fecha_ingreso;
+  document.getElementById('u-disponibilidad').value = unidad.estado;
+  modalUnidad.classList.remove('hidden');
+}
+
+document.getElementById('u-cancelar').addEventListener('click', () => modalUnidad.classList.add('hidden'));
+
+document.getElementById('u-guardar').addEventListener('click', async () => {
+  if (!EDITANDO_UNIDAD) return;
+  const cambios = {
+    talle: PRODUCTO_ACTUAL.tiene_talles ? document.getElementById('u-talle').value.trim() : null,
+    costo_compra_usd: parseFloat(document.getElementById('u-costo-compra').value) || 0,
+    costo_envio_usd: parseFloat(document.getElementById('u-costo-envio').value) || 0,
+    fecha_ingreso: document.getElementById('u-fecha').value,
+    estado: document.getElementById('u-disponibilidad').value,
+  };
+  const { error } = await supabase.from('unidades').update(cambios).eq('id', EDITANDO_UNIDAD.id);
+  if (error) { alert('Error al guardar la unidad.'); console.error(error); return; }
+
+  modalUnidad.classList.add('hidden');
+  EDITANDO_UNIDAD = null;
+  await cargarProductos();
+  const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
+  abrirDetalle(actualizado);
 });
 </script>
 </body>

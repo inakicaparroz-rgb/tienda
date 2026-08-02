@@ -145,3 +145,52 @@ create policy "productos_bucket_actualizacion_autenticada" on storage.objects
 drop policy if exists "productos_bucket_borrado_autenticado" on storage.objects;
 create policy "productos_bucket_borrado_autenticado" on storage.objects
   for delete using (bucket_id = 'productos' and auth.role() = 'authenticated');
+
+-- ─── Historial de modificaciones (automático, no editable a mano) ──────────
+-- Cada UPDATE en productos/unidades queda registrado solo, sin que el panel
+-- tenga que acordarse de llamarlo. No visible salvo que se pida (botón
+-- "Historial de modificaciones" en el menú de cada fila).
+
+create table if not exists historial (
+  id uuid primary key default gen_random_uuid(),
+  tabla text not null,
+  registro_id uuid not null,
+  datos_anteriores jsonb,
+  datos_nuevos jsonb,
+  modificado_at timestamptz not null default now()
+);
+
+create index if not exists idx_historial_registro on historial(tabla, registro_id);
+
+alter table historial enable row level security;
+
+drop policy if exists "historial_authenticated_select" on historial;
+create policy "historial_authenticated_select" on historial
+  for select using (auth.role() = 'authenticated');
+
+grant select on historial to authenticated;
+-- Sin insert/update/delete para authenticated a propósito: solo el trigger
+-- (que corre con privilegios de su dueño) puede escribir acá.
+
+create or replace function registrar_historial()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into historial (tabla, registro_id, datos_anteriores, datos_nuevos)
+  values (TG_TABLE_NAME, OLD.id, to_jsonb(OLD), to_jsonb(NEW));
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trg_historial_productos on productos;
+create trigger trg_historial_productos
+  after update on productos
+  for each row execute function registrar_historial();
+
+drop trigger if exists trg_historial_unidades on unidades;
+create trigger trg_historial_unidades
+  after update on unidades
+  for each row execute function registrar_historial();
