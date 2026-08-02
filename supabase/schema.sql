@@ -30,7 +30,8 @@ alter table productos add column if not exists estado text
   check (estado in ('New', 'VNDS', 'Used'));
 
 -- La descripción libre quedó obsoleta (reemplazada por fit/estado/imagen).
-alter table productos drop column if exists descripcion;
+-- cascade porque productos_publicos depende de esta columna; se recrea más abajo.
+alter table productos drop column if exists descripcion cascade;
 
 -- ─── UNIDADES (cada prenda física, con su propio código de barra y costo) ──
 
