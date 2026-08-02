@@ -76,6 +76,9 @@
         <button id="btn-nuevo-producto" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nuevo producto
         </button>
+        <button id="btn-importar-stock" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Importar stock (CSV)
+        </button>
       </div>
 
       <div class="border border-border overflow-x-auto">
@@ -177,6 +180,24 @@
     <div class="flex gap-2 mt-5">
       <button id="p-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
       <button id="p-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: importar stock desde CSV -->
+<div id="modal-importar" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[85vh] overflow-y-auto">
+    <h3 class="font-bold mb-3">Importar stock desde CSV</h3>
+    <p class="text-muted text-xs mb-4 leading-relaxed">
+      El archivo tiene que tener estas columnas (con esos nombres, en la primera fila):
+      <span class="font-mono block mt-1 text-white">MODELO, TALLE, PRECIO COMPRA, FECHA COMPRA, PRECIO VENTA, FECHA VENTA</span>
+      Las fechas en formato DD/MM/AAAA. Si una prenda ya está vendida (tiene FECHA VENTA), se carga igual pero marcada como vendida, sin sumar al stock disponible. Marca y Categoría quedan vacías — se completan a mano después si hace falta.
+    </p>
+    <input id="importar-file" type="file" accept=".csv" class="w-full text-sm mb-4" />
+    <div id="importar-log" class="font-mono text-xs text-muted space-y-1 max-h-48 overflow-y-auto mb-4"></div>
+    <div class="flex gap-2">
+      <button id="importar-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Importar</button>
+      <button id="importar-cerrar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
     </div>
   </div>
 </div>
@@ -669,6 +690,137 @@ document.getElementById('u-guardar').addEventListener('click', async () => {
   await cargarProductos();
   const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
   abrirDetalle(actualizado);
+});
+
+// ── STOCK: importar desde CSV (carga del Excel viejo) ────────────────────
+const modalImportar = document.getElementById('modal-importar');
+const importarLog = document.getElementById('importar-log');
+
+document.getElementById('btn-importar-stock').addEventListener('click', () => {
+  importarLog.innerHTML = '';
+  document.getElementById('importar-file').value = '';
+  modalImportar.classList.remove('hidden');
+});
+document.getElementById('importar-cerrar').addEventListener('click', () => modalImportar.classList.add('hidden'));
+
+function logImportar(texto) {
+  const linea = document.createElement('div');
+  linea.textContent = texto;
+  importarLog.appendChild(linea);
+  importarLog.scrollTop = importarLog.scrollHeight;
+}
+
+function parsearCSV(texto) {
+  const lineas = texto.replace(/\r/g, '').split('\n').filter(l => l.trim());
+  const partirLinea = (linea) => {
+    const campos = linea.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
+    return campos.map(c => c.replace(/^"|"$/g, '').trim());
+  };
+  const encabezados = partirLinea(lineas[0]).map(h => h.toUpperCase());
+  return lineas.slice(1).map(linea => {
+    const valores = partirLinea(linea);
+    const fila = {};
+    encabezados.forEach((h, i) => { fila[h] = valores[i] || ''; });
+    return fila;
+  });
+}
+
+function parsearFechaArg(str) {
+  if (!str || !str.trim()) return null;
+  const [d, m, y] = str.trim().split('/');
+  if (!d || !m || !y) return null;
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+
+function parsearPrecioArg(str) {
+  if (!str) return 0;
+  let limpio = String(str).replace(/[^0-9,.-]/g, '').trim();
+  if (limpio.includes(',')) limpio = limpio.replace(/\./g, '').replace(',', '.');
+  return parseFloat(limpio) || 0;
+}
+
+document.getElementById('importar-confirmar').addEventListener('click', async () => {
+  const file = document.getElementById('importar-file').files[0];
+  if (!file) { alert('Elegí un archivo CSV primero.'); return; }
+
+  const boton = document.getElementById('importar-confirmar');
+  boton.disabled = true;
+  importarLog.innerHTML = '';
+  logImportar('Leyendo archivo…');
+
+  const texto = await file.text();
+  const filas = parsearCSV(texto);
+  logImportar(`${filas.length} filas encontradas.`);
+
+  // Mapa de nombre de producto (en minúscula) → id, para no duplicar
+  const productoIdPorNombre = new Map();
+  PRODUCTOS.forEach(p => productoIdPorNombre.set(p.nombre.trim().toLowerCase(), p.id));
+
+  // Agrupar filas por producto para decidir tiene_talles y precio de venta
+  const grupos = new Map();
+  filas.forEach(fila => {
+    const nombre = (fila['MODELO'] || '').trim();
+    if (!nombre) return;
+    const clave = nombre.toLowerCase();
+    if (!grupos.has(clave)) grupos.set(clave, { nombre, filas: [] });
+    grupos.get(clave).filas.push(fila);
+  });
+
+  let productosCreados = 0, unidadesCreadas = 0, errores = 0;
+
+  for (const { nombre, filas: filasProducto } of grupos.values()) {
+    const clave = nombre.toLowerCase();
+    let productoId = productoIdPorNombre.get(clave);
+
+    if (!productoId) {
+      const tieneTalles = filasProducto.some(f => {
+        const t = (f['TALLE'] || '').trim();
+        return t && t !== '-';
+      });
+      const precioVenta = filasProducto
+        .map(f => parsearPrecioArg(f['PRECIO VENTA']))
+        .find(v => v > 0) || 0;
+
+      const { data, error } = await supabase.from('productos').insert({
+        slug: slugify(nombre) + '-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000),
+        nombre,
+        precio_venta_usd: precioVenta,
+        tiene_talles: tieneTalles,
+      }).select('id').single();
+
+      if (error) { logImportar(`✗ Error creando producto "${nombre}": ${error.message}`); errores++; continue; }
+      productoId = data.id;
+      productoIdPorNombre.set(clave, productoId);
+      productosCreados++;
+    }
+
+    for (const fila of filasProducto) {
+      const talleTexto = (fila['TALLE'] || '').trim();
+      const talle = (talleTexto && talleTexto !== '-') ? talleTexto : null;
+      const fechaVenta = parsearFechaArg(fila['FECHA VENTA']);
+      const fechaCompra = parsearFechaArg(fila['FECHA COMPRA']) || new Date().toISOString().slice(0, 10);
+
+      const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
+      const { error } = await supabase.from('unidades').insert({
+        producto_id: productoId,
+        talle,
+        codigo_barra: codigoData,
+        costo_compra_usd: parsearPrecioArg(fila['PRECIO COMPRA']),
+        costo_envio_usd: 0,
+        fecha_ingreso: fechaCompra,
+        estado: fechaVenta ? 'vendido' : 'disponible',
+        vendido_at: fechaVenta ? fechaVenta + 'T00:00:00' : null,
+      });
+
+      if (error) { logImportar(`✗ Error en unidad de "${nombre}" (${talle || 'sin talle'}): ${error.message}`); errores++; }
+      else unidadesCreadas++;
+    }
+  }
+
+  logImportar('—');
+  logImportar(`Listo: ${productosCreados} productos nuevos, ${unidadesCreadas} unidades cargadas, ${errores} errores.`);
+  boton.disabled = false;
+  await cargarProductos();
 });
 </script>
 </body>

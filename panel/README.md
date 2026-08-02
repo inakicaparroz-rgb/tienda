@@ -18,9 +18,10 @@ Sistema de stock/ventas/caja de uso interno. Separado de la web pública (`/inde
 
 - ✅ Stock: alta de productos (con fit y estado New/VNDS/Used), unidades con código de barra autogenerado (con costo por unidad: compra + envío, y fecha de ingreso editable + días en stock calculados), listado plano de unidades por producto, búsqueda/filtro (compatible con lector de código de barra USB). Editar y eliminar tanto productos como unidades desde el menú "⋮" de cada fila, con historial automático de modificaciones (no visible salvo que se pida).
 - ✅ Login con botón para mostrar/ocultar la contraseña.
+- ✅ Importar stock desde CSV (carga masiva del Excel viejo): botón "Importar stock (CSV)" en Stock. Columnas esperadas: `MODELO, TALLE, PRECIO COMPRA, FECHA COMPRA, PRECIO VENTA, FECHA VENTA` (fechas DD/MM/AAAA). Las prendas ya vendidas se cargan igual, marcadas como vendidas (no suman al stock disponible) — para poder analizarlas después en Reportes. El precio de venta real y la utilidad de lo ya vendido no se importan todavía; eso se hace en una segunda pasada cuando exista la pestaña Ventas.
 - ⏳ Ventas, Flujo de caja, Reportes, Deudas y deudores: pendientes.
 - ⏳ Conexión con la web pública (para que index.html lea `productos_publicos` / `stock_publico` en vez del CSV de Google Sheets): pendiente.
 
 ## Pendientes puntuales de Stock
 
-Ninguno por ahora — la subida de foto directa (Supabase Storage) ya está hecha, y el campo Descripción se sacó por obsoleto.
+Ninguno por ahora.
