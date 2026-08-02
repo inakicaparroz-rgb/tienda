@@ -132,8 +132,42 @@
       </div>
     </section>
 
-    <!-- placeholders -->
-    <section id="tab-ventas" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
+    <!-- VENTAS -->
+    <section id="tab-ventas" class="tab-section hidden">
+      <div class="flex flex-col sm:flex-row gap-3 mb-4">
+        <input id="ventas-search" type="text" placeholder="Buscar por cliente, producto, código, moneda…"
+          class="flex-1 px-3 py-2 text-sm" />
+        <button id="btn-nueva-venta" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
+          + Nueva venta
+        </button>
+      </div>
+
+      <div class="border border-border overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-muted font-mono text-xs uppercase">
+              <th class="p-2">Cliente</th>
+              <th class="p-2">Fecha</th>
+              <th class="p-2">Ítems</th>
+              <th class="p-2">Total USD</th>
+              <th class="p-2">Canal</th>
+            </tr>
+          </thead>
+          <tbody id="ventas-tbody"></tbody>
+        </table>
+        <p id="ventas-empty" class="p-6 text-center text-muted text-sm hidden">No hay ventas todavía.</p>
+      </div>
+
+      <!-- Detalle de venta -->
+      <div id="venta-detalle" class="hidden mt-6 border border-border bg-surface p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="venta-detalle-titulo" class="font-bold"></h3>
+          <button id="venta-cerrar-detalle" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+        </div>
+        <div id="venta-detalle-items"></div>
+      </div>
+    </section>
+
     <section id="tab-caja" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
     <section id="tab-reportes" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
     <section id="tab-deudas" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
@@ -180,6 +214,41 @@
     <div class="flex gap-2 mt-5">
       <button id="p-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
       <button id="p-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: nueva venta -->
+<div id="modal-venta" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-2xl bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
+    <h3 class="font-bold mb-4">Nueva venta</h3>
+
+    <div class="relative mb-3">
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Cliente</label>
+      <input id="v-cliente-nombre" placeholder="Nombre del cliente" class="w-full px-3 py-2 text-sm" autocomplete="off" />
+      <div id="v-cliente-sugerencias" class="hidden absolute z-10 w-full bg-surface border border-border max-h-40 overflow-y-auto text-sm"></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <input id="v-cliente-telefono" placeholder="Teléfono (opcional)" class="w-full px-3 py-2 text-sm" />
+      <input id="v-cliente-email" placeholder="Mail (opcional)" class="w-full px-3 py-2 text-sm" />
+    </div>
+
+    <div class="flex items-end gap-3 mb-4">
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Cotización USD hoy</label>
+        <input id="v-cotizacion" type="number" step="0.01" class="w-32 px-3 py-2 text-sm" />
+      </div>
+      <p class="text-muted text-xs leading-tight">Se usa para convertir los ítems cobrados en ARS. Queda fijada en esta venta — si mañana cambia el dólar, esta venta no se recalcula.</p>
+    </div>
+
+    <div id="v-items" class="space-y-2 mb-2"></div>
+    <button id="v-agregar-item" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
+      + Agregar prenda
+    </button>
+
+    <div class="flex gap-2 mt-5">
+      <button id="v-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Confirmar venta</button>
+      <button id="v-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
     </div>
   </div>
 </div>
@@ -318,6 +387,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.remove('border-transparent', 'text-muted');
     document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+    if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); }
   });
 });
 
@@ -821,6 +891,316 @@ document.getElementById('importar-confirmar').addEventListener('click', async ()
   logImportar(`Listo: ${productosCreados} productos nuevos, ${unidadesCreadas} unidades cargadas, ${errores} errores.`);
   boton.disabled = false;
   await cargarProductos();
+});
+
+// ═══ VENTAS ═══════════════════════════════════════════════════════════
+
+// ── Clientes: carga + autocompletar ──────────────────────────────────────
+let CLIENTES = [];
+let CLIENTE_SELECCIONADO = null;
+
+async function cargarClientes() {
+  const { data, error } = await supabase.from('clientes').select('*').order('nombre');
+  if (error) { console.error(error); return; }
+  CLIENTES = data || [];
+}
+
+const vClienteNombre = document.getElementById('v-cliente-nombre');
+const vClienteSugerencias = document.getElementById('v-cliente-sugerencias');
+
+vClienteNombre.addEventListener('input', () => {
+  CLIENTE_SELECCIONADO = null;
+  const q = vClienteNombre.value.trim().toLowerCase();
+  if (!q) { vClienteSugerencias.classList.add('hidden'); return; }
+  const coincidencias = CLIENTES.filter(c => c.nombre.toLowerCase().includes(q)).slice(0, 8);
+  if (coincidencias.length === 0) { vClienteSugerencias.classList.add('hidden'); return; }
+  vClienteSugerencias.innerHTML = coincidencias.map(c =>
+    `<div class="v-sugerencia px-3 py-2 hover:bg-surface-elevated cursor-pointer" data-id="${c.id}">${c.nombre}</div>`
+  ).join('');
+  vClienteSugerencias.classList.remove('hidden');
+  vClienteSugerencias.querySelectorAll('.v-sugerencia').forEach(el => {
+    el.addEventListener('click', () => {
+      const c = CLIENTES.find(x => x.id === el.dataset.id);
+      CLIENTE_SELECCIONADO = c;
+      vClienteNombre.value = c.nombre;
+      document.getElementById('v-cliente-telefono').value = c.telefono || '';
+      document.getElementById('v-cliente-email').value = c.email || '';
+      vClienteSugerencias.classList.add('hidden');
+    });
+  });
+});
+
+document.addEventListener('click', (e) => {
+  if (!vClienteSugerencias.contains(e.target) && e.target !== vClienteNombre) {
+    vClienteSugerencias.classList.add('hidden');
+  }
+});
+
+// ── Cotización del dólar (auto + editable) ───────────────────────────────
+async function obtenerCotizacionSugerida() {
+  try {
+    const resp = await fetch('https://dolarapi.com/v1/dolares/blue');
+    const data = await resp.json();
+    if (data && data.venta) {
+      await supabase.from('configuracion').update({
+        cotizacion_usd_ars: data.venta,
+        cotizacion_actualizada_at: new Date().toISOString(),
+      }).eq('id', true);
+      return data.venta;
+    }
+  } catch (e) { console.error('No se pudo obtener la cotización automática', e); }
+
+  const { data } = await supabase.from('configuracion').select('cotizacion_usd_ars').single();
+  return data?.cotizacion_usd_ars || 0;
+}
+
+// ── Nueva venta: ítems dinámicos ─────────────────────────────────────────
+let ITEM_VENTA_SEQ = 0;
+
+function agregarItemVenta() {
+  const idx = ITEM_VENTA_SEQ++;
+  const div = document.createElement('div');
+  div.className = 'v-item border border-border p-3 grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2 sm:items-end';
+  div.dataset.idx = idx;
+  div.innerHTML = `
+    <div>
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Código</label>
+      <input class="v-item-codigo w-full px-3 py-2 text-sm font-mono" placeholder="Escanear o tipear" />
+      <p class="v-item-info text-xs text-muted mt-1">Sin escanear.</p>
+    </div>
+    <div>
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Precio venta</label>
+      <input type="number" step="0.01" class="v-item-precio w-full sm:w-28 px-3 py-2 text-sm" />
+    </div>
+    <div>
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Moneda</label>
+      <select class="v-item-moneda w-full sm:w-24 px-3 py-2 text-sm">
+        <option value="USD">USD</option>
+        <option value="ARS">ARS</option>
+      </select>
+    </div>
+    <button type="button" class="v-item-quitar text-red-400 text-xs font-mono uppercase px-2 py-2">Quitar</button>
+  `;
+  div._unidad = null;
+  div._producto = null;
+
+  const inputCodigo = div.querySelector('.v-item-codigo');
+  const info = div.querySelector('.v-item-info');
+  const inputPrecio = div.querySelector('.v-item-precio');
+
+  async function buscarCodigo() {
+    const codigo = inputCodigo.value.trim();
+    if (!codigo) return;
+    const { data, error } = await supabase
+      .from('unidades')
+      .select('*, productos(nombre, precio_venta_usd, precio_promocional_usd)')
+      .eq('codigo_barra', codigo)
+      .eq('estado', 'disponible')
+      .maybeSingle();
+
+    if (error || !data) {
+      div._unidad = null; div._producto = null;
+      info.textContent = 'Código no encontrado o ya vendido.';
+      info.className = 'v-item-info text-xs text-red-400 mt-1';
+      return;
+    }
+    div._unidad = data;
+    div._producto = data.productos;
+    info.textContent = `${data.productos.nombre}${data.talle ? ' — talle ' + data.talle : ''}`;
+    info.className = 'v-item-info text-xs text-accent mt-1';
+    inputPrecio.value = data.productos.precio_promocional_usd || data.productos.precio_venta_usd || '';
+  }
+
+  inputCodigo.addEventListener('blur', buscarCodigo);
+  inputCodigo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); buscarCodigo(); } });
+  div.querySelector('.v-item-quitar').addEventListener('click', () => div.remove());
+
+  document.getElementById('v-items').appendChild(div);
+  inputCodigo.focus();
+}
+
+document.getElementById('v-agregar-item').addEventListener('click', agregarItemVenta);
+
+const modalVenta = document.getElementById('modal-venta');
+
+async function abrirModalVenta() {
+  vClienteNombre.value = '';
+  document.getElementById('v-cliente-telefono').value = '';
+  document.getElementById('v-cliente-email').value = '';
+  CLIENTE_SELECCIONADO = null;
+  document.getElementById('v-items').innerHTML = '';
+  modalVenta.classList.remove('hidden');
+  document.getElementById('v-cotizacion').value = 'Buscando…';
+  document.getElementById('v-cotizacion').value = await obtenerCotizacionSugerida();
+  agregarItemVenta();
+}
+
+document.getElementById('btn-nueva-venta').addEventListener('click', abrirModalVenta);
+document.getElementById('v-cancelar').addEventListener('click', () => modalVenta.classList.add('hidden'));
+
+document.getElementById('v-confirmar').addEventListener('click', async () => {
+  const nombreCliente = vClienteNombre.value.trim();
+  if (!nombreCliente) { alert('El nombre del cliente es obligatorio.'); return; }
+
+  const filas = [...document.getElementById('v-items').children];
+  const items = filas.filter(f => f._unidad);
+  if (items.length === 0) { alert('Agregá al menos una prenda con un código válido.'); return; }
+
+  const cotizacion = parseFloat(document.getElementById('v-cotizacion').value) || 0;
+  const necesitaCotizacion = items.some(f => f.querySelector('.v-item-moneda').value === 'ARS');
+  if (necesitaCotizacion && cotizacion <= 0) { alert('Falta la cotización del dólar para convertir los ítems en ARS.'); return; }
+
+  const boton = document.getElementById('v-confirmar');
+  boton.disabled = true;
+
+  // Cliente: usar el seleccionado, o buscar por nombre exacto, o crear nuevo
+  let cliente = CLIENTE_SELECCIONADO;
+  if (!cliente) {
+    cliente = CLIENTES.find(c => c.nombre.toLowerCase() === nombreCliente.toLowerCase());
+  }
+  if (!cliente) {
+    const { data, error } = await supabase.from('clientes').insert({
+      nombre: nombreCliente,
+      telefono: document.getElementById('v-cliente-telefono').value.trim() || null,
+      email: document.getElementById('v-cliente-email').value.trim() || null,
+    }).select().single();
+    if (error) { alert('Error al crear el cliente.'); console.error(error); boton.disabled = false; return; }
+    cliente = data;
+  }
+
+  const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
+    cliente_id: cliente.id,
+    canal: 'local',
+  }).select().single();
+  if (errorVenta) { alert('Error al crear la venta.'); console.error(errorVenta); boton.disabled = false; return; }
+
+  const totalesPorMoneda = {};
+
+  for (const fila of items) {
+    const moneda = fila.querySelector('.v-item-moneda').value;
+    const precioVenta = parseFloat(fila.querySelector('.v-item-precio').value) || 0;
+    const { error } = await supabase.from('venta_items').insert({
+      venta_id: venta.id,
+      unidad_id: fila._unidad.id,
+      precio_venta: precioVenta,
+      moneda,
+      cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
+      costo_usd_snapshot: fila._unidad.costo_usd,
+      precio_lista_usd_snapshot: fila._producto.precio_venta_usd || 0,
+    });
+    if (error) { console.error(error); continue; }
+    totalesPorMoneda[moneda] = (totalesPorMoneda[moneda] || 0) + precioVenta;
+  }
+
+  for (const [moneda, monto] of Object.entries(totalesPorMoneda)) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'ingreso',
+      motivo: cliente.nombre,
+      categoria: 'venta',
+      monto,
+      moneda,
+      venta_id: venta.id,
+    });
+  }
+
+  boton.disabled = false;
+  modalVenta.classList.add('hidden');
+  await cargarClientes();
+  await cargarVentas();
+});
+
+// ── Listado de ventas ─────────────────────────────────────────────────────
+let VENTAS = [];
+
+async function cargarVentas() {
+  const { data, error } = await supabase
+    .from('ventas')
+    .select(`
+      *,
+      clientes(nombre, telefono, email),
+      venta_items(id, precio_venta, moneda, cotizacion_usada, precio_venta_usd, costo_usd_snapshot, precio_lista_usd_snapshot,
+        unidades(codigo_barra, talle, productos(nombre)))
+    `)
+    .order('created_at', { ascending: false });
+  if (error) { console.error(error); return; }
+  VENTAS = data || [];
+  renderVentas(VENTAS);
+}
+
+function totalUsdVenta(venta) {
+  return (venta.venta_items || []).reduce((s, i) => s + Number(i.precio_venta_usd || 0), 0);
+}
+
+function renderVentas(lista) {
+  const tbody = document.getElementById('ventas-tbody');
+  const empty = document.getElementById('ventas-empty');
+  tbody.innerHTML = '';
+  empty.classList.toggle('hidden', lista.length > 0);
+
+  lista.forEach(v => {
+    const tr = document.createElement('tr');
+    tr.className = 'cursor-pointer hover:bg-surface-elevated';
+    tr.innerHTML = `
+      <td class="p-2">${v.clientes?.nombre || '-'}</td>
+      <td class="p-2 text-muted">${new Date(v.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
+      <td class="p-2">${(v.venta_items || []).length}</td>
+      <td class="p-2">USD ${totalUsdVenta(v).toFixed(2)}</td>
+      <td class="p-2 ${v.canal === 'web' ? 'text-accent' : 'text-muted'}">${v.canal === 'web' ? 'Web' : 'Local'}</td>
+    `;
+    tr.addEventListener('click', () => abrirDetalleVenta(v));
+    tbody.appendChild(tr);
+  });
+}
+
+function filtrarVentas(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) { renderVentas(VENTAS); return; }
+  const filtrado = VENTAS.filter(v => {
+    const items = (v.venta_items || []).map(i =>
+      `${i.unidades?.productos?.nombre || ''} ${i.unidades?.codigo_barra || ''} ${i.moneda}`
+    ).join(' ');
+    return [v.clientes?.nombre, v.canal, items].join(' ').toLowerCase().includes(q);
+  });
+  renderVentas(filtrado);
+}
+
+document.getElementById('ventas-search').addEventListener('input', e => filtrarVentas(e.target.value));
+
+function abrirDetalleVenta(venta) {
+  document.getElementById('venta-detalle-titulo').textContent =
+    `${venta.clientes?.nombre || 'Cliente'} — ${new Date(venta.fecha + 'T00:00:00').toLocaleDateString('es-AR')}`;
+  document.getElementById('venta-detalle').classList.remove('hidden');
+
+  const items = venta.venta_items || [];
+  document.getElementById('venta-detalle-items').innerHTML = `
+    <table class="w-full text-sm">
+      <thead><tr class="text-left text-muted font-mono text-xs uppercase">
+        <th class="p-2">Producto</th><th class="p-2">Código</th><th class="p-2">Precio</th>
+        <th class="p-2">Ganancia</th><th class="p-2">Descuento</th>
+      </tr></thead>
+      <tbody>
+        ${items.map(i => {
+          const ganancia = Number(i.precio_venta_usd || 0) - Number(i.costo_usd_snapshot || 0);
+          const descuento = i.precio_lista_usd_snapshot > 0
+            ? Math.round((1 - Number(i.precio_venta_usd || 0) / Number(i.precio_lista_usd_snapshot)) * 100)
+            : null;
+          return `
+            <tr>
+              <td class="p-2">${i.unidades?.productos?.nombre || '-'}${i.unidades?.talle ? ' ' + i.unidades.talle : ''}</td>
+              <td class="p-2 font-mono">${i.unidades?.codigo_barra || '-'}</td>
+              <td class="p-2">${i.moneda} ${Number(i.precio_venta).toFixed(2)}</td>
+              <td class="p-2 ${ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${ganancia.toFixed(2)}</td>
+              <td class="p-2 text-muted">${descuento !== null ? descuento + '%' : '-'}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+document.getElementById('venta-cerrar-detalle').addEventListener('click', () => {
+  document.getElementById('venta-detalle').classList.add('hidden');
 });
 </script>
 </body>

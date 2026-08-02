@@ -194,3 +194,132 @@ drop trigger if exists trg_historial_unidades on unidades;
 create trigger trg_historial_unidades
   after update on unidades
   for each row execute function registrar_historial();
+
+-- ═══ MÓDULO VENTAS ══════════════════════════════════════════════════════
+
+-- ─── Configuración general (fila única) — cotización del dólar ────────────
+-- Se autoactualiza desde una API pública, pero es editable a mano si hace
+-- falta forzar un valor.
+
+create table if not exists configuracion (
+  id boolean primary key default true check (id = true), -- fuerza una sola fila
+  cotizacion_usd_ars numeric(10,2) not null default 0,
+  cotizacion_actualizada_at timestamptz
+);
+
+insert into configuracion (id) values (true) on conflict (id) do nothing;
+
+alter table configuracion enable row level security;
+drop policy if exists "configuracion_authenticated_all" on configuracion;
+create policy "configuracion_authenticated_all" on configuracion
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, update on configuracion to authenticated;
+
+-- ─── Clientes ───────────────────────────────────────────────────────────
+
+create table if not exists clientes (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null,
+  telefono text,
+  email text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_clientes_nombre on clientes(lower(nombre));
+
+alter table clientes enable row level security;
+drop policy if exists "clientes_authenticated_all" on clientes;
+create policy "clientes_authenticated_all" on clientes
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on clientes to authenticated;
+
+drop trigger if exists trg_historial_clientes on clientes;
+create trigger trg_historial_clientes
+  after update on clientes
+  for each row execute function registrar_historial();
+
+-- ─── Caja: movimientos ──────────────────────────────────────────────────
+-- Tabla base para Flujo de Caja. La pestaña Caja todavía no existe, pero
+-- Ventas ya necesita poder generar sus ingresos acá.
+
+create table if not exists caja_movimientos (
+  id uuid primary key default gen_random_uuid(),
+  tipo text not null check (tipo in ('ingreso', 'gasto')),
+  fecha date not null default current_date,
+  motivo text not null,
+  categoria text not null
+    check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial', 'pago_inversor')),
+  monto numeric(12,2) not null,
+  moneda text not null check (moneda in ('USD', 'ARS')),
+  venta_id uuid, -- referencia informativa, sin FK dura (una venta puede generar varios movimientos)
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_caja_venta on caja_movimientos(venta_id);
+
+alter table caja_movimientos enable row level security;
+drop policy if exists "caja_movimientos_authenticated_all" on caja_movimientos;
+create policy "caja_movimientos_authenticated_all" on caja_movimientos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on caja_movimientos to authenticated;
+
+-- ─── Ventas (el "ticket") y sus ítems (una prenda cada uno) ────────────────
+
+create table if not exists ventas (
+  id uuid primary key default gen_random_uuid(),
+  cliente_id uuid not null references clientes(id),
+  canal text not null default 'local' check (canal in ('local', 'web')),
+  fecha date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+alter table ventas enable row level security;
+drop policy if exists "ventas_authenticated_all" on ventas;
+create policy "ventas_authenticated_all" on ventas
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on ventas to authenticated;
+
+create table if not exists venta_items (
+  id uuid primary key default gen_random_uuid(),
+  venta_id uuid not null references ventas(id) on delete cascade,
+  unidad_id uuid not null references unidades(id),
+  precio_venta numeric(10,2) not null,
+  moneda text not null check (moneda in ('USD', 'ARS')),
+  cotizacion_usada numeric(10,2),
+  costo_usd_snapshot numeric(10,2) not null default 0,
+  precio_lista_usd_snapshot numeric(10,2) not null default 0,
+  precio_venta_usd numeric(10,2) generated always as (
+    case when moneda = 'USD' then precio_venta
+         else round(precio_venta / nullif(cotizacion_usada, 0), 2)
+    end
+  ) stored,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_venta_items_venta on venta_items(venta_id);
+
+alter table venta_items enable row level security;
+drop policy if exists "venta_items_authenticated_all" on venta_items;
+create policy "venta_items_authenticated_all" on venta_items
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on venta_items to authenticated;
+
+-- Al cargar un ítem de venta, la unidad correspondiente pasa a vendida sola
+-- (no depende de que el panel se acuerde de actualizarla aparte).
+
+create or replace function marcar_unidad_vendida()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update unidades set estado = 'vendido', vendido_at = now() where id = NEW.unidad_id;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trg_marcar_unidad_vendida on venta_items;
+create trigger trg_marcar_unidad_vendida
+  after insert on venta_items
+  for each row execute function marcar_unidad_vendida();
