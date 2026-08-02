@@ -816,7 +816,7 @@ function logImportar(texto) {
 }
 
 function parsearCSV(texto) {
-  const lineas = texto.replace(/\r/g, '').split('\n').filter(l => l.trim());
+  const lineas = texto.replace(/^\uFEFF/, '').replace(/\r/g, '').split('\n').filter(l => l.trim());
   const partirLinea = (linea) => {
     const campos = linea.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
     return campos.map(c => c.replace(/^"|"$/g, '').trim());
