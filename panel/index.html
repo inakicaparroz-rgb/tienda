@@ -142,8 +142,11 @@
       <input id="p-nombre" placeholder="Nombre" class="w-full px-3 py-2" />
       <input id="p-marca" placeholder="Marca" class="w-full px-3 py-2" />
       <input id="p-categoria" placeholder="Categoría" class="w-full px-3 py-2" />
-      <textarea id="p-descripcion" placeholder="Descripción" class="w-full px-3 py-2" rows="2"></textarea>
-      <input id="p-imagen" placeholder="URL de imagen" class="w-full px-3 py-2" />
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Foto</label>
+        <input id="p-imagen-file" type="file" accept="image/*" class="w-full text-sm" />
+        <img id="p-imagen-preview" class="hidden w-24 h-24 object-cover mt-2 bg-surface-elevated" />
+      </div>
       <div class="grid grid-cols-2 gap-3">
         <input id="p-precio" type="number" step="0.01" placeholder="Precio venta USD" class="w-full px-3 py-2" />
         <input id="p-promo" type="number" step="0.01" placeholder="Precio promo USD (opcional)" class="w-full px-3 py-2" />
@@ -276,7 +279,7 @@ function filtrar(query) {
   if (!q) { renderProductos(PRODUCTOS); return; }
   const filtrado = PRODUCTOS.filter(p => {
     const codigos = (p.unidades || []).map(u => u.codigo_barra || '').join(' ');
-    return [p.nombre, p.marca, p.categoria, p.descripcion, codigos]
+    return [p.nombre, p.marca, p.categoria, p.fit, p.estado, codigos]
       .join(' ').toLowerCase().includes(q);
   });
   renderProductos(filtrado);
@@ -398,17 +401,33 @@ function slugify(texto) {
     .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
+document.getElementById('p-imagen-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  const preview = document.getElementById('p-imagen-preview');
+  if (!file) { preview.classList.add('hidden'); return; }
+  preview.src = URL.createObjectURL(file);
+  preview.classList.remove('hidden');
+});
+
 document.getElementById('p-guardar').addEventListener('click', async () => {
   const nombre = document.getElementById('p-nombre').value.trim();
   if (!nombre) { alert('El nombre es obligatorio.'); return; }
+
+  let imagenUrl = null;
+  const file = document.getElementById('p-imagen-file').files[0];
+  if (file) {
+    const ruta = `${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage.from('productos').upload(ruta, file);
+    if (uploadError) { alert('Error al subir la foto.'); console.error(uploadError); return; }
+    imagenUrl = supabase.storage.from('productos').getPublicUrl(ruta).data.publicUrl;
+  }
 
   const producto = {
     slug: slugify(nombre) + '-' + Date.now().toString(36),
     nombre,
     marca: document.getElementById('p-marca').value.trim() || null,
     categoria: document.getElementById('p-categoria').value.trim() || null,
-    descripcion: document.getElementById('p-descripcion').value.trim() || null,
-    imagen_url: document.getElementById('p-imagen').value.trim() || null,
+    imagen_url: imagenUrl,
     precio_venta_usd: parseFloat(document.getElementById('p-precio').value) || 0,
     precio_promocional_usd: document.getElementById('p-promo').value ? parseFloat(document.getElementById('p-promo').value) : null,
     fit: document.getElementById('p-fit').value || null,
@@ -420,9 +439,12 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
   if (error) { alert('Error al guardar el producto.'); console.error(error); return; }
 
   modalProducto.classList.add('hidden');
-  document.querySelectorAll('#modal-producto input, #modal-producto textarea').forEach(el => {
-    if (el.type === 'checkbox') el.checked = true; else el.value = '';
+  document.querySelectorAll('#modal-producto input').forEach(el => {
+    if (el.type === 'checkbox') el.checked = true;
+    else if (el.type === 'file') el.value = '';
+    else el.value = '';
   });
+  document.getElementById('p-imagen-preview').classList.add('hidden');
   document.querySelectorAll('#modal-producto select').forEach(el => { el.value = ''; });
   cargarProductos();
 });

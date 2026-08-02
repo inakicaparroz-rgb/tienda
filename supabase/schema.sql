@@ -12,7 +12,6 @@ create table if not exists productos (
   nombre text not null,
   marca text,
   categoria text,
-  descripcion text,
   imagen_url text,
   precio_venta_usd numeric(10,2) not null default 0,
   precio_promocional_usd numeric(10,2),
@@ -29,6 +28,9 @@ alter table productos add column if not exists fit text
   check (fit in ('Regular', 'Oversize', 'Small', 'Boxy'));
 alter table productos add column if not exists estado text
   check (estado in ('New', 'VNDS', 'Used'));
+
+-- La descripción libre quedó obsoleta (reemplazada por fit/estado/imagen).
+alter table productos drop column if exists descripcion;
 
 -- ─── UNIDADES (cada prenda física, con su propio código de barra y costo) ──
 
@@ -100,7 +102,6 @@ select
   nombre,
   marca,
   categoria,
-  descripcion,
   imagen_url,
   precio_venta_usd,
   precio_promocional_usd,
@@ -119,3 +120,27 @@ group by producto_id, talle;
 
 grant select on productos_publicos to anon;
 grant select on stock_publico to anon;
+
+-- ─── Storage: fotos de producto ─────────────────────────────────────────────
+-- Bucket público de lectura (para que se vean en la web/panel), solo el
+-- panel logueado puede subir/editar/borrar fotos.
+
+insert into storage.buckets (id, name, public)
+values ('productos', 'productos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "productos_bucket_lectura_publica" on storage.objects;
+create policy "productos_bucket_lectura_publica" on storage.objects
+  for select using (bucket_id = 'productos');
+
+drop policy if exists "productos_bucket_escritura_autenticada" on storage.objects;
+create policy "productos_bucket_escritura_autenticada" on storage.objects
+  for insert with check (bucket_id = 'productos' and auth.role() = 'authenticated');
+
+drop policy if exists "productos_bucket_actualizacion_autenticada" on storage.objects;
+create policy "productos_bucket_actualizacion_autenticada" on storage.objects
+  for update using (bucket_id = 'productos' and auth.role() = 'authenticated');
+
+drop policy if exists "productos_bucket_borrado_autenticado" on storage.objects;
+create policy "productos_bucket_borrado_autenticado" on storage.objects
+  for delete using (bucket_id = 'productos' and auth.role() = 'authenticated');

@@ -22,4 +22,4 @@ Sistema de stock/ventas/caja de uso interno. Separado de la web pública (`/inde
 
 ## Pendientes puntuales de Stock
 
-- Subir foto de producto directo desde el celu/compu (a Supabase Storage), en vez de tener que pegar una URL de imagen a mano.
+Ninguno por ahora — la subida de foto directa (Supabase Storage) ya está hecha, y el campo Descripción se sacó por obsoleto.
