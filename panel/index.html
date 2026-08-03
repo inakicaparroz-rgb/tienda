@@ -301,6 +301,11 @@
       Mismo archivo que en Stock, mismas columnas. Acá solo se procesan las filas <strong>con</strong> FECHA VENTA. Por cada una se crea la prenda y la venta juntas (quedan ligadas sin ambigüedad), con cliente <span class="font-mono text-white">XXX</span> (no hay forma de saber quién compró cada una), precio de venta en USD, y cada fila como una venta separada.
     </p>
     <input id="importar-ventas-file" type="file" accept=".csv" class="w-full text-sm mb-4" />
+    <div class="mb-4">
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Empezar desde la fila (opcional)</label>
+      <input id="importar-ventas-desde" type="number" min="1" placeholder="1" class="w-32 px-3 py-2 text-sm" />
+      <p class="text-muted text-xs mt-1">Contando solo entre las filas <strong>con FECHA VENTA</strong> del archivo (no todas las filas, no el encabezado). Dejalo vacío para arrancar desde la primera. Usalo si una carga anterior se cortó a mitad de camino, para no volver a cargar lo que ya entró.</p>
+    </div>
     <div id="importar-ventas-log" class="font-mono text-xs text-muted space-y-1 max-h-48 overflow-y-auto mb-4"></div>
     <div class="flex gap-2">
       <button id="importar-ventas-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Importar</button>
@@ -1400,6 +1405,7 @@ const importarVentasLog = document.getElementById('importar-ventas-log');
 document.getElementById('btn-importar-ventas').addEventListener('click', () => {
   importarVentasLog.innerHTML = '';
   document.getElementById('importar-ventas-file').value = '';
+  document.getElementById('importar-ventas-desde').value = '';
   modalImportarVentas.classList.remove('hidden');
 });
 document.getElementById('importar-ventas-cerrar').addEventListener('click', () => modalImportarVentas.classList.add('hidden'));
@@ -1422,8 +1428,14 @@ document.getElementById('importar-ventas-confirmar').addEventListener('click', a
 
   const texto = await file.text();
   const todasLasFilas = parsearCSV(texto);
-  const filas = todasLasFilas.filter(f => parsearFechaArg(f['FECHA VENTA']));
-  logImportarVentas(`${todasLasFilas.length} filas en el archivo, ${filas.length} vendidas (se importan acá).`);
+  const vendidas = todasLasFilas.filter(f => parsearFechaArg(f['FECHA VENTA']));
+
+  const desdeInput = parseInt(document.getElementById('importar-ventas-desde').value, 10);
+  const desde = (desdeInput && desdeInput > 1) ? desdeInput : 1;
+  const filas = vendidas.slice(desde - 1);
+
+  logImportarVentas(`${todasLasFilas.length} filas en el archivo, ${vendidas.length} vendidas en total.`);
+  if (desde > 1) logImportarVentas(`Arrancando desde la fila vendida #${desde} → ${filas.length} filas a procesar en esta corrida.`);
 
   if (filas.length === 0) {
     logImportarVentas('Nada para importar.');
