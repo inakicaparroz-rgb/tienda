@@ -29,6 +29,11 @@ alter table productos add column if not exists fit text
 alter table productos add column if not exists estado text
   check (estado in ('New', 'VNDS', 'Used'));
 
+-- Para poder distinguir con seguridad qué se cargó por importación masiva
+-- vs. a mano, y poder deshacer una importación sin arriesgar datos reales.
+alter table productos add column if not exists origen text not null default 'manual'
+  check (origen in ('manual', 'importado'));
+
 -- La descripción libre quedó obsoleta (reemplazada por fit/estado/imagen).
 -- cascade porque productos_publicos depende de esta columna; se recrea más abajo.
 alter table productos drop column if exists descripcion cascade;
@@ -57,6 +62,9 @@ alter table unidades add column costo_usd numeric(10,2)
 -- Fecha real en que la prenda entró a stock (editable — no siempre coincide
 -- con el día que se carga en el sistema).
 alter table unidades add column if not exists fecha_ingreso date not null default current_date;
+
+alter table unidades add column if not exists origen text not null default 'manual'
+  check (origen in ('manual', 'importado'));
 
 create index if not exists idx_unidades_producto on unidades(producto_id);
 create index if not exists idx_unidades_codigo on unidades(codigo_barra);

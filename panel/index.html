@@ -929,45 +929,59 @@ document.getElementById('importar-confirmar').addEventListener('click', async ()
     let productoId = productoIdPorNombre.get(clave);
 
     if (!productoId) {
-      const tieneTalles = filasProducto.some(f => {
-        const t = (f['TALLE'] || '').trim();
-        return t && t !== '-';
-      });
-      const precioVenta = filasProducto
-        .map(f => parsearPrecioArg(f['PRECIO VENTA']))
-        .find(v => v > 0) || 0;
+      try {
+        const tieneTalles = filasProducto.some(f => {
+          const t = (f['TALLE'] || '').trim();
+          return t && t !== '-';
+        });
+        const precioVenta = filasProducto
+          .map(f => parsearPrecioArg(f['PRECIO VENTA']))
+          .find(v => v > 0) || 0;
 
-      const { data, error } = await supabase.from('productos').insert({
-        slug: slugify(nombre) + '-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000),
-        nombre,
-        precio_venta_usd: precioVenta,
-        tiene_talles: tieneTalles,
-      }).select('id').single();
+        const { data, error } = await supabase.from('productos').insert({
+          slug: slugify(nombre) + '-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000),
+          nombre,
+          precio_venta_usd: precioVenta,
+          tiene_talles: tieneTalles,
+          origen: 'importado',
+        }).select('id').single();
 
-      if (error) { logImportar(`✗ Error creando producto "${nombre}": ${error.message}`); errores++; continue; }
-      productoId = data.id;
-      productoIdPorNombre.set(clave, productoId);
-      productosCreados++;
+        if (error) { logImportar(`✗ Error creando producto "${nombre}": ${error.message}`); errores++; continue; }
+        productoId = data.id;
+        productoIdPorNombre.set(clave, productoId);
+        productosCreados++;
+      } catch (e) {
+        logImportar(`✗ Error de conexión creando producto "${nombre}": ${e.message}. Seguimos con lo siguiente.`);
+        errores++;
+        continue;
+      }
     }
 
     for (const fila of filasProducto) {
-      const talleTexto = (fila['TALLE'] || '').trim();
-      const talle = (talleTexto && talleTexto !== '-') ? talleTexto : null;
-      const fechaCompra = parsearFechaArg(fila['FECHA COMPRA']) || new Date().toISOString().slice(0, 10);
+      try {
+        const talleTexto = (fila['TALLE'] || '').trim();
+        const talle = (talleTexto && talleTexto !== '-') ? talleTexto : null;
+        const fechaCompra = parsearFechaArg(fila['FECHA COMPRA']) || new Date().toISOString().slice(0, 10);
 
-      const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
-      const { error } = await supabase.from('unidades').insert({
-        producto_id: productoId,
-        talle,
-        codigo_barra: codigoData,
-        costo_compra_usd: parsearPrecioArg(fila['PRECIO COMPRA']),
-        costo_envio_usd: 0,
-        fecha_ingreso: fechaCompra,
-        estado: 'disponible',
-      });
+        const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
+        const { error } = await supabase.from('unidades').insert({
+          producto_id: productoId,
+          talle,
+          codigo_barra: codigoData,
+          costo_compra_usd: parsearPrecioArg(fila['PRECIO COMPRA']),
+          costo_envio_usd: 0,
+          fecha_ingreso: fechaCompra,
+          estado: 'disponible',
+          origen: 'importado',
+        });
 
-      if (error) { logImportar(`✗ Error en unidad de "${nombre}" (${talle || 'sin talle'}): ${error.message}`); errores++; }
-      else unidadesCreadas++;
+        if (error) { logImportar(`✗ Error en unidad de "${nombre}" (${talle || 'sin talle'}): ${error.message}`); errores++; }
+        else unidadesCreadas++;
+      } catch (e) {
+        logImportar(`✗ Error de conexión en unidad de "${nombre}": ${e.message}. Seguimos con lo siguiente.`);
+        errores++;
+      }
+      if ((unidadesCreadas + errores) % 50 === 0) logImportar(`… en progreso: ${unidadesCreadas} unidades cargadas hasta ahora.`);
     }
   }
 
@@ -1436,78 +1450,86 @@ document.getElementById('importar-ventas-confirmar').addEventListener('click', a
   let productosCreados = 0, ventasCreadas = 0, errores = 0;
 
   for (const fila of filas) {
-    const nombre = (fila['MODELO'] || '').trim();
-    if (!nombre) continue;
-    const clave = nombre.toLowerCase();
-    const talleTexto = (fila['TALLE'] || '').trim();
-    const talle = (talleTexto && talleTexto !== '-') ? talleTexto : null;
-    const costoCompra = parsearPrecioArg(fila['PRECIO COMPRA']);
-    const precioVenta = parsearPrecioArg(fila['PRECIO VENTA']);
-    const fechaVenta = parsearFechaArg(fila['FECHA VENTA']);
-    const fechaCompra = parsearFechaArg(fila['FECHA COMPRA']) || fechaVenta;
+    try {
+      const nombre = (fila['MODELO'] || '').trim();
+      if (!nombre) continue;
+      const clave = nombre.toLowerCase();
+      const talleTexto = (fila['TALLE'] || '').trim();
+      const talle = (talleTexto && talleTexto !== '-') ? talleTexto : null;
+      const costoCompra = parsearPrecioArg(fila['PRECIO COMPRA']);
+      const precioVenta = parsearPrecioArg(fila['PRECIO VENTA']);
+      const fechaVenta = parsearFechaArg(fila['FECHA VENTA']);
+      const fechaCompra = parsearFechaArg(fila['FECHA COMPRA']) || fechaVenta;
 
-    let productoId = productoIdPorNombre.get(clave);
-    let precioListaProducto = null;
-    if (!productoId) {
-      const { data, error } = await supabase.from('productos').insert({
-        slug: slugify(nombre) + '-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000),
-        nombre,
-        precio_venta_usd: precioVenta,
-        tiene_talles: !!talle,
-      }).select('id, precio_venta_usd').single();
-      if (error) { logImportarVentas(`✗ Error creando producto "${nombre}": ${error.message}`); errores++; continue; }
-      productoId = data.id;
-      precioListaProducto = data.precio_venta_usd;
-      productoIdPorNombre.set(clave, productoId);
-      precioListaPorId.set(productoId, precioListaProducto);
-      productosCreados++;
-    } else {
-      precioListaProducto = precioListaPorId.get(productoId) ?? precioVenta;
+      let productoId = productoIdPorNombre.get(clave);
+      let precioListaProducto = null;
+      if (!productoId) {
+        const { data, error } = await supabase.from('productos').insert({
+          slug: slugify(nombre) + '-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000),
+          nombre,
+          precio_venta_usd: precioVenta,
+          tiene_talles: !!talle,
+          origen: 'importado',
+        }).select('id, precio_venta_usd').single();
+        if (error) { logImportarVentas(`✗ Error creando producto "${nombre}": ${error.message}`); errores++; continue; }
+        productoId = data.id;
+        precioListaProducto = data.precio_venta_usd;
+        productoIdPorNombre.set(clave, productoId);
+        precioListaPorId.set(productoId, precioListaProducto);
+        productosCreados++;
+      } else {
+        precioListaProducto = precioListaPorId.get(productoId) ?? precioVenta;
+      }
+
+      const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
+      const { data: unidad, error: errorUnidad } = await supabase.from('unidades').insert({
+        producto_id: productoId,
+        talle,
+        codigo_barra: codigoData,
+        costo_compra_usd: costoCompra,
+        costo_envio_usd: 0,
+        fecha_ingreso: fechaCompra,
+        estado: 'disponible',
+        origen: 'importado',
+      }).select().single();
+      if (errorUnidad) { logImportarVentas(`✗ Error creando unidad de "${nombre}": ${errorUnidad.message}`); errores++; continue; }
+
+      const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
+        cliente_id: clienteXXX.id,
+        canal: 'local',
+        fecha: fechaVenta,
+      }).select().single();
+      if (errorVenta) { logImportarVentas(`✗ Error creando venta de "${nombre}": ${errorVenta.message}`); errores++; continue; }
+
+      const { error: errorItem } = await supabase.from('venta_items').insert({
+        venta_id: venta.id,
+        unidad_id: unidad.id,
+        precio_venta: precioVenta,
+        moneda: 'USD',
+        costo_usd_snapshot: costoCompra,
+        precio_lista_usd_snapshot: precioListaProducto || 0,
+      });
+      if (errorItem) { logImportarVentas(`✗ Error creando ítem de venta de "${nombre}": ${errorItem.message}`); errores++; continue; }
+
+      // El trigger marca la unidad vendida "ahora" — la corregimos a la fecha real
+      await supabase.from('unidades').update({ vendido_at: fechaVenta + 'T00:00:00' }).eq('id', unidad.id);
+
+      await supabase.from('caja_movimientos').insert({
+        tipo: 'ingreso',
+        fecha: fechaVenta,
+        motivo: 'XXX',
+        categoria: 'venta',
+        monto: precioVenta,
+        moneda: 'USD',
+        venta_id: venta.id,
+      });
+
+      ventasCreadas++;
+    } catch (e) {
+      logImportarVentas(`✗ Error de conexión en fila de "${fila['MODELO'] || '?'}": ${e.message}. Seguimos con lo siguiente.`);
+      errores++;
     }
-
-    const { data: codigoData } = await supabase.rpc('generar_codigo_barra');
-    const { data: unidad, error: errorUnidad } = await supabase.from('unidades').insert({
-      producto_id: productoId,
-      talle,
-      codigo_barra: codigoData,
-      costo_compra_usd: costoCompra,
-      costo_envio_usd: 0,
-      fecha_ingreso: fechaCompra,
-      estado: 'disponible',
-    }).select().single();
-    if (errorUnidad) { logImportarVentas(`✗ Error creando unidad de "${nombre}": ${errorUnidad.message}`); errores++; continue; }
-
-    const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
-      cliente_id: clienteXXX.id,
-      canal: 'local',
-      fecha: fechaVenta,
-    }).select().single();
-    if (errorVenta) { logImportarVentas(`✗ Error creando venta de "${nombre}": ${errorVenta.message}`); errores++; continue; }
-
-    const { error: errorItem } = await supabase.from('venta_items').insert({
-      venta_id: venta.id,
-      unidad_id: unidad.id,
-      precio_venta: precioVenta,
-      moneda: 'USD',
-      costo_usd_snapshot: costoCompra,
-      precio_lista_usd_snapshot: precioListaProducto || 0,
-    });
-    if (errorItem) { logImportarVentas(`✗ Error creando ítem de venta de "${nombre}": ${errorItem.message}`); errores++; continue; }
-
-    // El trigger marca la unidad vendida "ahora" — la corregimos a la fecha real
-    await supabase.from('unidades').update({ vendido_at: fechaVenta + 'T00:00:00' }).eq('id', unidad.id);
-
-    await supabase.from('caja_movimientos').insert({
-      tipo: 'ingreso',
-      fecha: fechaVenta,
-      motivo: 'XXX',
-      categoria: 'venta',
-      monto: precioVenta,
-      moneda: 'USD',
-      venta_id: venta.id,
-    });
-
-    ventasCreadas++;
+    if ((ventasCreadas + errores) % 50 === 0) logImportarVentas(`… en progreso: ${ventasCreadas} ventas cargadas hasta ahora.`);
   }
 
   logImportarVentas('—');
