@@ -70,9 +70,12 @@
 
     <!-- STOCK -->
     <section id="tab-stock" class="tab-section">
-      <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <div class="flex flex-col sm:flex-row gap-3 mb-2">
         <input id="stock-search" type="text" placeholder="Buscar por nombre, marca, categoría o código de barra…"
           class="flex-1 px-3 py-2 text-sm" autofocus />
+        <button id="stock-orden-fecha" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Fecha ↕
+        </button>
         <button id="btn-nuevo-producto" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nuevo producto
         </button>
@@ -80,6 +83,7 @@
           Importar stock (CSV)
         </button>
       </div>
+      <p id="stock-contador" class="text-muted font-mono text-xs mb-3"></p>
 
       <div class="border border-border overflow-x-auto">
         <table class="w-full text-sm">
@@ -139,9 +143,12 @@
 
     <!-- VENTAS -->
     <section id="tab-ventas" class="tab-section hidden">
-      <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <div class="flex flex-col sm:flex-row gap-3 mb-2">
         <input id="ventas-search" type="text" placeholder="Buscar por cliente, producto, código, moneda…"
           class="flex-1 px-3 py-2 text-sm" />
+        <button id="ventas-orden-fecha" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Fecha ↕
+        </button>
         <button id="btn-nueva-venta" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nueva venta
         </button>
@@ -149,6 +156,7 @@
           Importar historial (CSV)
         </button>
       </div>
+      <p id="ventas-contador" class="text-muted font-mono text-xs mb-3"></p>
 
       <div class="border border-border overflow-x-auto">
         <table class="w-full text-sm">
@@ -430,7 +438,7 @@ async function cargarProductos() {
     .order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   PRODUCTOS = data || [];
-  renderProductos(PRODUCTOS);
+  filtrar();
 }
 
 function renderProductos(lista) {
@@ -438,6 +446,7 @@ function renderProductos(lista) {
   const empty = document.getElementById('productos-empty');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', lista.length > 0);
+  document.getElementById('stock-contador').textContent = `Mostrando ${lista.length}/${PRODUCTOS.length}`;
 
   lista.forEach(p => {
     const disponibles = (p.unidades || []).filter(u => u.estado === 'disponible').length;
@@ -463,18 +472,33 @@ function renderProductos(lista) {
   });
 }
 
-function filtrar(query) {
-  const q = query.trim().toLowerCase();
-  if (!q) { renderProductos(PRODUCTOS); return; }
-  const filtrado = PRODUCTOS.filter(p => {
-    const codigos = (p.unidades || []).map(u => u.codigo_barra || '').join(' ');
-    return [p.nombre, p.marca, p.categoria, p.fit, p.estado, codigos]
-      .join(' ').toLowerCase().includes(q);
-  });
-  renderProductos(filtrado);
+let ORDEN_STOCK = null; // null | 'asc' | 'desc'
+
+function filtrar() {
+  const q = document.getElementById('stock-search').value.trim().toLowerCase();
+  let lista = PRODUCTOS;
+  if (q) {
+    lista = PRODUCTOS.filter(p => {
+      const codigos = (p.unidades || []).map(u => u.codigo_barra || '').join(' ');
+      return [p.nombre, p.marca, p.categoria, p.fit, p.estado, codigos]
+        .join(' ').toLowerCase().includes(q);
+    });
+  }
+  if (ORDEN_STOCK) {
+    lista = [...lista].sort((a, b) => {
+      const diff = new Date(a.created_at) - new Date(b.created_at);
+      return ORDEN_STOCK === 'asc' ? diff : -diff;
+    });
+  }
+  renderProductos(lista);
 }
 
-document.getElementById('stock-search').addEventListener('input', e => filtrar(e.target.value));
+document.getElementById('stock-search').addEventListener('input', filtrar);
+document.getElementById('stock-orden-fecha').addEventListener('click', () => {
+  ORDEN_STOCK = ORDEN_STOCK === 'desc' ? 'asc' : 'desc';
+  document.getElementById('stock-orden-fecha').textContent = ORDEN_STOCK === 'asc' ? 'Fecha ↑' : 'Fecha ↓';
+  filtrar();
+});
 
 // ── STOCK: detalle de producto (lista plana de unidades) ────────────────
 let PRODUCTO_ACTUAL = null;
@@ -1246,7 +1270,7 @@ async function cargarVentas() {
     .order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   VENTAS = data || [];
-  renderVentas(VENTAS);
+  filtrarVentas();
 }
 
 function totalUsdVenta(venta) {
@@ -1258,6 +1282,7 @@ function renderVentas(lista) {
   const empty = document.getElementById('ventas-empty');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', lista.length > 0);
+  document.getElementById('ventas-contador').textContent = `Mostrando ${lista.length}/${VENTAS.length}`;
 
   lista.forEach(v => {
     const tr = document.createElement('tr');
@@ -1279,19 +1304,34 @@ function renderVentas(lista) {
   });
 }
 
-function filtrarVentas(query) {
-  const q = query.trim().toLowerCase();
-  if (!q) { renderVentas(VENTAS); return; }
-  const filtrado = VENTAS.filter(v => {
-    const items = (v.venta_items || []).map(i =>
-      `${i.unidades?.productos?.nombre || ''} ${i.unidades?.codigo_barra || ''} ${i.moneda}`
-    ).join(' ');
-    return [v.clientes?.nombre, v.canal, items].join(' ').toLowerCase().includes(q);
-  });
-  renderVentas(filtrado);
+let ORDEN_VENTAS = null; // null | 'asc' | 'desc'
+
+function filtrarVentas() {
+  const q = document.getElementById('ventas-search').value.trim().toLowerCase();
+  let lista = VENTAS;
+  if (q) {
+    lista = VENTAS.filter(v => {
+      const items = (v.venta_items || []).map(i =>
+        `${i.unidades?.productos?.nombre || ''} ${i.unidades?.codigo_barra || ''} ${i.moneda}`
+      ).join(' ');
+      return [v.clientes?.nombre, v.canal, items].join(' ').toLowerCase().includes(q);
+    });
+  }
+  if (ORDEN_VENTAS) {
+    lista = [...lista].sort((a, b) => {
+      const diff = new Date(a.fecha) - new Date(b.fecha);
+      return ORDEN_VENTAS === 'asc' ? diff : -diff;
+    });
+  }
+  renderVentas(lista);
 }
 
-document.getElementById('ventas-search').addEventListener('input', e => filtrarVentas(e.target.value));
+document.getElementById('ventas-search').addEventListener('input', filtrarVentas);
+document.getElementById('ventas-orden-fecha').addEventListener('click', () => {
+  ORDEN_VENTAS = ORDEN_VENTAS === 'desc' ? 'asc' : 'desc';
+  document.getElementById('ventas-orden-fecha').textContent = ORDEN_VENTAS === 'asc' ? 'Fecha ↑' : 'Fecha ↓';
+  filtrarVentas();
+});
 
 function abrirDetalleVenta(venta) {
   document.getElementById('venta-detalle-titulo').textContent =
