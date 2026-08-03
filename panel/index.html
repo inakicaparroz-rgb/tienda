@@ -73,14 +73,14 @@
       <div class="flex flex-col sm:flex-row gap-3 mb-2">
         <input id="stock-search" type="text" placeholder="Buscar por nombre, marca, categoría o código de barra…"
           class="flex-1 px-3 py-2 text-sm" autofocus />
-        <button id="stock-orden-fecha" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
-          Fecha ↕
+        <button id="btn-filtrar-stock" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Filtrar ▾
+        </button>
+        <button id="btn-ordenar-stock" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Ordenar ▾
         </button>
         <button id="btn-nuevo-producto" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nuevo producto
-        </button>
-        <button id="btn-importar-stock" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
-          Importar stock (CSV)
         </button>
       </div>
       <p id="stock-contador" class="text-muted font-mono text-xs mb-3"></p>
@@ -365,6 +365,21 @@
   <button id="accion-eliminar" class="block w-full text-left px-4 py-2.5 hover:bg-surface-elevated text-red-400">Eliminar</button>
 </div>
 
+<!-- Menú flotante: Filtrar (Stock) -->
+<div id="filtro-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-56">
+  <button id="filtro-stock-opcion" class="block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">En stock (≥1 unidad)</button>
+  <button class="block w-full text-left px-4 py-2.5 text-muted cursor-default" disabled>Marca (próximamente)</button>
+  <button class="block w-full text-left px-4 py-2.5 text-muted cursor-default" disabled>Categoría (próximamente)</button>
+</div>
+
+<!-- Menú flotante: Ordenar (Stock) -->
+<div id="orden-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-64">
+  <button data-orden="fecha-asc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">📅 Fecha ingreso: menor a mayor</button>
+  <button data-orden="fecha-desc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">📅 Fecha ingreso: mayor a menor</button>
+  <button data-orden="alfa-asc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">🔤 Alfabético: A-Z</button>
+  <button data-orden="alfa-desc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">🔤 Alfabético: Z-A</button>
+</div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -491,32 +506,83 @@ function renderProductos(lista) {
   });
 }
 
-let ORDEN_STOCK = null; // null | 'asc' | 'desc'
+let ORDEN_STOCK = null; // null | 'fecha-asc' | 'fecha-desc' | 'alfa-asc' | 'alfa-desc'
+let FILTRO_STOCK_ACTIVO = false; // "en stock (≥1 unidad)"
 
 function filtrar() {
   const q = document.getElementById('stock-search').value.trim().toLowerCase();
   let lista = PRODUCTOS;
   if (q) {
-    lista = PRODUCTOS.filter(p => {
+    lista = lista.filter(p => {
       const codigos = (p.unidades || []).map(u => u.codigo_barra || '').join(' ');
       return [p.nombre, p.marca, p.categoria, p.fit, p.estado, codigos]
         .join(' ').toLowerCase().includes(q);
     });
   }
-  if (ORDEN_STOCK) {
-    lista = [...lista].sort((a, b) => {
-      const diff = new Date(a.created_at) - new Date(b.created_at);
-      return ORDEN_STOCK === 'asc' ? diff : -diff;
-    });
+  if (FILTRO_STOCK_ACTIVO) {
+    lista = lista.filter(p => (p.unidades || []).some(u => u.estado === 'disponible'));
   }
+  if (ORDEN_STOCK === 'fecha-asc') lista = [...lista].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  else if (ORDEN_STOCK === 'fecha-desc') lista = [...lista].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  else if (ORDEN_STOCK === 'alfa-asc') lista = [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  else if (ORDEN_STOCK === 'alfa-desc') lista = [...lista].sort((a, b) => b.nombre.localeCompare(a.nombre));
+
   renderProductos(lista);
 }
 
 document.getElementById('stock-search').addEventListener('input', filtrar);
-document.getElementById('stock-orden-fecha').addEventListener('click', () => {
-  ORDEN_STOCK = ORDEN_STOCK === 'desc' ? 'asc' : 'desc';
-  document.getElementById('stock-orden-fecha').textContent = ORDEN_STOCK === 'asc' ? 'Fecha ↑' : 'Fecha ↓';
+
+// ── Menús flotantes de Filtrar/Ordenar (Stock) ──
+const filtroStockMenu = document.getElementById('filtro-stock-menu');
+const ordenStockMenu = document.getElementById('orden-stock-menu');
+
+function cerrarMenusFlotantesStock() {
+  filtroStockMenu.classList.add('hidden');
+  ordenStockMenu.classList.add('hidden');
+}
+
+function abrirMenuFlotante(boton, menu, anchoPx) {
+  const yaAbierto = !menu.classList.contains('hidden');
+  cerrarMenusFlotantesStock();
+  if (yaAbierto) return; // tocar el mismo botón de nuevo lo cierra
+  const rect = boton.getBoundingClientRect();
+  menu.style.top = `${rect.bottom + 4}px`;
+  menu.style.left = `${Math.max(8, rect.right - anchoPx)}px`;
+  menu.classList.remove('hidden');
+}
+
+document.addEventListener('click', (e) => {
+  if (!filtroStockMenu.classList.contains('hidden') && !filtroStockMenu.contains(e.target) && e.target.id !== 'btn-filtrar-stock') {
+    filtroStockMenu.classList.add('hidden');
+  }
+  if (!ordenStockMenu.classList.contains('hidden') && !ordenStockMenu.contains(e.target) && e.target.id !== 'btn-ordenar-stock') {
+    ordenStockMenu.classList.add('hidden');
+  }
+});
+
+// ── Filtrar ──
+document.getElementById('btn-filtrar-stock').addEventListener('click', (e) => {
+  abrirMenuFlotante(e.currentTarget, filtroStockMenu, 224);
+});
+document.getElementById('filtro-stock-opcion').addEventListener('click', (e) => {
+  FILTRO_STOCK_ACTIVO = !FILTRO_STOCK_ACTIVO;
+  e.currentTarget.textContent = FILTRO_STOCK_ACTIVO ? '✓ En stock (≥1 unidad)' : 'En stock (≥1 unidad)';
+  filtroStockMenu.classList.add('hidden');
   filtrar();
+});
+
+// ── Ordenar ──
+document.getElementById('btn-ordenar-stock').addEventListener('click', (e) => {
+  abrirMenuFlotante(e.currentTarget, ordenStockMenu, 256);
+});
+document.querySelectorAll('.orden-stock-opcion').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    ORDEN_STOCK = e.currentTarget.dataset.orden;
+    document.querySelectorAll('.orden-stock-opcion').forEach(b => b.classList.remove('text-accent'));
+    e.currentTarget.classList.add('text-accent');
+    ordenStockMenu.classList.add('hidden');
+    filtrar();
+  });
 });
 
 // ── STOCK: detalle de producto (lista plana de unidades) ────────────────
@@ -857,7 +923,10 @@ document.getElementById('u-guardar').addEventListener('click', async () => {
 const modalImportar = document.getElementById('modal-importar');
 const importarLog = document.getElementById('importar-log');
 
-document.getElementById('btn-importar-stock').addEventListener('click', () => {
+// Botón "Importar stock (CSV)" retirado de la UI (carga pasa a ser manual).
+// Se deja el listener con optional chaining para poder reactivarlo fácil
+// si hace falta: solo hay que volver a poner el botón #btn-importar-stock en el HTML.
+document.getElementById('btn-importar-stock')?.addEventListener('click', () => {
   importarLog.innerHTML = '';
   document.getElementById('importar-file').value = '';
   modalImportar.classList.remove('hidden');
