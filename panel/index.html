@@ -192,7 +192,7 @@
 
     <!-- FLUJO DE CAJA -->
     <section id="tab-caja" class="tab-section hidden">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div class="border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Saldo USD</p>
           <p id="caja-saldo-usd" class="text-xl font-bold">USD 0.00</p>
@@ -202,12 +202,8 @@
           <p id="caja-saldo-ars" class="text-xl font-bold">ARS 0.00</p>
         </div>
         <div class="border border-border p-4">
-          <p class="text-muted font-mono text-xs uppercase mb-1">Neto del mes USD</p>
-          <p id="caja-neto-mes-usd" class="text-xl font-bold">USD 0.00</p>
-        </div>
-        <div class="border border-border p-4">
-          <p class="text-muted font-mono text-xs uppercase mb-1">Neto del mes ARS</p>
-          <p id="caja-neto-mes-ars" class="text-xl font-bold">ARS 0.00</p>
+          <p class="text-muted font-mono text-xs uppercase mb-1">Saldo total (USD)</p>
+          <p id="caja-saldo-total" class="text-xl font-bold">USD 0.00</p>
         </div>
       </div>
 
@@ -2022,6 +2018,7 @@ document.getElementById('importar-ventas-confirmar').addEventListener('click', a
 
 // ── FLUJO DE CAJA ─────────────────────────────────────────────────────────
 let CAJA = [];
+let COTIZACION_ACTUAL = 0;
 
 const CATEGORIA_LABEL = {
   venta: 'Venta', inversion: 'Inversión', retiro: 'Retiro',
@@ -2031,9 +2028,11 @@ const CATEGORIA_LABEL = {
 async function cargarConfiguracion() {
   const { data, error } = await supabase.from('configuracion').select('*').single();
   if (error) { console.error(error); return; }
-  document.getElementById('caja-cotizacion-actual').textContent = data?.cotizacion_usd_ars
-    ? `$${Number(data.cotizacion_usd_ars).toFixed(2)}`
+  COTIZACION_ACTUAL = Number(data?.cotizacion_usd_ars) || 0;
+  document.getElementById('caja-cotizacion-actual').textContent = COTIZACION_ACTUAL
+    ? `$${COTIZACION_ACTUAL.toFixed(2)}`
     : 'Sin cargar';
+  renderResumenCaja();
 }
 
 async function cargarCaja() {
@@ -2053,16 +2052,12 @@ function saldoNeto(lista, moneda) {
 }
 
 function renderResumenCaja() {
-  document.getElementById('caja-saldo-usd').textContent = `USD ${saldoNeto(CAJA, 'USD').toFixed(2)}`;
-  document.getElementById('caja-saldo-ars').textContent = `ARS ${saldoNeto(CAJA, 'ARS').toFixed(2)}`;
-
-  const hoy = new Date();
-  const delMes = CAJA.filter(m => {
-    const f = new Date(m.fecha + 'T00:00:00');
-    return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
-  });
-  document.getElementById('caja-neto-mes-usd').textContent = `USD ${saldoNeto(delMes, 'USD').toFixed(2)}`;
-  document.getElementById('caja-neto-mes-ars').textContent = `ARS ${saldoNeto(delMes, 'ARS').toFixed(2)}`;
+  const saldoUsd = saldoNeto(CAJA, 'USD');
+  const saldoArs = saldoNeto(CAJA, 'ARS');
+  const saldoTotal = saldoUsd + (COTIZACION_ACTUAL ? saldoArs / COTIZACION_ACTUAL : 0);
+  document.getElementById('caja-saldo-usd').textContent = `USD ${saldoUsd.toFixed(2)}`;
+  document.getElementById('caja-saldo-ars').textContent = `ARS ${saldoArs.toFixed(2)}`;
+  document.getElementById('caja-saldo-total').textContent = `USD ${saldoTotal.toFixed(2)}`;
 }
 
 function renderCaja(lista) {
