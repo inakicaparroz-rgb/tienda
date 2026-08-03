@@ -171,17 +171,22 @@
             </tr>
           </thead>
           <tbody id="ventas-tbody"></tbody>
+          <!-- Fila de detalle: se mueve por JS justo debajo de la venta clickeada -->
+          <tbody id="venta-detalle-tbody">
+            <tr id="fila-detalle-venta" class="hidden">
+              <td colspan="6" class="p-0">
+                <div class="border-t border-border bg-surface p-5">
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 id="venta-detalle-titulo" class="font-bold"></h3>
+                    <button id="venta-cerrar-detalle" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+                  </div>
+                  <div id="venta-detalle-items"></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
         </table>
         <p id="ventas-empty" class="p-6 text-center text-muted text-sm hidden">No hay ventas todavía.</p>
-      </div>
-
-      <!-- Detalle de venta -->
-      <div id="venta-detalle" class="hidden mt-6 border border-border bg-surface p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 id="venta-detalle-titulo" class="font-bold"></h3>
-          <button id="venta-cerrar-detalle" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
-        </div>
-        <div id="venta-detalle-items"></div>
       </div>
     </section>
 
@@ -367,6 +372,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Referencia estable a la fila de detalle de producto — se mueve por el DOM
 // (nunca se recrea), así sobrevive a los re-render del listado.
 const filaDetalleProducto = document.getElementById('fila-detalle-producto');
+const filaDetalleVenta = document.getElementById('fila-detalle-venta');
 
 // ── LOGIN ──────────────────────────────────────────────────────────────
 const loginScreen = document.getElementById('login-screen');
@@ -732,7 +738,7 @@ document.getElementById('accion-eliminar').addEventListener('click', async () =>
     await supabase.from('caja_movimientos').delete().eq('venta_id', obj.id);
     const { error } = await supabase.from('ventas').delete().eq('id', obj.id);
     if (error) { alert('Error al eliminar la venta.'); console.error(error); return; }
-    document.getElementById('venta-detalle').classList.add('hidden');
+    filaDetalleVenta.classList.add('hidden');
     await cargarProductos();
     await cargarVentas();
     return;
@@ -1287,6 +1293,7 @@ function renderVentas(lista) {
   lista.forEach(v => {
     const tr = document.createElement('tr');
     tr.className = 'cursor-pointer hover:bg-surface-elevated';
+    tr.dataset.id = v.id;
     tr.innerHTML = `
       <td class="p-2">${v.clientes?.nombre || '-'}</td>
       <td class="p-2 text-muted">${new Date(v.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
@@ -1295,7 +1302,7 @@ function renderVentas(lista) {
       <td class="p-2 ${v.canal === 'web' ? 'text-accent' : 'text-muted'}">${v.canal === 'web' ? 'Web' : 'Local'}</td>
       <td class="p-2 text-right"><button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button></td>
     `;
-    tr.addEventListener('click', () => abrirDetalleVenta(v));
+    tr.addEventListener('click', () => abrirDetalleVenta(v, tr));
     tr.querySelector('.btn-acciones').addEventListener('click', (e) => {
       e.stopPropagation();
       abrirMenuAcciones(e.currentTarget, 'venta', v);
@@ -1333,10 +1340,12 @@ document.getElementById('ventas-orden-fecha').addEventListener('click', () => {
   filtrarVentas();
 });
 
-function abrirDetalleVenta(venta) {
+function abrirDetalleVenta(venta, filaClickeada) {
   document.getElementById('venta-detalle-titulo').textContent =
     `${venta.clientes?.nombre || 'Cliente'} — ${new Date(venta.fecha + 'T00:00:00').toLocaleDateString('es-AR')}`;
-  document.getElementById('venta-detalle').classList.remove('hidden');
+  const fila = filaClickeada || document.querySelector(`#ventas-tbody tr[data-id="${venta.id}"]`);
+  if (fila) fila.insertAdjacentElement('afterend', filaDetalleVenta);
+  filaDetalleVenta.classList.remove('hidden');
 
   const items = venta.venta_items || [];
   document.getElementById('venta-detalle-items').innerHTML = `
@@ -1367,7 +1376,7 @@ function abrirDetalleVenta(venta) {
 }
 
 document.getElementById('venta-cerrar-detalle').addEventListener('click', () => {
-  document.getElementById('venta-detalle').classList.add('hidden');
+  filaDetalleVenta.classList.add('hidden');
 });
 
 // ── VENTAS: importar historial desde CSV (crea unidad + venta juntas) ────
