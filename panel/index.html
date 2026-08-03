@@ -146,8 +146,11 @@
       <div class="flex flex-col sm:flex-row gap-3 mb-2">
         <input id="ventas-search" type="text" placeholder="Buscar por cliente, producto, código, moneda…"
           class="flex-1 px-3 py-2 text-sm" />
-        <button id="ventas-orden-fecha" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
-          Fecha ↕
+        <button id="btn-filtrar-ventas" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Filtrar ▾
+        </button>
+        <button id="btn-ordenar-ventas" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Ordenar ▾
         </button>
         <button id="btn-nueva-venta" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nueva venta
@@ -366,18 +369,79 @@
 </div>
 
 <!-- Menú flotante: Filtrar (Stock) -->
-<div id="filtro-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-56">
-  <button id="filtro-stock-opcion" class="block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">En stock</button>
-  <button class="block w-full text-left px-4 py-2.5 text-muted cursor-default" disabled>Marca</button>
-  <button class="block w-full text-left px-4 py-2.5 text-muted cursor-default" disabled>Categoría</button>
+<div id="filtro-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-48">
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated">
+    <span>En stock</span>
+    <button type="button" id="filtro-stock-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
 </div>
 
 <!-- Menú flotante: Ordenar (Stock) -->
-<div id="orden-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-64">
-  <button data-orden="fecha-asc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">📅 Menor a mayor</button>
-  <button data-orden="fecha-desc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">📅 Mayor a menor</button>
-  <button data-orden="alfa-asc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">🔤 A-Z</button>
-  <button data-orden="alfa-desc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">🔤 Z-A</button>
+<div id="orden-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-32">
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated">
+    <span>📅↑</span>
+    <button type="button" id="orden-stock-fecha-asc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
+    <span>📅↓</span>
+    <button type="button" id="orden-stock-fecha-desc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
+    <span>🔤</span>
+    <button type="button" id="orden-stock-alfa" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
+</div>
+
+<!-- Menú flotante: Filtrar (Ventas) -->
+<div id="filtro-ventas-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-64">
+  <button id="filtro-ventas-anio-toggle" type="button" class="flex items-center justify-between w-full text-left px-4 py-2.5 hover:bg-surface-elevated">
+    <span>Año</span><span class="text-muted normal-case">▸</span>
+  </button>
+  <div id="filtro-ventas-anio-opciones" class="hidden border-t border-border"></div>
+
+  <button id="filtro-ventas-mes-toggle" type="button" class="flex items-center justify-between w-full text-left px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
+    <span>Mes</span><span class="text-muted normal-case">▸</span>
+  </button>
+  <div id="filtro-ventas-mes-opciones" class="hidden border-t border-border"></div>
+
+  <button id="filtro-ventas-cliente-toggle" type="button" class="flex items-center justify-between w-full text-left px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
+    <span>Cliente</span><span class="text-muted normal-case">▸</span>
+  </button>
+  <div id="filtro-ventas-cliente-panel" class="hidden border-t border-border p-2">
+    <input id="filtro-ventas-cliente-input" type="text" placeholder="Buscar cliente…" class="w-full px-2 py-1.5 text-xs normal-case" autocomplete="off" />
+    <button id="filtro-ventas-cliente-clear" type="button" class="hidden text-red-400 normal-case mt-1 px-2 py-1">✕ Quitar filtro de cliente</button>
+    <div id="filtro-ventas-cliente-lista" class="max-h-40 overflow-y-auto mt-1 normal-case"></div>
+  </div>
+</div>
+
+<!-- Menú flotante: Ordenar (Ventas) -->
+<div id="orden-ventas-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-32">
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated">
+    <span>📅↑</span>
+    <button type="button" id="orden-ventas-fecha-asc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
+    <span>📅↓</span>
+    <button type="button" id="orden-ventas-fecha-desc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
+    <span>🔤</span>
+    <button type="button" id="orden-ventas-alfa" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
 </div>
 
 <script type="module">
@@ -506,8 +570,9 @@ function renderProductos(lista) {
   });
 }
 
-let ORDEN_STOCK = null; // null | 'fecha-asc' | 'fecha-desc' | 'alfa-asc' | 'alfa-desc'
 let FILTRO_STOCK_ACTIVO = false; // "en stock (≥1 unidad)"
+let ORDEN_STOCK_FECHA = null; // null | 'asc' | 'desc'
+let ORDEN_STOCK_ALFA = false; // combinable con la fecha (desempate alfabético)
 
 function filtrar() {
   const q = document.getElementById('stock-search').value.trim().toLowerCase();
@@ -522,28 +587,55 @@ function filtrar() {
   if (FILTRO_STOCK_ACTIVO) {
     lista = lista.filter(p => (p.unidades || []).some(u => u.estado === 'disponible'));
   }
-  if (ORDEN_STOCK === 'fecha-asc') lista = [...lista].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-  else if (ORDEN_STOCK === 'fecha-desc') lista = [...lista].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  else if (ORDEN_STOCK === 'alfa-asc') lista = [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre));
-  else if (ORDEN_STOCK === 'alfa-desc') lista = [...lista].sort((a, b) => b.nombre.localeCompare(a.nombre));
+  if (ORDEN_STOCK_FECHA || ORDEN_STOCK_ALFA) {
+    lista = [...lista].sort((a, b) => {
+      if (ORDEN_STOCK_FECHA) {
+        const diff = new Date(a.created_at) - new Date(b.created_at);
+        if (diff !== 0) return ORDEN_STOCK_FECHA === 'asc' ? diff : -diff;
+      }
+      if (ORDEN_STOCK_ALFA) return a.nombre.localeCompare(b.nombre);
+      return 0;
+    });
+  }
 
   renderProductos(lista);
 }
 
 document.getElementById('stock-search').addEventListener('input', filtrar);
 
-// ── Menús flotantes de Filtrar/Ordenar (Stock) ──
+// ── Switch reutilizable (Filtrar/Ordenar, Stock y Ventas) ──
+function setSwitch(btn, on) {
+  btn.dataset.on = on ? 'true' : 'false';
+  btn.classList.toggle('bg-accent', on);
+  btn.classList.toggle('bg-border', !on);
+  btn.querySelector('.switch-knob').classList.toggle('translate-x-4', on);
+}
+
+function filaSwitchHTML(valor, texto) {
+  return `
+    <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated">
+      <span>${texto}</span>
+      <button type="button" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-valor="${valor}" data-on="false">
+        <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+      </button>
+    </div>`;
+}
+
+// ── Menús flotantes de Filtrar/Ordenar (Stock y Ventas) ──
 const filtroStockMenu = document.getElementById('filtro-stock-menu');
 const ordenStockMenu = document.getElementById('orden-stock-menu');
+const filtroVentasMenu = document.getElementById('filtro-ventas-menu');
+const ordenVentasMenu = document.getElementById('orden-ventas-menu');
+const TODOS_LOS_MENUS_FLOTANTES = [filtroStockMenu, ordenStockMenu, filtroVentasMenu, ordenVentasMenu];
+const BOTONES_DE_MENUS_FLOTANTES = ['btn-filtrar-stock', 'btn-ordenar-stock', 'btn-filtrar-ventas', 'btn-ordenar-ventas'];
 
-function cerrarMenusFlotantesStock() {
-  filtroStockMenu.classList.add('hidden');
-  ordenStockMenu.classList.add('hidden');
+function cerrarMenusFlotantes() {
+  TODOS_LOS_MENUS_FLOTANTES.forEach(m => m.classList.add('hidden'));
 }
 
 function abrirMenuFlotante(boton, menu, anchoPx) {
   const yaAbierto = !menu.classList.contains('hidden');
-  cerrarMenusFlotantesStock();
+  cerrarMenusFlotantes();
   if (yaAbierto) return; // tocar el mismo botón de nuevo lo cierra
   const rect = boton.getBoundingClientRect();
   menu.style.top = `${rect.bottom + 4}px`;
@@ -552,37 +644,48 @@ function abrirMenuFlotante(boton, menu, anchoPx) {
 }
 
 document.addEventListener('click', (e) => {
-  if (!filtroStockMenu.classList.contains('hidden') && !filtroStockMenu.contains(e.target) && e.target.id !== 'btn-filtrar-stock') {
-    filtroStockMenu.classList.add('hidden');
-  }
-  if (!ordenStockMenu.classList.contains('hidden') && !ordenStockMenu.contains(e.target) && e.target.id !== 'btn-ordenar-stock') {
-    ordenStockMenu.classList.add('hidden');
-  }
+  TODOS_LOS_MENUS_FLOTANTES.forEach(menu => {
+    if (!menu.classList.contains('hidden') && !menu.contains(e.target) && !BOTONES_DE_MENUS_FLOTANTES.includes(e.target.id)) {
+      menu.classList.add('hidden');
+    }
+  });
 });
 
-// ── Filtrar ──
+// ── Filtrar (Stock) ──
 document.getElementById('btn-filtrar-stock').addEventListener('click', (e) => {
-  abrirMenuFlotante(e.currentTarget, filtroStockMenu, 224);
+  abrirMenuFlotante(e.currentTarget, filtroStockMenu, 192);
 });
-document.getElementById('filtro-stock-opcion').addEventListener('click', (e) => {
+const switchFiltroStock = document.getElementById('filtro-stock-switch');
+switchFiltroStock.addEventListener('click', () => {
   FILTRO_STOCK_ACTIVO = !FILTRO_STOCK_ACTIVO;
-  e.currentTarget.textContent = FILTRO_STOCK_ACTIVO ? '✓ En stock' : 'En stock';
-  filtroStockMenu.classList.add('hidden');
+  setSwitch(switchFiltroStock, FILTRO_STOCK_ACTIVO);
   filtrar();
 });
 
-// ── Ordenar ──
+// ── Ordenar (Stock) ──
 document.getElementById('btn-ordenar-stock').addEventListener('click', (e) => {
-  abrirMenuFlotante(e.currentTarget, ordenStockMenu, 256);
+  abrirMenuFlotante(e.currentTarget, ordenStockMenu, 128);
 });
-document.querySelectorAll('.orden-stock-opcion').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    ORDEN_STOCK = e.currentTarget.dataset.orden;
-    document.querySelectorAll('.orden-stock-opcion').forEach(b => b.classList.remove('text-accent'));
-    e.currentTarget.classList.add('text-accent');
-    ordenStockMenu.classList.add('hidden');
-    filtrar();
-  });
+const switchOrdenStockFechaAsc = document.getElementById('orden-stock-fecha-asc');
+const switchOrdenStockFechaDesc = document.getElementById('orden-stock-fecha-desc');
+const switchOrdenStockAlfa = document.getElementById('orden-stock-alfa');
+
+switchOrdenStockFechaAsc.addEventListener('click', () => {
+  ORDEN_STOCK_FECHA = ORDEN_STOCK_FECHA === 'asc' ? null : 'asc';
+  setSwitch(switchOrdenStockFechaAsc, ORDEN_STOCK_FECHA === 'asc');
+  setSwitch(switchOrdenStockFechaDesc, false);
+  filtrar();
+});
+switchOrdenStockFechaDesc.addEventListener('click', () => {
+  ORDEN_STOCK_FECHA = ORDEN_STOCK_FECHA === 'desc' ? null : 'desc';
+  setSwitch(switchOrdenStockFechaDesc, ORDEN_STOCK_FECHA === 'desc');
+  setSwitch(switchOrdenStockFechaAsc, false);
+  filtrar();
+});
+switchOrdenStockAlfa.addEventListener('click', () => {
+  ORDEN_STOCK_ALFA = !ORDEN_STOCK_ALFA;
+  setSwitch(switchOrdenStockAlfa, ORDEN_STOCK_ALFA);
+  filtrar();
 });
 
 // ── STOCK: detalle de producto (lista plana de unidades) ────────────────
@@ -1373,6 +1476,7 @@ async function cargarVentas() {
     .order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   VENTAS = data || [];
+  poblarFiltroVentasAnios();
   filtrarVentas();
 }
 
@@ -1416,32 +1520,142 @@ function renderVentas(lista) {
   });
 }
 
-let ORDEN_VENTAS = null; // null | 'asc' | 'desc'
+let ORDEN_VENTAS_FECHA = null; // null | 'asc' | 'desc'
+let ORDEN_VENTAS_ALFA = false; // combinable con la fecha (desempate por nombre de cliente)
+let FILTRO_VENTAS_ANIOS = new Set();
+let FILTRO_VENTAS_MESES = new Set(); // 0-11
+let FILTRO_VENTAS_CLIENTE_ID = null;
+const MESES_VENTAS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 function filtrarVentas() {
   const q = document.getElementById('ventas-search').value.trim().toLowerCase();
   let lista = VENTAS;
   if (q) {
-    lista = VENTAS.filter(v => {
+    lista = lista.filter(v => {
       const items = (v.venta_items || []).map(i =>
         `${i.unidades?.productos?.nombre || ''} ${i.unidades?.codigo_barra || ''} ${i.moneda}`
       ).join(' ');
       return [v.clientes?.nombre, v.canal, items].join(' ').toLowerCase().includes(q);
     });
   }
-  if (ORDEN_VENTAS) {
+  if (FILTRO_VENTAS_ANIOS.size > 0) {
+    lista = lista.filter(v => FILTRO_VENTAS_ANIOS.has(new Date(v.fecha + 'T00:00:00').getFullYear()));
+  }
+  if (FILTRO_VENTAS_MESES.size > 0) {
+    lista = lista.filter(v => FILTRO_VENTAS_MESES.has(new Date(v.fecha + 'T00:00:00').getMonth()));
+  }
+  if (FILTRO_VENTAS_CLIENTE_ID) {
+    lista = lista.filter(v => v.cliente_id === FILTRO_VENTAS_CLIENTE_ID);
+  }
+  if (ORDEN_VENTAS_FECHA || ORDEN_VENTAS_ALFA) {
     lista = [...lista].sort((a, b) => {
-      const diff = new Date(a.fecha) - new Date(b.fecha);
-      return ORDEN_VENTAS === 'asc' ? diff : -diff;
+      if (ORDEN_VENTAS_FECHA) {
+        const diff = new Date(a.fecha) - new Date(b.fecha);
+        if (diff !== 0) return ORDEN_VENTAS_FECHA === 'asc' ? diff : -diff;
+      }
+      if (ORDEN_VENTAS_ALFA) return (a.clientes?.nombre || '').localeCompare(b.clientes?.nombre || '');
+      return 0;
     });
   }
   renderVentas(lista);
 }
 
 document.getElementById('ventas-search').addEventListener('input', filtrarVentas);
-document.getElementById('ventas-orden-fecha').addEventListener('click', () => {
-  ORDEN_VENTAS = ORDEN_VENTAS === 'desc' ? 'asc' : 'desc';
-  document.getElementById('ventas-orden-fecha').textContent = ORDEN_VENTAS === 'asc' ? 'Fecha ↑' : 'Fecha ↓';
+
+// ── Filtrar (Ventas) ──
+document.getElementById('btn-filtrar-ventas').addEventListener('click', (e) => {
+  abrirMenuFlotante(e.currentTarget, filtroVentasMenu, 256);
+});
+
+document.getElementById('filtro-ventas-anio-toggle').addEventListener('click', () => {
+  document.getElementById('filtro-ventas-anio-opciones').classList.toggle('hidden');
+});
+document.getElementById('filtro-ventas-mes-toggle').addEventListener('click', () => {
+  document.getElementById('filtro-ventas-mes-opciones').classList.toggle('hidden');
+});
+document.getElementById('filtro-ventas-cliente-toggle').addEventListener('click', () => {
+  document.getElementById('filtro-ventas-cliente-panel').classList.toggle('hidden');
+});
+
+function poblarFiltroVentasAnios() {
+  const cont = document.getElementById('filtro-ventas-anio-opciones');
+  const anios = [...new Set(VENTAS.map(v => new Date(v.fecha + 'T00:00:00').getFullYear()))].sort((a, b) => b - a);
+  cont.innerHTML = anios.map(a => filaSwitchHTML(a, a)).join('') || '<p class="text-muted normal-case px-4 py-2">Sin ventas todavía.</p>';
+  cont.querySelectorAll('.switch-toggle').forEach(btn => {
+    const anio = Number(btn.dataset.valor);
+    setSwitch(btn, FILTRO_VENTAS_ANIOS.has(anio));
+    btn.addEventListener('click', () => {
+      if (FILTRO_VENTAS_ANIOS.has(anio)) FILTRO_VENTAS_ANIOS.delete(anio); else FILTRO_VENTAS_ANIOS.add(anio);
+      setSwitch(btn, FILTRO_VENTAS_ANIOS.has(anio));
+      filtrarVentas();
+    });
+  });
+}
+
+(function poblarFiltroVentasMeses() {
+  const cont = document.getElementById('filtro-ventas-mes-opciones');
+  cont.innerHTML = MESES_VENTAS.map((m, i) => filaSwitchHTML(i, m)).join('');
+  cont.querySelectorAll('.switch-toggle').forEach(btn => {
+    const mes = Number(btn.dataset.valor);
+    btn.addEventListener('click', () => {
+      if (FILTRO_VENTAS_MESES.has(mes)) FILTRO_VENTAS_MESES.delete(mes); else FILTRO_VENTAS_MESES.add(mes);
+      setSwitch(btn, FILTRO_VENTAS_MESES.has(mes));
+      filtrarVentas();
+    });
+  });
+})();
+
+const filtroVentasClienteInput = document.getElementById('filtro-ventas-cliente-input');
+const filtroVentasClienteLista = document.getElementById('filtro-ventas-cliente-lista');
+const filtroVentasClienteClear = document.getElementById('filtro-ventas-cliente-clear');
+
+filtroVentasClienteInput.addEventListener('input', () => {
+  const q = filtroVentasClienteInput.value.trim().toLowerCase();
+  const resultados = (q ? CLIENTES.filter(c => c.nombre.toLowerCase().includes(q)) : CLIENTES).slice(0, 8);
+  filtroVentasClienteLista.innerHTML = resultados.map(c =>
+    `<button type="button" class="filtro-ventas-cliente-opcion block w-full text-left px-2 py-1.5 hover:bg-surface-elevated normal-case" data-id="${c.id}">${c.nombre}</button>`
+  ).join('') || '<p class="text-muted normal-case px-2 py-1.5">Sin resultados.</p>';
+  filtroVentasClienteLista.querySelectorAll('.filtro-ventas-cliente-opcion').forEach(btn => {
+    btn.addEventListener('click', () => {
+      FILTRO_VENTAS_CLIENTE_ID = btn.dataset.id;
+      filtroVentasClienteInput.value = btn.textContent;
+      filtroVentasClienteLista.innerHTML = '';
+      filtroVentasClienteClear.classList.remove('hidden');
+      filtrarVentas();
+    });
+  });
+});
+filtroVentasClienteClear.addEventListener('click', () => {
+  FILTRO_VENTAS_CLIENTE_ID = null;
+  filtroVentasClienteInput.value = '';
+  filtroVentasClienteLista.innerHTML = '';
+  filtroVentasClienteClear.classList.add('hidden');
+  filtrarVentas();
+});
+
+// ── Ordenar (Ventas) ──
+document.getElementById('btn-ordenar-ventas').addEventListener('click', (e) => {
+  abrirMenuFlotante(e.currentTarget, ordenVentasMenu, 128);
+});
+const switchOrdenVentasFechaAsc = document.getElementById('orden-ventas-fecha-asc');
+const switchOrdenVentasFechaDesc = document.getElementById('orden-ventas-fecha-desc');
+const switchOrdenVentasAlfa = document.getElementById('orden-ventas-alfa');
+
+switchOrdenVentasFechaAsc.addEventListener('click', () => {
+  ORDEN_VENTAS_FECHA = ORDEN_VENTAS_FECHA === 'asc' ? null : 'asc';
+  setSwitch(switchOrdenVentasFechaAsc, ORDEN_VENTAS_FECHA === 'asc');
+  setSwitch(switchOrdenVentasFechaDesc, false);
+  filtrarVentas();
+});
+switchOrdenVentasFechaDesc.addEventListener('click', () => {
+  ORDEN_VENTAS_FECHA = ORDEN_VENTAS_FECHA === 'desc' ? null : 'desc';
+  setSwitch(switchOrdenVentasFechaDesc, ORDEN_VENTAS_FECHA === 'desc');
+  setSwitch(switchOrdenVentasFechaAsc, false);
+  filtrarVentas();
+});
+switchOrdenVentasAlfa.addEventListener('click', () => {
+  ORDEN_VENTAS_ALFA = !ORDEN_VENTAS_ALFA;
+  setSwitch(switchOrdenVentasAlfa, ORDEN_VENTAS_ALFA);
   filtrarVentas();
 });
 
