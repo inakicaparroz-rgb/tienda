@@ -367,17 +367,17 @@
 
 <!-- Menú flotante: Filtrar (Stock) -->
 <div id="filtro-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-56">
-  <button id="filtro-stock-opcion" class="block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">En stock (≥1 unidad)</button>
-  <button class="block w-full text-left px-4 py-2.5 text-muted cursor-default" disabled>Marca (próximamente)</button>
-  <button class="block w-full text-left px-4 py-2.5 text-muted cursor-default" disabled>Categoría (próximamente)</button>
+  <button id="filtro-stock-opcion" class="block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">En stock</button>
+  <button class="block w-full text-left px-4 py-2.5 text-muted cursor-default" disabled>Marca</button>
+  <button class="block w-full text-left px-4 py-2.5 text-muted cursor-default" disabled>Categoría</button>
 </div>
 
 <!-- Menú flotante: Ordenar (Stock) -->
 <div id="orden-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-64">
-  <button data-orden="fecha-asc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">📅 Fecha ingreso: menor a mayor</button>
-  <button data-orden="fecha-desc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">📅 Fecha ingreso: mayor a menor</button>
-  <button data-orden="alfa-asc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">🔤 Alfabético: A-Z</button>
-  <button data-orden="alfa-desc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">🔤 Alfabético: Z-A</button>
+  <button data-orden="fecha-asc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">📅 Menor a mayor</button>
+  <button data-orden="fecha-desc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">📅 Mayor a menor</button>
+  <button data-orden="alfa-asc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">🔤 A-Z</button>
+  <button data-orden="alfa-desc" class="orden-stock-opcion block w-full text-left px-4 py-2.5 hover:bg-surface-elevated">🔤 Z-A</button>
 </div>
 
 <script type="module">
@@ -566,7 +566,7 @@ document.getElementById('btn-filtrar-stock').addEventListener('click', (e) => {
 });
 document.getElementById('filtro-stock-opcion').addEventListener('click', (e) => {
   FILTRO_STOCK_ACTIVO = !FILTRO_STOCK_ACTIVO;
-  e.currentTarget.textContent = FILTRO_STOCK_ACTIVO ? '✓ En stock (≥1 unidad)' : 'En stock (≥1 unidad)';
+  e.currentTarget.textContent = FILTRO_STOCK_ACTIVO ? '✓ En stock' : 'En stock';
   filtroStockMenu.classList.add('hidden');
   filtrar();
 });
