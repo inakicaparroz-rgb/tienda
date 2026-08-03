@@ -474,7 +474,15 @@ function renderProductos(lista) {
       <td class="p-2">${disponibles}</td>
       <td class="p-2 text-right"><button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button></td>
     `;
-    tr.addEventListener('click', () => abrirDetalle(p, tr));
+    tr.addEventListener('click', () => {
+      const yaAbierto = PRODUCTO_ACTUAL?.id === p.id && !filaDetalleProducto.classList.contains('hidden');
+      if (yaAbierto) {
+        filaDetalleProducto.classList.add('hidden');
+        PRODUCTO_ACTUAL = null;
+      } else {
+        abrirDetalle(p, tr);
+      }
+    });
     tr.querySelector('.btn-acciones').addEventListener('click', (e) => {
       e.stopPropagation();
       abrirMenuAcciones(e.currentTarget, 'producto', p);
@@ -744,6 +752,7 @@ document.getElementById('accion-eliminar').addEventListener('click', async () =>
     const { error } = await supabase.from('ventas').delete().eq('id', obj.id);
     if (error) { alert('Error al eliminar la venta.'); console.error(error); return; }
     filaDetalleVenta.classList.add('hidden');
+    VENTA_ACTUAL = null;
     await cargarProductos();
     await cargarVentas();
     return;
@@ -1321,7 +1330,15 @@ function renderVentas(lista) {
       <td class="p-2 ${v.canal === 'web' ? 'text-accent' : 'text-muted'}">${v.canal === 'web' ? 'Web' : 'Local'}</td>
       <td class="p-2 text-right"><button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button></td>
     `;
-    tr.addEventListener('click', () => abrirDetalleVenta(v, tr));
+    tr.addEventListener('click', () => {
+      const yaAbierto = VENTA_ACTUAL?.id === v.id && !filaDetalleVenta.classList.contains('hidden');
+      if (yaAbierto) {
+        filaDetalleVenta.classList.add('hidden');
+        VENTA_ACTUAL = null;
+      } else {
+        abrirDetalleVenta(v, tr);
+      }
+    });
     tr.querySelector('.btn-acciones').addEventListener('click', (e) => {
       e.stopPropagation();
       abrirMenuAcciones(e.currentTarget, 'venta', v);
@@ -1359,7 +1376,10 @@ document.getElementById('ventas-orden-fecha').addEventListener('click', () => {
   filtrarVentas();
 });
 
+let VENTA_ACTUAL = null;
+
 function abrirDetalleVenta(venta, filaClickeada) {
+  VENTA_ACTUAL = venta;
   document.getElementById('venta-detalle-titulo').textContent =
     `${venta.clientes?.nombre || 'Cliente'} — ${new Date(venta.fecha + 'T00:00:00').toLocaleDateString('es-AR')}`;
   const fila = filaClickeada || document.querySelector(`#ventas-tbody tr[data-id="${venta.id}"]`);
@@ -1396,6 +1416,7 @@ function abrirDetalleVenta(venta, filaClickeada) {
 
 document.getElementById('venta-cerrar-detalle').addEventListener('click', () => {
   filaDetalleVenta.classList.add('hidden');
+  VENTA_ACTUAL = null;
 });
 
 // ── VENTAS: importar historial desde CSV (crea unidad + venta juntas) ────
