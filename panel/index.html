@@ -155,9 +155,6 @@
         <button id="btn-nueva-venta" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nueva venta
         </button>
-        <button id="btn-importar-ventas" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
-          Importar historial (CSV)
-        </button>
       </div>
       <p id="ventas-contador" class="text-muted font-mono text-xs mb-3"></p>
 
@@ -1706,7 +1703,10 @@ document.getElementById('venta-cerrar-detalle').addEventListener('click', () => 
 const modalImportarVentas = document.getElementById('modal-importar-ventas');
 const importarVentasLog = document.getElementById('importar-ventas-log');
 
-document.getElementById('btn-importar-ventas').addEventListener('click', () => {
+// Botón "Importar historial (CSV)" retirado de la UI (carga pasa a ser manual).
+// Se deja el listener con optional chaining para poder reactivarlo fácil
+// si hace falta: solo hay que volver a poner el botón #btn-importar-ventas en el HTML.
+document.getElementById('btn-importar-ventas')?.addEventListener('click', () => {
   importarVentasLog.innerHTML = '';
   document.getElementById('importar-ventas-file').value = '';
   document.getElementById('importar-ventas-desde').value = '';
