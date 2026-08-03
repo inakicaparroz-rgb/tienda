@@ -271,6 +271,11 @@ create policy "caja_movimientos_authenticated_all" on caja_movimientos
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 grant select, insert, update, delete on caja_movimientos to authenticated;
 
+drop trigger if exists trg_historial_caja_movimientos on caja_movimientos;
+create trigger trg_historial_caja_movimientos
+  after update on caja_movimientos
+  for each row execute function registrar_historial();
+
 -- ─── Ventas (el "ticket") y sus ítems (una prenda cada uno) ────────────────
 
 create table if not exists ventas (
