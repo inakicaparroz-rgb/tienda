@@ -227,6 +227,9 @@
         <button id="btn-nuevo-movimiento" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nuevo movimiento
         </button>
+        <button id="btn-importar-caja" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Importar historial (CSV)
+        </button>
       </div>
       <p id="caja-contador" class="text-muted font-mono text-xs mb-3"></p>
 
@@ -366,6 +369,28 @@
     <div class="flex gap-2">
       <button id="importar-ventas-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Importar</button>
       <button id="importar-ventas-cerrar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: importar historial de caja desde CSV -->
+<div id="modal-importar-caja" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[85vh] overflow-y-auto">
+    <h3 class="font-bold mb-3">Importar historial de caja desde CSV</h3>
+    <p class="text-muted text-xs mb-4 leading-relaxed">
+      El archivo tiene que tener, en este orden, sin fila de encabezado: <span class="font-mono block mt-1 text-white">Fecha, Categoría, Motivo, Monto, Moneda, Tipo</span>
+      Fechas en formato DD/MM/AAAA. El tipo (Ingreso/Gasto) se calcula solo a partir del signo del monto (negativo = Gasto), así que la columna Tipo del archivo no se usa. La categoría se mapea así: VENTA/VENTAS → Venta, RETIRO → Retiro, OPERATIVO → Gasto operativo, COMERCIAL → Gasto comercial, INVERSION → Inversión, texto con INVERSOR → Pago a inversor. Las filas sin categoría (o con una que no matchea ninguna) quedan como Venta si son ingreso, o Gasto operativo si son gasto.
+    </p>
+    <input id="importar-caja-file" type="file" accept=".csv" class="w-full text-sm mb-4" />
+    <div class="mb-4">
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Empezar desde la fila (opcional)</label>
+      <input id="importar-caja-desde" type="number" min="1" placeholder="1" class="w-32 px-3 py-2 text-sm" />
+      <p class="text-muted text-xs mt-1">Dejalo vacío para arrancar desde la primera fila. Usalo si una carga anterior se cortó a mitad de camino.</p>
+    </div>
+    <div id="importar-caja-log" class="font-mono text-xs text-muted space-y-1 max-h-48 overflow-y-auto mb-4"></div>
+    <div class="flex gap-2">
+      <button id="importar-caja-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Importar</button>
+      <button id="importar-caja-cerrar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2241,6 +2266,111 @@ document.getElementById('caja-cotizacion-refrescar').addEventListener('click', a
   const valor = await obtenerCotizacionSugerida();
   document.getElementById('caja-cotizacion-input').value = valor;
   cargarConfiguracion();
+});
+
+// ── Importar historial de caja desde CSV ──────────────────────────────────
+const modalImportarCaja = document.getElementById('modal-importar-caja');
+const importarCajaLog = document.getElementById('importar-caja-log');
+
+document.getElementById('btn-importar-caja').addEventListener('click', () => {
+  importarCajaLog.innerHTML = '';
+  document.getElementById('importar-caja-file').value = '';
+  document.getElementById('importar-caja-desde').value = '';
+  modalImportarCaja.classList.remove('hidden');
+});
+document.getElementById('importar-caja-cerrar').addEventListener('click', () => modalImportarCaja.classList.add('hidden'));
+
+function logImportarCaja(texto) {
+  const linea = document.createElement('div');
+  linea.textContent = texto;
+  importarCajaLog.appendChild(linea);
+  importarCajaLog.scrollTop = importarCajaLog.scrollHeight;
+}
+
+// Sin fila de encabezado: A=fecha, B=categoría, C=motivo, D=monto, E=moneda, F=tipo (no se usa).
+function parsearCSVCaja(texto) {
+  const lineas = texto.replace(/^\uFEFF/, '').replace(/\r/g, '').split('\n').filter(l => l.trim());
+  const partirLinea = (linea) => {
+    const campos = linea.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
+    return campos.map(c => c.replace(/^"|"$/g, '').trim());
+  };
+  return lineas.map(linea => {
+    const v = partirLinea(linea);
+    return { fecha: v[0] || '', categoria: v[1] || '', motivo: v[2] || '', monto: v[3] || '', moneda: v[4] || '' };
+  });
+}
+
+function mapearCategoriaCaja(textoCategoria, tipo) {
+  const t = (textoCategoria || '').trim().toUpperCase();
+  if (t.startsWith('VENTA')) return 'venta';
+  if (t.startsWith('RETIRO')) return 'retiro';
+  if (t.startsWith('OPER')) return 'gasto_operativo';
+  if (t.startsWith('COMER')) return 'gasto_comercial';
+  if (t.includes('INVERSOR')) return 'pago_inversor';
+  if (t.startsWith('INVERSION')) return 'inversion';
+  return tipo === 'ingreso' ? 'venta' : 'gasto_operativo';
+}
+
+document.getElementById('importar-caja-confirmar').addEventListener('click', async () => {
+  const file = document.getElementById('importar-caja-file').files[0];
+  if (!file) { alert('Elegí un archivo CSV primero.'); return; }
+
+  const boton = document.getElementById('importar-caja-confirmar');
+  boton.disabled = true;
+  importarCajaLog.innerHTML = '';
+  logImportarCaja('Leyendo archivo…');
+
+  const texto = await file.text();
+  let filas = parsearCSVCaja(texto);
+  logImportarCaja(`${filas.length} filas detectadas.`);
+
+  const desde = parseInt(document.getElementById('importar-caja-desde').value, 10);
+  if (desde && desde > 1) {
+    filas = filas.slice(desde - 1);
+    logImportarCaja(`Arrancando desde la fila ${desde}: quedan ${filas.length} filas por procesar.`);
+  }
+
+  let creados = 0;
+  let omitidos = 0;
+  let errores = 0;
+
+  for (const fila of filas) {
+    try {
+      const fecha = parsearFechaArg(fila.fecha);
+      const moneda = (fila.moneda || '').trim().toUpperCase();
+      const montoConSigno = parsearPrecioArg(fila.monto);
+
+      if (!fecha || !['USD', 'ARS'].includes(moneda) || !montoConSigno) {
+        logImportarCaja(`✗ Fila omitida (fecha/moneda/monto inválidos): "${fila.motivo || '?'}"`);
+        omitidos++;
+        continue;
+      }
+
+      const tipo = montoConSigno < 0 ? 'gasto' : 'ingreso';
+      const categoria = mapearCategoriaCaja(fila.categoria, tipo);
+
+      const { error } = await supabase.from('caja_movimientos').insert({
+        tipo,
+        fecha,
+        motivo: fila.motivo.trim() || '(sin motivo)',
+        categoria,
+        monto: Math.abs(montoConSigno),
+        moneda,
+      });
+      if (error) { logImportarCaja(`✗ Error al guardar "${fila.motivo || '?'}": ${error.message}`); errores++; continue; }
+
+      creados++;
+    } catch (e) {
+      logImportarCaja(`✗ Error de conexión en fila "${fila.motivo || '?'}": ${e.message}. Seguimos con lo siguiente.`);
+      errores++;
+    }
+    if ((creados + errores) % 50 === 0) logImportarCaja(`… en progreso: ${creados} movimientos cargados hasta ahora.`);
+  }
+
+  logImportarCaja('—');
+  logImportarCaja(`Listo: ${creados} movimientos cargados, ${omitidos} omitidos, ${errores} errores.`);
+  boton.disabled = false;
+  await cargarCaja();
 });
 </script>
 </body>
