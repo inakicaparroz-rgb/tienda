@@ -816,13 +816,17 @@ function logImportar(texto) {
 }
 
 function parsearCSV(texto) {
-  const lineas = texto.replace(/^\uFEFF/, '').replace(/\r/g, '').split('\n').filter(l => l.trim());
+  const lineas = texto.replace(/^\uFEFF/, '').replace(/\r/g, '').split('\n');
   const partirLinea = (linea) => {
     const campos = linea.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
     return campos.map(c => c.replace(/^"|"$/g, '').trim());
   };
-  const encabezados = partirLinea(lineas[0]).map(h => h.toUpperCase());
-  return lineas.slice(1).map(linea => {
+  // El encabezado real puede no estar en la primera l\u00EDnea (a veces hay
+  // filas vac\u00EDas o de t\u00EDtulo antes) \u2014 buscamos la l\u00EDnea que tenga MODELO.
+  const indiceHeader = lineas.findIndex(l => partirLinea(l).some(c => c.toUpperCase() === 'MODELO'));
+  if (indiceHeader === -1) return [];
+  const encabezados = partirLinea(lineas[indiceHeader]).map(h => h.toUpperCase());
+  return lineas.slice(indiceHeader + 1).filter(l => l.trim()).map(linea => {
     const valores = partirLinea(linea);
     const fila = {};
     encabezados.forEach((h, i) => { fila[h] = valores[i] || ''; });
@@ -832,8 +836,9 @@ function parsearCSV(texto) {
 
 function parsearFechaArg(str) {
   if (!str || !str.trim()) return null;
-  const [d, m, y] = str.trim().split('/');
-  if (!d || !m || !y) return null;
+  const [d, m, yRaw] = str.trim().split('/');
+  if (!d || !m || !yRaw) return null;
+  const y = yRaw.length === 2 ? '20' + yRaw : yRaw;
   return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
 }
 
