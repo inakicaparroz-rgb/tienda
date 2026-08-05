@@ -248,7 +248,78 @@
       </div>
     </section>
     <section id="tab-reportes" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
-    <section id="tab-deudas" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
+    <!-- DEUDAS Y DEUDORES -->
+    <section id="tab-deudas" class="tab-section hidden">
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Clientes</h3>
+          <button id="btn-nueva-deuda" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
+            + Nueva deuda
+          </button>
+        </div>
+        <div class="border border-border overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-muted font-mono text-xs uppercase">
+                <th class="p-2">Cliente</th>
+                <th class="p-2">Saldo pendiente</th>
+                <th class="p-2"></th>
+              </tr>
+            </thead>
+            <tbody id="deudas-clientes-tbody"></tbody>
+            <tbody id="deudas-clientes-detalle-tbody">
+              <tr id="fila-detalle-deuda-cliente" class="hidden">
+                <td colspan="3" class="p-0">
+                  <div class="border-t border-border bg-surface p-5">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 id="deuda-cliente-detalle-titulo" class="font-bold"></h4>
+                      <button id="deuda-cliente-cerrar" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+                    </div>
+                    <div id="deuda-cliente-detalle-movimientos"></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p id="deudas-clientes-empty" class="p-6 text-center text-muted text-sm hidden">No hay clientes con saldo pendiente.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Inversores</h3>
+          <button id="btn-nuevo-inversor" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+            + Nuevo inversor
+          </button>
+        </div>
+        <div class="border border-border overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-muted font-mono text-xs uppercase">
+                <th class="p-2">Inversor</th>
+                <th class="p-2">Saldo (le debemos)</th>
+                <th class="p-2"></th>
+              </tr>
+            </thead>
+            <tbody id="deudas-inversores-tbody"></tbody>
+            <tbody id="deudas-inversores-detalle-tbody">
+              <tr id="fila-detalle-deuda-inversor" class="hidden">
+                <td colspan="3" class="p-0">
+                  <div class="border-t border-border bg-surface p-5">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 id="deuda-inversor-detalle-titulo" class="font-bold"></h4>
+                      <button id="deuda-inversor-cerrar" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+                    </div>
+                    <div id="deuda-inversor-detalle-movimientos"></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p id="deudas-inversores-empty" class="p-6 text-center text-muted text-sm hidden">No hay inversores cargados.</p>
+        </div>
+      </div>
+    </section>
 
   </main>
 </div>
@@ -323,6 +394,23 @@
     <button id="v-agregar-item" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
       + Agregar prenda
     </button>
+
+    <div class="border border-border p-3 mt-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="font-mono text-xs uppercase">Cuenta corriente</p>
+          <p class="text-muted text-xs mt-0.5">El cliente no paga el total ahora — la diferencia queda como deuda.</p>
+        </div>
+        <button type="button" id="v-cuenta-corriente-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+      <div id="v-cuenta-corriente-campos" class="hidden mt-3">
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Abona hoy (USD)</label>
+        <input id="v-abona-hoy" type="number" step="0.01" placeholder="0.00" class="w-40 px-3 py-2 text-sm" />
+        <p id="v-deuda-preview" class="text-muted text-xs mt-2"></p>
+      </div>
+    </div>
 
     <div class="flex gap-2 mt-5">
       <button id="v-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Confirmar venta</button>
@@ -445,7 +533,17 @@
           <option value="gasto_operativo">Gasto operativo</option>
           <option value="gasto_comercial">Gasto comercial</option>
           <option value="pago_inversor">Pago a inversor</option>
+          <option value="pago_deuda">Pago deuda</option>
         </select>
+      </div>
+      <div id="m-cliente-wrap" class="hidden relative">
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Cliente</label>
+        <input id="m-cliente-input" placeholder="Buscar cliente…" class="w-full px-3 py-2" autocomplete="off" />
+        <div id="m-cliente-sugerencias" class="hidden absolute z-10 w-full bg-surface border border-border max-h-40 overflow-y-auto text-sm"></div>
+      </div>
+      <div id="m-inversor-wrap" class="hidden">
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Inversor</label>
+        <select id="m-inversor" class="w-full px-3 py-2"></select>
       </div>
       <div>
         <label class="block text-muted font-mono text-xs uppercase mb-1">Motivo</label>
@@ -472,6 +570,50 @@
     <div class="flex gap-2 mt-5">
       <button id="m-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
       <button id="m-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: nueva deuda de cliente (manual) -->
+<div id="modal-nueva-deuda" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
+    <h3 class="font-bold mb-4">Nueva deuda de cliente</h3>
+    <div class="space-y-3 text-sm">
+      <div class="relative">
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Cliente</label>
+        <input id="nd-cliente-input" placeholder="Buscar cliente…" class="w-full px-3 py-2" autocomplete="off" />
+        <div id="nd-cliente-sugerencias" class="hidden absolute z-10 w-full bg-surface border border-border max-h-40 overflow-y-auto text-sm"></div>
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Motivo</label>
+        <input id="nd-motivo" placeholder="Ej: Se llevó mercadería, señó una parte" class="w-full px-3 py-2" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Monto (USD)</label>
+          <input id="nd-monto" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
+          <input id="nd-fecha" type="date" class="w-full px-3 py-2" />
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="nd-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="nd-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: nuevo inversor -->
+<div id="modal-nuevo-inversor" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-surface border border-border p-6">
+    <h3 class="font-bold mb-4">Nuevo inversor</h3>
+    <input id="ni-nombre" placeholder="Nombre" class="w-full px-3 py-2 text-sm mb-4" />
+    <div class="flex gap-2">
+      <button id="ni-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="ni-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
     </div>
   </div>
 </div>
@@ -681,7 +823,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
     if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); }
-    if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); }
+    if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
+    if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); }
   });
 });
 
@@ -1088,6 +1231,7 @@ document.getElementById('accion-eliminar').addEventListener('click', async () =>
       await supabase.from('unidades').update({ estado: 'disponible', vendido_at: null }).eq('id', item.unidad_id);
     }
     await supabase.from('caja_movimientos').delete().eq('venta_id', obj.id);
+    await supabase.from('deudas_movimientos').delete().eq('venta_id', obj.id);
     const { error } = await supabase.from('ventas').delete().eq('id', obj.id);
     if (error) { alert('Error al eliminar la venta.'); console.error(error); return; }
     filaDetalleVenta.classList.add('hidden');
@@ -1100,6 +1244,7 @@ document.getElementById('accion-eliminar').addEventListener('click', async () =>
   if (tipo === 'movimiento') {
     if (obj.venta_id) { alert('Este movimiento pertenece a una venta y se administra desde la pestaña Ventas.'); return; }
     if (!confirm(`¿Eliminar el movimiento "${obj.motivo}"? Esta acción no se puede deshacer.`)) return;
+    await supabase.from('deudas_movimientos').delete().eq('caja_movimiento_id', obj.id);
     const { error } = await supabase.from('caja_movimientos').delete().eq('id', obj.id);
     if (error) { alert('Error al eliminar el movimiento.'); console.error(error); return; }
     await cargarCaja();
@@ -1366,6 +1511,7 @@ async function cargarClientes() {
   const { data, error } = await supabase.from('clientes').select('*').order('nombre');
   if (error) { console.error(error); return; }
   CLIENTES = data || [];
+  renderDeudasClientes();
 }
 
 const vClienteNombre = document.getElementById('v-cliente-nombre');
@@ -1493,15 +1639,51 @@ function agregarItemVenta(existente) {
     inputCodigo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); buscarCodigo(); } });
   }
 
-  div.querySelector('.v-item-quitar').addEventListener('click', () => div.remove());
+  div.querySelector('.v-item-quitar').addEventListener('click', () => { div.remove(); actualizarPreviewDeuda(); });
+  inputPrecio.addEventListener('input', actualizarPreviewDeuda);
+  selectMoneda.addEventListener('change', actualizarPreviewDeuda);
 
   document.getElementById('v-items').appendChild(div);
   if (!existente) inputCodigo.focus();
+  actualizarPreviewDeuda();
+}
+
+function totalUsdItemsModal() {
+  const cotizacion = parseFloat(document.getElementById('v-cotizacion').value) || 0;
+  const filas = [...document.getElementById('v-items').children];
+  return filas.reduce((total, fila) => {
+    const precio = parseFloat(fila.querySelector('.v-item-precio')?.value) || 0;
+    const moneda = fila.querySelector('.v-item-moneda')?.value;
+    if (moneda === 'ARS') return total + (cotizacion ? precio / cotizacion : 0);
+    return total + precio;
+  }, 0);
+}
+
+function actualizarPreviewDeuda() {
+  const preview = document.getElementById('v-deuda-preview');
+  if (!preview) return;
+  const total = totalUsdItemsModal();
+  const abonado = parseFloat(document.getElementById('v-abona-hoy').value) || 0;
+  const deuda = Math.max(0, total - abonado);
+  preview.textContent = `Total venta: USD ${total.toFixed(2)} — Deuda: USD ${deuda.toFixed(2)}`;
 }
 
 document.getElementById('v-agregar-item').addEventListener('click', () => agregarItemVenta());
 
 const modalVenta = document.getElementById('modal-venta');
+
+const vCuentaCorrienteSwitch = document.getElementById('v-cuenta-corriente-switch');
+const vCuentaCorrienteCampos = document.getElementById('v-cuenta-corriente-campos');
+
+function setCuentaCorriente(activa) {
+  setSwitch(vCuentaCorrienteSwitch, activa);
+  vCuentaCorrienteCampos.classList.toggle('hidden', !activa);
+  if (activa) actualizarPreviewDeuda();
+}
+
+vCuentaCorrienteSwitch.addEventListener('click', () => setCuentaCorriente(vCuentaCorrienteSwitch.dataset.on !== 'true'));
+document.getElementById('v-abona-hoy').addEventListener('input', actualizarPreviewDeuda);
+document.getElementById('v-cotizacion').addEventListener('input', actualizarPreviewDeuda);
 
 async function abrirModalVenta(venta) {
   EDITANDO_VENTA = venta || null;
@@ -1511,6 +1693,8 @@ async function abrirModalVenta(venta) {
   document.getElementById('v-cliente-email').value = venta?.clientes?.email || '';
   CLIENTE_SELECCIONADO = null;
   document.getElementById('v-items').innerHTML = '';
+  document.getElementById('v-abona-hoy').value = venta?.monto_abonado_usd ?? '';
+  setCuentaCorriente(!!venta?.cuenta_corriente);
   modalVenta.classList.remove('hidden');
 
   if (venta) {
@@ -1523,6 +1707,7 @@ async function abrirModalVenta(venta) {
     document.getElementById('v-cotizacion').value = await obtenerCotizacionSugerida();
     agregarItemVenta();
   }
+  actualizarPreviewDeuda();
 }
 
 document.getElementById('btn-nueva-venta').addEventListener('click', () => abrirModalVenta());
@@ -1537,6 +1722,31 @@ async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales) {
   for (const [moneda, monto] of Object.entries(totalesPorMoneda)) {
     await supabase.from('caja_movimientos').insert({
       tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
+    });
+  }
+}
+
+// Venta con cuenta corriente: en vez de un ingreso por moneda por el total,
+// un único ingreso en USD por lo que se abonó hoy (el resto queda en deudas_movimientos).
+async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, abonadoUsd) {
+  await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
+  if (abonadoUsd > 0) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'ingreso', motivo, categoria: 'venta', monto: abonadoUsd, moneda: 'USD', venta_id: ventaId,
+    });
+  }
+}
+
+// Recrea (borra y, si corresponde, vuelve a insertar) la deuda que dejó esta
+// venta puntual. Con deudaUsd = 0 solo limpia una deuda vieja (ej. si se
+// desactivó cuenta corriente al editar la venta).
+async function regenerarDeudaDeVenta(ventaId, clienteId, fecha, deudaUsd) {
+  await supabase.from('deudas_movimientos').delete().eq('venta_id', ventaId);
+  if (deudaUsd > 0) {
+    await supabase.from('deudas_movimientos').insert({
+      entidad_tipo: 'cliente', entidad_id: clienteId, tipo: 'debe',
+      motivo: `Saldo pendiente — venta del ${new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR')}`,
+      monto: deudaUsd, fecha, venta_id: ventaId,
     });
   }
 }
@@ -1577,12 +1787,20 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     }).eq('id', cliente.id);
   }
 
-  let ventaId;
+  const cuentaCorrienteActiva = vCuentaCorrienteSwitch.dataset.on === 'true';
+  const totalUsdVentaModal = totalUsdItemsModal();
+  const abonadoUsd = cuentaCorrienteActiva ? (parseFloat(document.getElementById('v-abona-hoy').value) || 0) : totalUsdVentaModal;
+  const deudaUsd = cuentaCorrienteActiva ? Math.max(0, totalUsdVentaModal - abonadoUsd) : 0;
+
+  let ventaId, ventaFecha;
   if (EDITANDO_VENTA) {
     ventaId = EDITANDO_VENTA.id;
-    if (cliente.id !== EDITANDO_VENTA.cliente_id) {
-      await supabase.from('ventas').update({ cliente_id: cliente.id }).eq('id', ventaId);
-    }
+    ventaFecha = EDITANDO_VENTA.fecha;
+    await supabase.from('ventas').update({
+      cliente_id: cliente.id,
+      cuenta_corriente: cuentaCorrienteActiva,
+      monto_abonado_usd: cuentaCorrienteActiva ? abonadoUsd : null,
+    }).eq('id', ventaId);
 
     // Ítems que estaban antes y ya no están: se sacan y su unidad vuelve a disponible
     const idsActuales = new Set(items.filter(f => f._ventaItemId).map(f => f._ventaItemId));
@@ -1596,9 +1814,12 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
       cliente_id: cliente.id,
       canal: 'local',
+      cuenta_corriente: cuentaCorrienteActiva,
+      monto_abonado_usd: cuentaCorrienteActiva ? abonadoUsd : null,
     }).select().single();
     if (errorVenta) { alert('Error al crear la venta.'); console.error(errorVenta); boton.disabled = false; return; }
     ventaId = venta.id;
+    ventaFecha = venta.fecha;
   }
 
   const itemsFinales = [];
@@ -1630,7 +1851,12 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     itemsFinales.push({ moneda, monto: precioVenta });
   }
 
-  await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales);
+  if (cuentaCorrienteActiva) {
+    await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoUsd);
+  } else {
+    await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales);
+  }
+  await regenerarDeudaDeVenta(ventaId, cliente.id, ventaFecha, deudaUsd);
 
   boton.disabled = false;
   modalVenta.classList.add('hidden');
@@ -1663,6 +1889,11 @@ function totalUsdVenta(venta) {
   return (venta.venta_items || []).reduce((s, i) => s + Number(i.precio_venta_usd || 0), 0);
 }
 
+function deudaVenta(venta) {
+  if (!venta.cuenta_corriente) return 0;
+  return Math.max(0, totalUsdVenta(venta) - Number(venta.monto_abonado_usd || 0));
+}
+
 function renderVentas(lista) {
   const tbody = document.getElementById('ventas-tbody');
   const empty = document.getElementById('ventas-empty');
@@ -1674,8 +1905,9 @@ function renderVentas(lista) {
     const tr = document.createElement('tr');
     tr.className = 'cursor-pointer hover:bg-surface-elevated';
     tr.dataset.id = v.id;
+    const deuda = deudaVenta(v);
     tr.innerHTML = `
-      <td class="p-2">${v.clientes?.nombre || '-'}</td>
+      <td class="p-2">${v.clientes?.nombre || '-'}${deuda > 0 ? ' <span class="text-red-400 text-xs font-mono uppercase">● Cta. cte.</span>' : ''}</td>
       <td class="p-2 text-muted">${new Date(v.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
       <td class="p-2">${(v.venta_items || []).length}</td>
       <td class="p-2">USD ${totalUsdVenta(v).toFixed(2)}</td>
@@ -1842,8 +2074,10 @@ let VENTA_ACTUAL = null;
 
 function abrirDetalleVenta(venta, filaClickeada) {
   VENTA_ACTUAL = venta;
-  document.getElementById('venta-detalle-titulo').textContent =
-    `${venta.clientes?.nombre || 'Cliente'} — ${new Date(venta.fecha + 'T00:00:00').toLocaleDateString('es-AR')}`;
+  const deuda = deudaVenta(venta);
+  document.getElementById('venta-detalle-titulo').innerHTML =
+    `${venta.clientes?.nombre || 'Cliente'} — ${new Date(venta.fecha + 'T00:00:00').toLocaleDateString('es-AR')}` +
+    (deuda > 0 ? ` <span class="text-red-400">— Deuda: USD ${deuda.toFixed(2)}</span>` : '');
   const fila = filaClickeada || document.querySelector(`#ventas-tbody tr[data-id="${venta.id}"]`);
   if (fila) fila.insertAdjacentElement('afterend', filaDetalleVenta);
   filaDetalleVenta.classList.remove('hidden');
@@ -2041,10 +2275,12 @@ document.getElementById('importar-ventas-confirmar').addEventListener('click', a
 // ── FLUJO DE CAJA ─────────────────────────────────────────────────────────
 let CAJA = [];
 let COTIZACION_ACTUAL = 0;
+let INVERSORES = [];
 
 const CATEGORIA_LABEL = {
   venta: 'Venta', inversion: 'Inversión', retiro: 'Retiro',
   gasto_operativo: 'Gasto operativo', gasto_comercial: 'Gasto comercial', pago_inversor: 'Pago a inversor',
+  pago_deuda: 'Pago deuda',
 };
 
 async function cargarConfiguracion() {
@@ -2055,6 +2291,19 @@ async function cargarConfiguracion() {
     ? `$${COTIZACION_ACTUAL.toFixed(2)}`
     : 'Sin cargar';
   renderResumenCaja();
+}
+
+async function cargarInversores() {
+  const { data, error } = await supabase.from('inversores').select('*').order('nombre');
+  if (error) { console.error(error); return; }
+  INVERSORES = data || [];
+  const select = document.getElementById('m-inversor');
+  if (select) {
+    const actual = select.value;
+    select.innerHTML = INVERSORES.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+    if (actual) select.value = actual;
+  }
+  renderDeudasInversores();
 }
 
 async function cargarCaja() {
@@ -2206,17 +2455,59 @@ switchOrdenCajaAlfa.addEventListener('click', () => {
 // ── Nuevo/editar movimiento manual ──
 const modalMovimiento = document.getElementById('modal-movimiento');
 let EDITANDO_MOVIMIENTO = null;
+let M_CLIENTE_SELECCIONADO = null;
+
+const mCategoria = document.getElementById('m-categoria');
+const mClienteWrap = document.getElementById('m-cliente-wrap');
+const mClienteInput = document.getElementById('m-cliente-input');
+const mClienteSugerencias = document.getElementById('m-cliente-sugerencias');
+const mInversorWrap = document.getElementById('m-inversor-wrap');
+
+function actualizarCamposMovimiento() {
+  const categoria = mCategoria.value;
+  mClienteWrap.classList.toggle('hidden', categoria !== 'pago_deuda');
+  mInversorWrap.classList.toggle('hidden', !['inversion', 'pago_inversor'].includes(categoria));
+}
+mCategoria.addEventListener('change', actualizarCamposMovimiento);
+
+mClienteInput.addEventListener('input', () => {
+  M_CLIENTE_SELECCIONADO = null;
+  const q = mClienteInput.value.trim().toLowerCase();
+  const resultados = (q ? CLIENTES.filter(c => c.nombre.toLowerCase().includes(q)) : CLIENTES).slice(0, 8);
+  mClienteSugerencias.innerHTML = resultados.map(c =>
+    `<button type="button" class="m-cliente-opcion block w-full text-left px-2 py-1.5 hover:bg-surface-elevated" data-id="${c.id}">${c.nombre}</button>`
+  ).join('');
+  mClienteSugerencias.classList.toggle('hidden', resultados.length === 0);
+  mClienteSugerencias.querySelectorAll('.m-cliente-opcion').forEach(btn => {
+    btn.addEventListener('click', () => {
+      M_CLIENTE_SELECCIONADO = CLIENTES.find(c => c.id === btn.dataset.id);
+      mClienteInput.value = M_CLIENTE_SELECCIONADO.nombre;
+      mClienteSugerencias.classList.add('hidden');
+    });
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!mClienteSugerencias.contains(e.target) && e.target !== mClienteInput) {
+    mClienteSugerencias.classList.add('hidden');
+  }
+});
 
 function abrirModalMovimiento(movimiento) {
   if (movimiento?.venta_id) { alert('Este movimiento pertenece a una venta y se administra desde la pestaña Ventas.'); return; }
   EDITANDO_MOVIMIENTO = movimiento || null;
   document.getElementById('modal-movimiento-titulo').textContent = movimiento ? 'Editar movimiento' : 'Nuevo movimiento';
   document.getElementById('m-tipo').value = movimiento?.tipo || 'ingreso';
-  document.getElementById('m-categoria').value = movimiento?.categoria || 'gasto_operativo';
+  mCategoria.value = movimiento?.categoria || 'gasto_operativo';
   document.getElementById('m-motivo').value = movimiento?.motivo || '';
   document.getElementById('m-monto').value = movimiento?.monto ?? '';
   document.getElementById('m-moneda').value = movimiento?.moneda || 'USD';
   document.getElementById('m-fecha').value = movimiento?.fecha || new Date().toISOString().slice(0, 10);
+
+  M_CLIENTE_SELECCIONADO = movimiento?.cliente_id ? CLIENTES.find(c => c.id === movimiento.cliente_id) : null;
+  mClienteInput.value = M_CLIENTE_SELECCIONADO?.nombre || '';
+  document.getElementById('m-inversor').value = movimiento?.inversor_id || '';
+
+  actualizarCamposMovimiento();
   modalMovimiento.classList.remove('hidden');
 }
 
@@ -2226,21 +2517,60 @@ document.getElementById('m-cancelar').addEventListener('click', () => {
   EDITANDO_MOVIMIENTO = null;
 });
 
+// Borra y, si corresponde, vuelve a crear la deuda ligada a este movimiento
+// de caja (mismo criterio que regenerarDeudaDeVenta: delete + insert condicional).
+async function sincronizarDeudaDeMovimiento(movimientoId, categoria, motivo, fecha, monto, moneda, clienteId, inversorId) {
+  await supabase.from('deudas_movimientos').delete().eq('caja_movimiento_id', movimientoId);
+  const montoUsd = moneda === 'USD' ? monto : (COTIZACION_ACTUAL ? monto / COTIZACION_ACTUAL : 0);
+  if (categoria === 'pago_deuda' && clienteId) {
+    await supabase.from('deudas_movimientos').insert({
+      entidad_tipo: 'cliente', entidad_id: clienteId, tipo: 'pago',
+      motivo, monto: montoUsd, fecha, caja_movimiento_id: movimientoId,
+    });
+  } else if (categoria === 'inversion' && inversorId) {
+    await supabase.from('deudas_movimientos').insert({
+      entidad_tipo: 'inversor', entidad_id: inversorId, tipo: 'debe',
+      motivo, monto: montoUsd, fecha, caja_movimiento_id: movimientoId,
+    });
+  } else if (categoria === 'pago_inversor' && inversorId) {
+    await supabase.from('deudas_movimientos').insert({
+      entidad_tipo: 'inversor', entidad_id: inversorId, tipo: 'pago',
+      motivo, monto: montoUsd, fecha, caja_movimiento_id: movimientoId,
+    });
+  }
+}
+
 document.getElementById('m-guardar').addEventListener('click', async () => {
+  const categoria = mCategoria.value;
+  const inversorId = document.getElementById('m-inversor').value || null;
+  const clienteId = M_CLIENTE_SELECCIONADO?.id || null;
+
+  if (categoria === 'pago_deuda' && !clienteId) { alert('Elegí a qué cliente corresponde el pago.'); return; }
+  if (['inversion', 'pago_inversor'].includes(categoria) && !inversorId) { alert('Elegí a qué inversor corresponde.'); return; }
+
   const payload = {
     tipo: document.getElementById('m-tipo').value,
-    categoria: document.getElementById('m-categoria').value,
+    categoria,
     motivo: document.getElementById('m-motivo').value.trim(),
     monto: Number(document.getElementById('m-monto').value),
     moneda: document.getElementById('m-moneda').value,
     fecha: document.getElementById('m-fecha').value,
+    cliente_id: categoria === 'pago_deuda' ? clienteId : null,
+    inversor_id: ['inversion', 'pago_inversor'].includes(categoria) ? inversorId : null,
   };
   if (!payload.motivo || !payload.monto || !payload.fecha) { alert('Completá motivo, monto y fecha.'); return; }
 
-  const { error } = EDITANDO_MOVIMIENTO
-    ? await supabase.from('caja_movimientos').update(payload).eq('id', EDITANDO_MOVIMIENTO.id)
-    : await supabase.from('caja_movimientos').insert(payload);
-  if (error) { alert('Error al guardar el movimiento.'); console.error(error); return; }
+  let movimientoId = EDITANDO_MOVIMIENTO?.id;
+  if (EDITANDO_MOVIMIENTO) {
+    const { error } = await supabase.from('caja_movimientos').update(payload).eq('id', movimientoId);
+    if (error) { alert('Error al guardar el movimiento.'); console.error(error); return; }
+  } else {
+    const { data, error } = await supabase.from('caja_movimientos').insert(payload).select().single();
+    if (error) { alert('Error al guardar el movimiento.'); console.error(error); return; }
+    movimientoId = data.id;
+  }
+
+  await sincronizarDeudaDeMovimiento(movimientoId, categoria, payload.motivo, payload.fecha, payload.monto, payload.moneda, clienteId, inversorId);
 
   modalMovimiento.classList.add('hidden');
   EDITANDO_MOVIMIENTO = null;
@@ -2371,6 +2701,203 @@ document.getElementById('importar-caja-confirmar').addEventListener('click', asy
   logImportarCaja(`Listo: ${creados} movimientos cargados, ${omitidos} omitidos, ${errores} errores.`);
   boton.disabled = false;
   await cargarCaja();
+});
+
+// ── DEUDAS Y DEUDORES ─────────────────────────────────────────────────────
+let DEUDAS = [];
+
+async function cargarDeudas() {
+  const { data, error } = await supabase.from('deudas_movimientos').select('*').order('fecha', { ascending: false });
+  if (error) { console.error(error); return; }
+  DEUDAS = data || [];
+  renderDeudasClientes();
+  renderDeudasInversores();
+}
+
+function saldoEntidad(entidadTipo, entidadId) {
+  return DEUDAS.filter(d => d.entidad_tipo === entidadTipo && d.entidad_id === entidadId)
+    .reduce((s, d) => s + (d.tipo === 'debe' ? Number(d.monto) : -Number(d.monto)), 0);
+}
+
+function renderMovimientosDeuda(entidadTipo, entidadId) {
+  const movimientos = DEUDAS.filter(d => d.entidad_tipo === entidadTipo && d.entidad_id === entidadId)
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  if (movimientos.length === 0) return '<p class="text-muted text-sm">Todavía no hay movimientos.</p>';
+  return `
+    <table class="w-full text-sm">
+      <thead><tr class="text-left text-muted font-mono text-xs uppercase">
+        <th class="p-2">Fecha</th><th class="p-2">Motivo</th><th class="p-2">Monto</th>
+      </tr></thead>
+      <tbody>
+        ${movimientos.map(d => `
+          <tr class="border-t border-border">
+            <td class="p-2 text-muted">${new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
+            <td class="p-2">${d.motivo}</td>
+            <td class="p-2 ${d.tipo === 'debe' ? 'text-red-400' : 'text-accent'}">${d.tipo === 'debe' ? '+' : '-'}USD ${Number(d.monto).toFixed(2)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+const filaDetalleDeudaCliente = document.getElementById('fila-detalle-deuda-cliente');
+let DEUDA_CLIENTE_ACTUAL = null;
+
+function renderDeudasClientes() {
+  const tbody = document.getElementById('deudas-clientes-tbody');
+  const empty = document.getElementById('deudas-clientes-empty');
+  tbody.innerHTML = '';
+
+  const idsConMovimiento = [...new Set(DEUDAS.filter(d => d.entidad_tipo === 'cliente').map(d => d.entidad_id))];
+  const clientesConSaldo = idsConMovimiento
+    .map(id => ({ cliente: CLIENTES.find(c => c.id === id), saldo: saldoEntidad('cliente', id) }))
+    .filter(x => x.cliente && x.saldo > 0.01)
+    .sort((a, b) => b.saldo - a.saldo);
+
+  empty.classList.toggle('hidden', clientesConSaldo.length > 0);
+
+  clientesConSaldo.forEach(({ cliente, saldo }) => {
+    const tr = document.createElement('tr');
+    tr.className = 'cursor-pointer hover:bg-surface-elevated';
+    tr.dataset.id = cliente.id;
+    tr.innerHTML = `
+      <td class="p-2">${cliente.nombre}</td>
+      <td class="p-2 text-red-400">USD ${saldo.toFixed(2)}</td>
+      <td class="p-2 text-right text-muted text-xs font-mono uppercase">Ver ▾</td>
+    `;
+    tr.addEventListener('click', () => {
+      const yaAbierto = DEUDA_CLIENTE_ACTUAL === cliente.id && !filaDetalleDeudaCliente.classList.contains('hidden');
+      if (yaAbierto) {
+        filaDetalleDeudaCliente.classList.add('hidden');
+        DEUDA_CLIENTE_ACTUAL = null;
+      } else {
+        DEUDA_CLIENTE_ACTUAL = cliente.id;
+        document.getElementById('deuda-cliente-detalle-titulo').textContent = `${cliente.nombre} — debe USD ${saldo.toFixed(2)}`;
+        document.getElementById('deuda-cliente-detalle-movimientos').innerHTML = renderMovimientosDeuda('cliente', cliente.id);
+        tr.insertAdjacentElement('afterend', filaDetalleDeudaCliente);
+        filaDetalleDeudaCliente.classList.remove('hidden');
+      }
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('deuda-cliente-cerrar').addEventListener('click', () => {
+  filaDetalleDeudaCliente.classList.add('hidden');
+  DEUDA_CLIENTE_ACTUAL = null;
+});
+
+const filaDetalleDeudaInversor = document.getElementById('fila-detalle-deuda-inversor');
+let DEUDA_INVERSOR_ACTUAL = null;
+
+function renderDeudasInversores() {
+  const tbody = document.getElementById('deudas-inversores-tbody');
+  const empty = document.getElementById('deudas-inversores-empty');
+  tbody.innerHTML = '';
+  empty.classList.toggle('hidden', INVERSORES.length > 0);
+
+  INVERSORES.forEach(inversor => {
+    const saldo = saldoEntidad('inversor', inversor.id);
+    const tr = document.createElement('tr');
+    tr.className = 'cursor-pointer hover:bg-surface-elevated';
+    tr.dataset.id = inversor.id;
+    tr.innerHTML = `
+      <td class="p-2">${inversor.nombre}</td>
+      <td class="p-2 ${saldo > 0.01 ? 'text-red-400' : 'text-muted'}">USD ${saldo.toFixed(2)}</td>
+      <td class="p-2 text-right text-muted text-xs font-mono uppercase">Ver ▾</td>
+    `;
+    tr.addEventListener('click', () => {
+      const yaAbierto = DEUDA_INVERSOR_ACTUAL === inversor.id && !filaDetalleDeudaInversor.classList.contains('hidden');
+      if (yaAbierto) {
+        filaDetalleDeudaInversor.classList.add('hidden');
+        DEUDA_INVERSOR_ACTUAL = null;
+      } else {
+        DEUDA_INVERSOR_ACTUAL = inversor.id;
+        document.getElementById('deuda-inversor-detalle-titulo').textContent = `${inversor.nombre} — le debemos USD ${saldo.toFixed(2)}`;
+        document.getElementById('deuda-inversor-detalle-movimientos').innerHTML = renderMovimientosDeuda('inversor', inversor.id);
+        tr.insertAdjacentElement('afterend', filaDetalleDeudaInversor);
+        filaDetalleDeudaInversor.classList.remove('hidden');
+      }
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('deuda-inversor-cerrar').addEventListener('click', () => {
+  filaDetalleDeudaInversor.classList.add('hidden');
+  DEUDA_INVERSOR_ACTUAL = null;
+});
+
+// ── Nueva deuda de cliente (manual) ──
+const modalNuevaDeuda = document.getElementById('modal-nueva-deuda');
+const ndClienteInput = document.getElementById('nd-cliente-input');
+const ndClienteSugerencias = document.getElementById('nd-cliente-sugerencias');
+let ND_CLIENTE_SELECCIONADO = null;
+
+document.getElementById('btn-nueva-deuda').addEventListener('click', () => {
+  ND_CLIENTE_SELECCIONADO = null;
+  ndClienteInput.value = '';
+  document.getElementById('nd-motivo').value = '';
+  document.getElementById('nd-monto').value = '';
+  document.getElementById('nd-fecha').value = new Date().toISOString().slice(0, 10);
+  modalNuevaDeuda.classList.remove('hidden');
+});
+document.getElementById('nd-cancelar').addEventListener('click', () => modalNuevaDeuda.classList.add('hidden'));
+
+ndClienteInput.addEventListener('input', () => {
+  ND_CLIENTE_SELECCIONADO = null;
+  const q = ndClienteInput.value.trim().toLowerCase();
+  const resultados = (q ? CLIENTES.filter(c => c.nombre.toLowerCase().includes(q)) : CLIENTES).slice(0, 8);
+  ndClienteSugerencias.innerHTML = resultados.map(c =>
+    `<button type="button" class="nd-cliente-opcion block w-full text-left px-2 py-1.5 hover:bg-surface-elevated" data-id="${c.id}">${c.nombre}</button>`
+  ).join('');
+  ndClienteSugerencias.classList.toggle('hidden', resultados.length === 0);
+  ndClienteSugerencias.querySelectorAll('.nd-cliente-opcion').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ND_CLIENTE_SELECCIONADO = CLIENTES.find(c => c.id === btn.dataset.id);
+      ndClienteInput.value = ND_CLIENTE_SELECCIONADO.nombre;
+      ndClienteSugerencias.classList.add('hidden');
+    });
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!ndClienteSugerencias.contains(e.target) && e.target !== ndClienteInput) {
+    ndClienteSugerencias.classList.add('hidden');
+  }
+});
+
+document.getElementById('nd-guardar').addEventListener('click', async () => {
+  if (!ND_CLIENTE_SELECCIONADO) { alert('Elegí un cliente.'); return; }
+  const motivo = document.getElementById('nd-motivo').value.trim();
+  const monto = Number(document.getElementById('nd-monto').value);
+  const fecha = document.getElementById('nd-fecha').value;
+  if (!motivo || !monto || !fecha) { alert('Completá motivo, monto y fecha.'); return; }
+
+  const { error } = await supabase.from('deudas_movimientos').insert({
+    entidad_tipo: 'cliente', entidad_id: ND_CLIENTE_SELECCIONADO.id, tipo: 'debe', motivo, monto, fecha,
+  });
+  if (error) { alert('Error al guardar la deuda.'); console.error(error); return; }
+
+  modalNuevaDeuda.classList.add('hidden');
+  await cargarDeudas();
+});
+
+// ── Nuevo inversor ──
+const modalNuevoInversor = document.getElementById('modal-nuevo-inversor');
+document.getElementById('btn-nuevo-inversor').addEventListener('click', () => {
+  document.getElementById('ni-nombre').value = '';
+  modalNuevoInversor.classList.remove('hidden');
+});
+document.getElementById('ni-cancelar').addEventListener('click', () => modalNuevoInversor.classList.add('hidden'));
+document.getElementById('ni-guardar').addEventListener('click', async () => {
+  const nombre = document.getElementById('ni-nombre').value.trim();
+  if (!nombre) { alert('Ingresá un nombre.'); return; }
+  const { error } = await supabase.from('inversores').insert({ nombre });
+  if (error) { alert('Error al guardar el inversor.'); console.error(error); return; }
+  modalNuevoInversor.classList.add('hidden');
+  await cargarInversores();
+  await cargarDeudas();
 });
 </script>
 </body>

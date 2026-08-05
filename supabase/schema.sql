@@ -341,3 +341,77 @@ drop trigger if exists trg_historial_ventas on ventas;
 create trigger trg_historial_ventas
   after update on ventas
   for each row execute function registrar_historial();
+
+-- ═══ MÓDULO DEUDAS Y DEUDORES ═══════════════════════════════════════════
+
+-- ─── Caja: nueva categoría "pago_deuda" + vínculos informativos ───────────
+-- cliente_id se completa solo cuando categoria = 'pago_deuda'; inversor_id
+-- solo cuando categoria es 'inversion' o 'pago_inversor'. Sin FK dura,
+-- mismo criterio que venta_id (referencia informativa).
+
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial', 'pago_inversor', 'pago_deuda'));
+
+alter table caja_movimientos add column if not exists cliente_id uuid;
+alter table caja_movimientos add column if not exists inversor_id uuid;
+
+-- ─── Ventas: cuenta corriente (venta con pago parcial) ─────────────────────
+-- Si cuenta_corriente = true, monto_abonado_usd es lo que se cobró en el
+-- momento; la diferencia contra el total de la venta queda como deuda del
+-- cliente (se registra en deudas_movimientos al guardar la venta).
+
+alter table ventas add column if not exists cuenta_corriente boolean not null default false;
+alter table ventas add column if not exists monto_abonado_usd numeric(12,2);
+
+-- ─── Inversores ─────────────────────────────────────────────────────────
+
+create table if not exists inversores (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null,
+  created_at timestamptz not null default now()
+);
+
+insert into inversores (nombre)
+  select 'Damián' where not exists (select 1 from inversores where nombre = 'Damián');
+insert into inversores (nombre)
+  select 'Eugenia' where not exists (select 1 from inversores where nombre = 'Eugenia');
+
+alter table inversores enable row level security;
+drop policy if exists "inversores_authenticated_all" on inversores;
+create policy "inversores_authenticated_all" on inversores
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on inversores to authenticated;
+
+-- ─── Deudas: ledger único para clientes e inversores ───────────────────────
+-- tipo 'debe' aumenta el saldo pendiente, tipo 'pago' lo reduce. Para
+-- clientes, "debe" es lo que nos deben; para inversores, "debe" es lo que
+-- nosotros les debemos (pusieron plata), y "pago" es cuando se la devolvemos.
+-- monto siempre en USD (moneda de referencia para el saldo, sin importar en
+-- qué moneda se haya cobrado/pagado el movimiento de caja de origen).
+
+create table if not exists deudas_movimientos (
+  id uuid primary key default gen_random_uuid(),
+  entidad_tipo text not null check (entidad_tipo in ('cliente', 'inversor')),
+  entidad_id uuid not null,
+  tipo text not null check (tipo in ('debe', 'pago')),
+  motivo text not null,
+  monto numeric(12,2) not null,
+  fecha date not null default current_date,
+  venta_id uuid,
+  caja_movimiento_id uuid,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_deudas_entidad on deudas_movimientos(entidad_tipo, entidad_id);
+
+alter table deudas_movimientos enable row level security;
+drop policy if exists "deudas_movimientos_authenticated_all" on deudas_movimientos;
+create policy "deudas_movimientos_authenticated_all" on deudas_movimientos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on deudas_movimientos to authenticated;
+
+drop trigger if exists trg_historial_deudas_movimientos on deudas_movimientos;
+create trigger trg_historial_deudas_movimientos
+  after update on deudas_movimientos
+  for each row execute function registrar_historial();
