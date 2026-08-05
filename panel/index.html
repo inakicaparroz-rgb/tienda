@@ -524,23 +524,28 @@
   <div class="w-full max-w-md bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
     <h3 id="modal-movimiento-titulo" class="font-bold mb-4">Nuevo movimiento</h3>
     <div class="space-y-3 text-sm">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Monto</label>
+          <input id="m-monto" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Moneda</label>
+          <select id="m-moneda" class="w-full px-3 py-2">
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+          </select>
+        </div>
+      </div>
+      <p class="text-muted text-xs -mt-2">Negativo = gasto, positivo = ingreso.</p>
       <div>
         <label class="block text-muted font-mono text-xs uppercase mb-1">Tipo</label>
-        <select id="m-tipo" class="w-full px-3 py-2">
-          <option value="ingreso">Ingreso</option>
-          <option value="gasto">Gasto</option>
-        </select>
+        <p id="m-tipo-display" class="px-3 py-2 border border-border font-mono">—</p>
+        <input type="hidden" id="m-tipo" value="ingreso" />
       </div>
       <div>
         <label class="block text-muted font-mono text-xs uppercase mb-1">Categoría</label>
-        <select id="m-categoria" class="w-full px-3 py-2">
-          <option value="inversion">Inversión</option>
-          <option value="retiro">Retiro</option>
-          <option value="gasto_operativo">Gasto operativo</option>
-          <option value="gasto_comercial">Gasto comercial</option>
-          <option value="pago_inversor">Pago a inversor</option>
-          <option value="pago_deuda">Pago deuda</option>
-        </select>
+        <select id="m-categoria" class="w-full px-3 py-2"></select>
       </div>
       <div id="m-cliente-wrap" class="hidden relative">
         <label class="block text-muted font-mono text-xs uppercase mb-1">Cliente</label>
@@ -554,19 +559,6 @@
       <div>
         <label class="block text-muted font-mono text-xs uppercase mb-1">Motivo</label>
         <input id="m-motivo" placeholder="Ej: Pago de alquiler local" class="w-full px-3 py-2" />
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-muted font-mono text-xs uppercase mb-1">Monto</label>
-          <input id="m-monto" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2" />
-        </div>
-        <div>
-          <label class="block text-muted font-mono text-xs uppercase mb-1">Moneda</label>
-          <select id="m-moneda" class="w-full px-3 py-2">
-            <option value="USD">USD</option>
-            <option value="ARS">ARS</option>
-          </select>
-        </div>
       </div>
       <div>
         <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
@@ -2486,11 +2478,34 @@ const mClienteInput = document.getElementById('m-cliente-input');
 const mClienteSugerencias = document.getElementById('m-cliente-sugerencias');
 const mInversorWrap = document.getElementById('m-inversor-wrap');
 
+const CATEGORIAS_POR_TIPO = {
+  ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda']],
+  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro']],
+};
+
 function actualizarCamposMovimiento() {
   const categoria = mCategoria.value;
   mClienteWrap.classList.toggle('hidden', categoria !== 'pago_deuda');
   mInversorWrap.classList.toggle('hidden', !['inversion', 'pago_inversor'].includes(categoria));
 }
+
+// El tipo (ingreso/gasto) se deriva solo del signo del monto — no se elige a mano.
+function actualizarTipoYCategorias() {
+  const monto = parseFloat(document.getElementById('m-monto').value);
+  const tipo = (isNaN(monto) || monto >= 0) ? 'ingreso' : 'gasto';
+  document.getElementById('m-tipo').value = tipo;
+  const display = document.getElementById('m-tipo-display');
+  display.textContent = tipo === 'ingreso' ? 'Ingreso' : 'Gasto';
+  display.className = `px-3 py-2 border border-border font-mono ${tipo === 'ingreso' ? 'text-accent' : 'text-red-400'}`;
+
+  const categoriaActual = mCategoria.value;
+  const opciones = CATEGORIAS_POR_TIPO[tipo];
+  mCategoria.innerHTML = opciones.map(([valor, texto]) => `<option value="${valor}">${texto}</option>`).join('');
+  if (opciones.some(([valor]) => valor === categoriaActual)) mCategoria.value = categoriaActual;
+
+  actualizarCamposMovimiento();
+}
+document.getElementById('m-monto').addEventListener('input', actualizarTipoYCategorias);
 mCategoria.addEventListener('change', actualizarCamposMovimiento);
 
 mClienteInput.addEventListener('input', () => {
@@ -2519,12 +2534,15 @@ function abrirModalMovimiento(movimiento) {
   if (movimiento?.venta_id) { alert('Este movimiento pertenece a una venta y se administra desde la pestaña Ventas.'); return; }
   EDITANDO_MOVIMIENTO = movimiento || null;
   document.getElementById('modal-movimiento-titulo').textContent = movimiento ? 'Editar movimiento' : 'Nuevo movimiento';
-  document.getElementById('m-tipo').value = movimiento?.tipo || 'ingreso';
-  mCategoria.value = movimiento?.categoria || 'gasto_operativo';
-  document.getElementById('m-motivo').value = movimiento?.motivo || '';
-  document.getElementById('m-monto').value = movimiento?.monto ?? '';
+  document.getElementById('m-monto').value = movimiento
+    ? (movimiento.tipo === 'gasto' ? -Math.abs(movimiento.monto) : Math.abs(movimiento.monto))
+    : '';
   document.getElementById('m-moneda').value = movimiento?.moneda || 'USD';
+  document.getElementById('m-motivo').value = movimiento?.motivo || '';
   document.getElementById('m-fecha').value = movimiento?.fecha || new Date().toISOString().slice(0, 10);
+
+  actualizarTipoYCategorias();
+  if (movimiento) mCategoria.value = movimiento.categoria;
 
   M_CLIENTE_SELECCIONADO = movimiento?.cliente_id ? CLIENTES.find(c => c.id === movimiento.cliente_id) : null;
   mClienteInput.value = M_CLIENTE_SELECCIONADO?.nombre || '';
@@ -2575,7 +2593,7 @@ document.getElementById('m-guardar').addEventListener('click', async () => {
     tipo: document.getElementById('m-tipo').value,
     categoria,
     motivo: document.getElementById('m-motivo').value.trim(),
-    monto: Number(document.getElementById('m-monto').value),
+    monto: Math.abs(Number(document.getElementById('m-monto').value)),
     moneda: document.getElementById('m-moneda').value,
     fecha: document.getElementById('m-fecha').value,
     cliente_id: categoria === 'pago_deuda' ? clienteId : null,
