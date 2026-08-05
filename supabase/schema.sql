@@ -357,12 +357,22 @@ alter table caja_movimientos add column if not exists cliente_id uuid;
 alter table caja_movimientos add column if not exists inversor_id uuid;
 
 -- ─── Ventas: cuenta corriente (venta con pago parcial) ─────────────────────
--- Si cuenta_corriente = true, monto_abonado_usd es lo que se cobró en el
--- momento; la diferencia contra el total de la venta queda como deuda del
--- cliente (se registra en deudas_movimientos al guardar la venta).
+-- Si cuenta_corriente = true, monto_abonado (en la moneda de abonado_moneda,
+-- USD o ARS — se guarda tal cual se cobró, sin convertir, para que coincida
+-- con el ingreso real en Flujo de Caja) es lo que se cobró en el momento; la
+-- diferencia contra el total de la venta (convertida a USD) queda como deuda
+-- del cliente (se registra en deudas_movimientos al guardar la venta).
 
 alter table ventas add column if not exists cuenta_corriente boolean not null default false;
-alter table ventas add column if not exists monto_abonado_usd numeric(12,2);
+
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_name = 'ventas' and column_name = 'monto_abonado_usd') then
+    alter table ventas rename column monto_abonado_usd to monto_abonado;
+  end if;
+end $$;
+alter table ventas add column if not exists monto_abonado numeric(12,2);
+alter table ventas add column if not exists abonado_moneda text check (abonado_moneda in ('USD', 'ARS'));
 
 -- ─── Inversores ─────────────────────────────────────────────────────────
 

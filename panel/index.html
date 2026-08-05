@@ -406,8 +406,14 @@
         </button>
       </div>
       <div id="v-cuenta-corriente-campos" class="hidden mt-3">
-        <label class="block text-muted font-mono text-xs uppercase mb-1">Abona hoy (USD)</label>
-        <input id="v-abona-hoy" type="number" step="0.01" placeholder="0.00" class="w-40 px-3 py-2 text-sm" />
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Abona hoy</label>
+        <div class="flex gap-2">
+          <input id="v-abona-hoy" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+          <select id="v-abona-moneda" class="px-3 py-2 text-sm">
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+          </select>
+        </div>
         <p id="v-deuda-preview" class="text-muted text-xs mt-2"></p>
       </div>
     </div>
@@ -822,7 +828,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.remove('border-transparent', 'text-muted');
     document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
-    if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); }
+    if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
     if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); }
   });
@@ -1659,12 +1665,19 @@ function totalUsdItemsModal() {
   }, 0);
 }
 
+function abonadoHoyEnUsd() {
+  const abonadoRaw = parseFloat(document.getElementById('v-abona-hoy').value) || 0;
+  const abonadoMoneda = document.getElementById('v-abona-moneda').value;
+  if (abonadoMoneda !== 'ARS') return abonadoRaw;
+  const cotizacion = parseFloat(document.getElementById('v-cotizacion').value) || 0;
+  return cotizacion ? abonadoRaw / cotizacion : 0;
+}
+
 function actualizarPreviewDeuda() {
   const preview = document.getElementById('v-deuda-preview');
   if (!preview) return;
   const total = totalUsdItemsModal();
-  const abonado = parseFloat(document.getElementById('v-abona-hoy').value) || 0;
-  const deuda = Math.max(0, total - abonado);
+  const deuda = Math.max(0, total - abonadoHoyEnUsd());
   preview.textContent = `Total venta: USD ${total.toFixed(2)} — Deuda: USD ${deuda.toFixed(2)}`;
 }
 
@@ -1683,6 +1696,7 @@ function setCuentaCorriente(activa) {
 
 vCuentaCorrienteSwitch.addEventListener('click', () => setCuentaCorriente(vCuentaCorrienteSwitch.dataset.on !== 'true'));
 document.getElementById('v-abona-hoy').addEventListener('input', actualizarPreviewDeuda);
+document.getElementById('v-abona-moneda').addEventListener('change', actualizarPreviewDeuda);
 document.getElementById('v-cotizacion').addEventListener('input', actualizarPreviewDeuda);
 
 async function abrirModalVenta(venta) {
@@ -1693,7 +1707,8 @@ async function abrirModalVenta(venta) {
   document.getElementById('v-cliente-email').value = venta?.clientes?.email || '';
   CLIENTE_SELECCIONADO = null;
   document.getElementById('v-items').innerHTML = '';
-  document.getElementById('v-abona-hoy').value = venta?.monto_abonado_usd ?? '';
+  document.getElementById('v-abona-hoy').value = venta?.monto_abonado ?? '';
+  document.getElementById('v-abona-moneda').value = venta?.abonado_moneda || 'USD';
   setCuentaCorriente(!!venta?.cuenta_corriente);
   modalVenta.classList.remove('hidden');
 
@@ -1728,11 +1743,14 @@ async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales) {
 
 // Venta con cuenta corriente: en vez de un ingreso por moneda por el total,
 // un único ingreso en USD por lo que se abonó hoy (el resto queda en deudas_movimientos).
-async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, abonadoUsd) {
+// El ingreso en caja va en la moneda que realmente se cobró (USD o ARS),
+// no convertido — si convirtiéramos a USD el flujo de caja no coincidiría
+// con la plata que efectivamente entró.
+async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moneda) {
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
-  if (abonadoUsd > 0) {
+  if (monto > 0) {
     await supabase.from('caja_movimientos').insert({
-      tipo: 'ingreso', motivo, categoria: 'venta', monto: abonadoUsd, moneda: 'USD', venta_id: ventaId,
+      tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
     });
   }
 }
@@ -1789,8 +1807,9 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
 
   const cuentaCorrienteActiva = vCuentaCorrienteSwitch.dataset.on === 'true';
   const totalUsdVentaModal = totalUsdItemsModal();
-  const abonadoUsd = cuentaCorrienteActiva ? (parseFloat(document.getElementById('v-abona-hoy').value) || 0) : totalUsdVentaModal;
-  const deudaUsd = cuentaCorrienteActiva ? Math.max(0, totalUsdVentaModal - abonadoUsd) : 0;
+  const abonadoRaw = cuentaCorrienteActiva ? (parseFloat(document.getElementById('v-abona-hoy').value) || 0) : totalUsdVentaModal;
+  const abonadoMoneda = cuentaCorrienteActiva ? document.getElementById('v-abona-moneda').value : 'USD';
+  const deudaUsd = cuentaCorrienteActiva ? Math.max(0, totalUsdVentaModal - abonadoHoyEnUsd()) : 0;
 
   let ventaId, ventaFecha;
   if (EDITANDO_VENTA) {
@@ -1799,7 +1818,8 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     await supabase.from('ventas').update({
       cliente_id: cliente.id,
       cuenta_corriente: cuentaCorrienteActiva,
-      monto_abonado_usd: cuentaCorrienteActiva ? abonadoUsd : null,
+      monto_abonado: cuentaCorrienteActiva ? abonadoRaw : null,
+      abonado_moneda: cuentaCorrienteActiva ? abonadoMoneda : null,
     }).eq('id', ventaId);
 
     // Ítems que estaban antes y ya no están: se sacan y su unidad vuelve a disponible
@@ -1815,7 +1835,8 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
       cliente_id: cliente.id,
       canal: 'local',
       cuenta_corriente: cuentaCorrienteActiva,
-      monto_abonado_usd: cuentaCorrienteActiva ? abonadoUsd : null,
+      monto_abonado: cuentaCorrienteActiva ? abonadoRaw : null,
+      abonado_moneda: cuentaCorrienteActiva ? abonadoMoneda : null,
     }).select().single();
     if (errorVenta) { alert('Error al crear la venta.'); console.error(errorVenta); boton.disabled = false; return; }
     ventaId = venta.id;
@@ -1852,7 +1873,7 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   }
 
   if (cuentaCorrienteActiva) {
-    await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoUsd);
+    await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda);
   } else {
     await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales);
   }
@@ -1889,9 +1910,11 @@ function totalUsdVenta(venta) {
   return (venta.venta_items || []).reduce((s, i) => s + Number(i.precio_venta_usd || 0), 0);
 }
 
+// Saldo VIVO del cliente (no una foto de lo que quedó pendiente en esta venta
+// puntual): si el cliente paga después desde Caja, esto se actualiza solo.
 function deudaVenta(venta) {
   if (!venta.cuenta_corriente) return 0;
-  return Math.max(0, totalUsdVenta(venta) - Number(venta.monto_abonado_usd || 0));
+  return saldoEntidad('cliente', venta.cliente_id);
 }
 
 function renderVentas(lista) {
@@ -2712,6 +2735,7 @@ async function cargarDeudas() {
   DEUDAS = data || [];
   renderDeudasClientes();
   renderDeudasInversores();
+  filtrarVentas();
 }
 
 function saldoEntidad(entidadTipo, entidadId) {
