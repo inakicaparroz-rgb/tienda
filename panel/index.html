@@ -273,6 +273,21 @@
         </div>
       </div>
 
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Rankings</h3>
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex border border-border">
+            <button id="rep-rank-modo-mensual" class="px-3 py-1.5 text-xs font-mono uppercase tracking-wide bg-accent text-black">Mensual</button>
+            <button id="rep-rank-modo-anual" class="px-3 py-1.5 text-xs font-mono uppercase tracking-wide bg-surface-elevated">Anual</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="rep-rank-periodo-anterior" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-1.5">◀</button>
+            <span id="rep-rank-periodo-label" class="font-mono text-xs uppercase tracking-wide w-32 text-center"></span>
+            <button id="rep-rank-periodo-siguiente" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-1.5">▶</button>
+          </div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="border border-border p-4">
           <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Clientes con más gastado</h4>
@@ -3038,6 +3053,8 @@ document.getElementById('ni-guardar').addEventListener('click', async () => {
 
 // ── REPORTES ───────────────────────────────────────────────────────────────
 let REPORTE_MES = new Date();
+let REPORTE_RANKING_MODO = 'mensual'; // 'mensual' | 'anual'
+let REPORTE_RANKING_PERIODO = new Date();
 
 function normalizarTexto(texto) {
   return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -3060,7 +3077,19 @@ function rangoMes(fecha) {
   return { inicio: fmt(inicio), fin: fmt(fin) };
 }
 
+function rangoAnio(fecha) {
+  const inicio = new Date(fecha.getFullYear(), 0, 1);
+  const fin = new Date(fecha.getFullYear() + 1, 0, 1);
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  return { inicio: fmt(inicio), fin: fmt(fin) };
+}
+
 async function cargarReportes() {
+  await cargarGananciaMensual();
+  await cargarRankings();
+}
+
+async function cargarGananciaMensual() {
   const { inicio, fin } = rangoMes(REPORTE_MES);
   document.getElementById('reportes-mes-label').textContent =
     REPORTE_MES.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).toUpperCase();
@@ -3080,15 +3109,68 @@ async function cargarReportes() {
     .gte('fecha', inicio).lt('fecha', fin);
   if (errorCaja) { console.error(errorCaja); return; }
 
-  const { data: unidadesMes, error: errorUnidades } = await supabase
+  renderGananciaMensual(ventasMes || [], cajaMes || []);
+}
+
+async function cargarRankings() {
+  const { inicio, fin } = REPORTE_RANKING_MODO === 'anual' ? rangoAnio(REPORTE_RANKING_PERIODO) : rangoMes(REPORTE_RANKING_PERIODO);
+  document.getElementById('rep-rank-periodo-label').textContent = REPORTE_RANKING_MODO === 'anual'
+    ? String(REPORTE_RANKING_PERIODO.getFullYear())
+    : REPORTE_RANKING_PERIODO.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).toUpperCase();
+
+  const { data: ventas, error: errorVentas } = await supabase
+    .from('ventas')
+    .select(`
+      id, fecha, cliente_id, clientes(nombre),
+      venta_items(precio_venta_usd, costo_usd_snapshot, unidades(productos(marca, categoria)))
+    `)
+    .gte('fecha', inicio).lt('fecha', fin);
+  if (errorVentas) { console.error(errorVentas); return; }
+
+  const { data: unidades, error: errorUnidades } = await supabase
     .from('unidades')
     .select('fecha_ingreso, productos(marca, categoria)')
     .gte('fecha_ingreso', inicio).lt('fecha_ingreso', fin);
   if (errorUnidades) { console.error(errorUnidades); return; }
 
-  renderGananciaMensual(ventasMes || [], cajaMes || []);
-  renderRankingsReportes(ventasMes || [], unidadesMes || []);
+  renderRankingsReportes(ventas || [], unidades || []);
 }
+
+function actualizarBotonesModoRanking() {
+  const mensual = REPORTE_RANKING_MODO === 'mensual';
+  document.getElementById('rep-rank-modo-mensual').classList.toggle('bg-accent', mensual);
+  document.getElementById('rep-rank-modo-mensual').classList.toggle('text-black', mensual);
+  document.getElementById('rep-rank-modo-mensual').classList.toggle('bg-surface-elevated', !mensual);
+  document.getElementById('rep-rank-modo-anual').classList.toggle('bg-accent', !mensual);
+  document.getElementById('rep-rank-modo-anual').classList.toggle('text-black', !mensual);
+  document.getElementById('rep-rank-modo-anual').classList.toggle('bg-surface-elevated', mensual);
+}
+
+document.getElementById('rep-rank-modo-mensual').addEventListener('click', () => {
+  if (REPORTE_RANKING_MODO === 'mensual') return;
+  REPORTE_RANKING_MODO = 'mensual';
+  actualizarBotonesModoRanking();
+  cargarRankings();
+});
+document.getElementById('rep-rank-modo-anual').addEventListener('click', () => {
+  if (REPORTE_RANKING_MODO === 'anual') return;
+  REPORTE_RANKING_MODO = 'anual';
+  actualizarBotonesModoRanking();
+  cargarRankings();
+});
+
+document.getElementById('rep-rank-periodo-anterior').addEventListener('click', () => {
+  REPORTE_RANKING_PERIODO = REPORTE_RANKING_MODO === 'anual'
+    ? new Date(REPORTE_RANKING_PERIODO.getFullYear() - 1, 0, 1)
+    : new Date(REPORTE_RANKING_PERIODO.getFullYear(), REPORTE_RANKING_PERIODO.getMonth() - 1, 1);
+  cargarRankings();
+});
+document.getElementById('rep-rank-periodo-siguiente').addEventListener('click', () => {
+  REPORTE_RANKING_PERIODO = REPORTE_RANKING_MODO === 'anual'
+    ? new Date(REPORTE_RANKING_PERIODO.getFullYear() + 1, 0, 1)
+    : new Date(REPORTE_RANKING_PERIODO.getFullYear(), REPORTE_RANKING_PERIODO.getMonth() + 1, 1);
+  cargarRankings();
+});
 
 function renderGananciaMensual(ventasMes, cajaMes) {
   const gananciaBruta = ventasMes.reduce((s, v) =>
@@ -3139,7 +3221,7 @@ function renderGananciaMensual(ventasMes, cajaMes) {
 
 function renderRankingLista(elId, entradas, formatoValor) {
   const el = document.getElementById(elId);
-  if (entradas.length === 0) { el.innerHTML = '<li class="text-muted">Sin datos este mes.</li>'; return; }
+  if (entradas.length === 0) { el.innerHTML = '<li class="text-muted">Sin datos en este período.</li>'; return; }
   el.innerHTML = entradas.map(([nombre, valor], i) =>
     `<li class="flex justify-between gap-2"><span>${i + 1}. ${nombre}</span><span class="text-muted whitespace-nowrap">${formatoValor(valor)}</span></li>`
   ).join('');
