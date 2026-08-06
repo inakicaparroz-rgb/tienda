@@ -425,3 +425,43 @@ drop trigger if exists trg_historial_deudas_movimientos on deudas_movimientos;
 create trigger trg_historial_deudas_movimientos
   after update on deudas_movimientos
   for each row execute function registrar_historial();
+
+-- ═══ MÓDULO REPORTES ═══════════════════════════════════════════════════
+
+-- ─── Caja: cotización histórica ─────────────────────────────────────────
+-- Antes, cualquier movimiento en ARS se convertía a USD con la cotización
+-- ACTUAL (la de hoy), sin importar de qué mes fuera — se perdía precisión
+-- histórica. Ahora cada movimiento en ARS guarda la cotización del momento
+-- en que se cargó, y Reportes usa esa en vez de la de hoy.
+
+alter table caja_movimientos add column if not exists cotizacion_usada numeric(10,2);
+
+-- Backfill: para movimientos ya cargados que vienen de una venta, se puede
+-- recuperar la cotización real que se usó en esa venta (venta_items ya la
+-- guarda). Para movimientos manuales o importados del Excel viejo no hay
+-- forma de saber la cotización histórica real, quedan sin este dato (los
+-- reportes de esos meses van a usar la cotización actual como aproximación).
+update caja_movimientos cm
+set cotizacion_usada = sub.cotizacion
+from (
+  select distinct on (vi.venta_id) vi.venta_id, vi.cotizacion_usada as cotizacion
+  from venta_items vi
+  where vi.moneda = 'ARS' and vi.cotizacion_usada is not null
+) sub
+where cm.venta_id = sub.venta_id and cm.moneda = 'ARS' and cm.cotizacion_usada is null;
+
+-- ─── Caja: a qué socio corresponde un retiro ────────────────────────────
+-- Estructurado (en vez de adivinar el nombre dentro del texto del motivo):
+-- 'emi' o 'ina' si es de uno solo, 'ambos' si se retiran los dos juntos.
+
+alter table caja_movimientos add column if not exists retiro_socio text
+  check (retiro_socio in ('emi', 'ina', 'ambos'));
+
+-- Backfill de retiros ya cargados, a partir del motivo (mismo criterio que
+-- ya venía usando Reportes antes de tener este campo estructurado).
+update caja_movimientos set retiro_socio = 'ambos'
+  where categoria = 'retiro' and retiro_socio is null and motivo ~* 'ambos';
+update caja_movimientos set retiro_socio = 'emi'
+  where categoria = 'retiro' and retiro_socio is null and motivo ~* 'emi';
+update caja_movimientos set retiro_socio = 'ina'
+  where categoria = 'retiro' and retiro_socio is null and motivo ~* 'i[ñn]a';

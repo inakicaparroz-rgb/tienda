@@ -604,6 +604,24 @@
         <label class="block text-muted font-mono text-xs uppercase mb-1">Inversor</label>
         <select id="m-inversor" class="w-full px-3 py-2"></select>
       </div>
+      <div id="m-retiro-wrap" class="hidden">
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Retiro de</label>
+        <div class="flex gap-6">
+          <div class="flex items-center gap-2">
+            <span>Emi</span>
+            <button type="button" id="m-retiro-emi-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+              <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <span>Iña</span>
+            <button type="button" id="m-retiro-ina-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+              <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+            </button>
+          </div>
+        </div>
+        <p class="text-muted text-xs mt-1">Marcá al menos uno. Si marcás los dos, se cuenta como retiro de ambos.</p>
+      </div>
       <div>
         <label class="block text-muted font-mono text-xs uppercase mb-1">Motivo</label>
         <input id="m-motivo" placeholder="Ej: Pago de alquiler local" class="w-full px-3 py-2" />
@@ -1769,7 +1787,7 @@ async function abrirModalVenta(venta) {
 document.getElementById('btn-nueva-venta').addEventListener('click', () => abrirModalVenta());
 document.getElementById('v-cancelar').addEventListener('click', () => modalVenta.classList.add('hidden'));
 
-async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales) {
+async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales, cotizacion) {
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
   const totalesPorMoneda = {};
   itemsFinales.forEach(({ moneda, monto }) => {
@@ -1778,6 +1796,7 @@ async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales) {
   for (const [moneda, monto] of Object.entries(totalesPorMoneda)) {
     await supabase.from('caja_movimientos').insert({
       tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
+      cotizacion_usada: moneda === 'ARS' ? (cotizacion || null) : null,
     });
   }
 }
@@ -1787,11 +1806,12 @@ async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales) {
 // El ingreso en caja va en la moneda que realmente se cobró (USD o ARS),
 // no convertido — si convirtiéramos a USD el flujo de caja no coincidiría
 // con la plata que efectivamente entró.
-async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moneda) {
+async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moneda, cotizacion) {
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
   if (monto > 0) {
     await supabase.from('caja_movimientos').insert({
       tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
+      cotizacion_usada: moneda === 'ARS' ? (cotizacion || null) : null,
     });
   }
 }
@@ -1914,9 +1934,9 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   }
 
   if (cuentaCorrienteActiva) {
-    await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda);
+    await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda, cotizacion);
   } else {
-    await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales);
+    await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales, cotizacion);
   }
   await regenerarDeudaDeVenta(ventaId, cliente.id, ventaFecha, deudaUsd);
 
@@ -2527,6 +2547,9 @@ const mClienteWrap = document.getElementById('m-cliente-wrap');
 const mClienteInput = document.getElementById('m-cliente-input');
 const mClienteSugerencias = document.getElementById('m-cliente-sugerencias');
 const mInversorWrap = document.getElementById('m-inversor-wrap');
+const mRetiroWrap = document.getElementById('m-retiro-wrap');
+const mRetiroEmiSwitch = document.getElementById('m-retiro-emi-switch');
+const mRetiroInaSwitch = document.getElementById('m-retiro-ina-switch');
 
 const CATEGORIAS_POR_TIPO = {
   ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda']],
@@ -2537,6 +2560,19 @@ function actualizarCamposMovimiento() {
   const categoria = mCategoria.value;
   mClienteWrap.classList.toggle('hidden', categoria !== 'pago_deuda');
   mInversorWrap.classList.toggle('hidden', !['inversion', 'pago_inversor'].includes(categoria));
+  mRetiroWrap.classList.toggle('hidden', categoria !== 'retiro');
+}
+
+mRetiroEmiSwitch.addEventListener('click', () => setSwitch(mRetiroEmiSwitch, mRetiroEmiSwitch.dataset.on !== 'true'));
+mRetiroInaSwitch.addEventListener('click', () => setSwitch(mRetiroInaSwitch, mRetiroInaSwitch.dataset.on !== 'true'));
+
+function retiroSocioSeleccionado() {
+  const emi = mRetiroEmiSwitch.dataset.on === 'true';
+  const ina = mRetiroInaSwitch.dataset.on === 'true';
+  if (emi && ina) return 'ambos';
+  if (emi) return 'emi';
+  if (ina) return 'ina';
+  return null;
 }
 
 // El tipo (ingreso/gasto) se deriva solo del signo del monto — no se elige a mano.
@@ -2598,6 +2634,9 @@ function abrirModalMovimiento(movimiento) {
   mClienteInput.value = M_CLIENTE_SELECCIONADO?.nombre || '';
   document.getElementById('m-inversor').value = movimiento?.inversor_id || '';
 
+  setSwitch(mRetiroEmiSwitch, movimiento?.retiro_socio === 'emi' || movimiento?.retiro_socio === 'ambos');
+  setSwitch(mRetiroInaSwitch, movimiento?.retiro_socio === 'ina' || movimiento?.retiro_socio === 'ambos');
+
   actualizarCamposMovimiento();
   modalMovimiento.classList.remove('hidden');
 }
@@ -2610,9 +2649,9 @@ document.getElementById('m-cancelar').addEventListener('click', () => {
 
 // Borra y, si corresponde, vuelve a crear la deuda ligada a este movimiento
 // de caja (mismo criterio que regenerarDeudaDeVenta: delete + insert condicional).
-async function sincronizarDeudaDeMovimiento(movimientoId, categoria, motivo, fecha, monto, moneda, clienteId, inversorId) {
+async function sincronizarDeudaDeMovimiento(movimientoId, categoria, motivo, fecha, monto, moneda, clienteId, inversorId, cotizacionUsada) {
   await supabase.from('deudas_movimientos').delete().eq('caja_movimiento_id', movimientoId);
-  const montoUsd = moneda === 'USD' ? monto : (COTIZACION_ACTUAL ? monto / COTIZACION_ACTUAL : 0);
+  const montoUsd = aUsd(monto, moneda, cotizacionUsada);
   if (categoria === 'pago_deuda' && clienteId) {
     await supabase.from('deudas_movimientos').insert({
       entidad_tipo: 'cliente', entidad_id: clienteId, tipo: 'pago',
@@ -2635,19 +2674,24 @@ document.getElementById('m-guardar').addEventListener('click', async () => {
   const categoria = mCategoria.value;
   const inversorId = document.getElementById('m-inversor').value || null;
   const clienteId = M_CLIENTE_SELECCIONADO?.id || null;
+  const retiroSocio = retiroSocioSeleccionado();
 
   if (categoria === 'pago_deuda' && !clienteId) { alert('Elegí a qué cliente corresponde el pago.'); return; }
   if (['inversion', 'pago_inversor'].includes(categoria) && !inversorId) { alert('Elegí a qué inversor corresponde.'); return; }
+  if (categoria === 'retiro' && !retiroSocio) { alert('Marcá de quién es el retiro (Emi, Iña, o los dos).'); return; }
 
+  const moneda = document.getElementById('m-moneda').value;
   const payload = {
     tipo: document.getElementById('m-tipo').value,
     categoria,
     motivo: document.getElementById('m-motivo').value.trim(),
     monto: Math.abs(Number(document.getElementById('m-monto').value)),
-    moneda: document.getElementById('m-moneda').value,
+    moneda,
+    cotizacion_usada: moneda === 'ARS' ? (COTIZACION_ACTUAL || null) : null,
     fecha: document.getElementById('m-fecha').value,
     cliente_id: categoria === 'pago_deuda' ? clienteId : null,
     inversor_id: ['inversion', 'pago_inversor'].includes(categoria) ? inversorId : null,
+    retiro_socio: categoria === 'retiro' ? retiroSocio : null,
   };
   if (!payload.motivo || !payload.monto || !payload.fecha) { alert('Completá motivo, monto y fecha.'); return; }
 
@@ -2661,7 +2705,7 @@ document.getElementById('m-guardar').addEventListener('click', async () => {
     movimientoId = data.id;
   }
 
-  await sincronizarDeudaDeMovimiento(movimientoId, categoria, payload.motivo, payload.fecha, payload.monto, payload.moneda, clienteId, inversorId);
+  await sincronizarDeudaDeMovimiento(movimientoId, categoria, payload.motivo, payload.fecha, payload.monto, payload.moneda, clienteId, inversorId, payload.cotizacion_usada);
 
   modalMovimiento.classList.add('hidden');
   EDITANDO_MOVIMIENTO = null;
@@ -2999,9 +3043,14 @@ function normalizarTexto(texto) {
   return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-function aUsd(monto, moneda) {
+// Usa la cotización guardada en el propio movimiento (histórica) si existe;
+// si no la tiene (movimientos manuales viejos o importados del Excel, de
+// antes de que esto se guardara), cae en la cotización actual como
+// aproximación.
+function aUsd(monto, moneda, cotizacionUsada) {
   if (moneda === 'USD') return Number(monto);
-  return COTIZACION_ACTUAL ? Number(monto) / COTIZACION_ACTUAL : 0;
+  const cotizacion = cotizacionUsada || COTIZACION_ACTUAL;
+  return cotizacion ? Number(monto) / cotizacion : 0;
 }
 
 function rangoMes(fecha) {
@@ -3047,7 +3096,7 @@ function renderGananciaMensual(ventasMes, cajaMes) {
 
   const gastosOperativos = cajaMes
     .filter(m => m.categoria === 'gasto_operativo' && m.tipo === 'gasto')
-    .reduce((s, m) => s + aUsd(m.monto, m.moneda), 0);
+    .reduce((s, m) => s + aUsd(m.monto, m.moneda, m.cotizacion_usada), 0);
 
   const gananciaOperativa = gananciaBruta - gastosOperativos;
 
@@ -3055,10 +3104,18 @@ function renderGananciaMensual(ventasMes, cajaMes) {
   cajaMes
     .filter(m => m.categoria === 'retiro' && m.tipo === 'gasto')
     .forEach(m => {
-      const motivo = normalizarTexto(m.motivo);
-      const usd = aUsd(m.monto, m.moneda);
-      if (motivo.includes('emi')) retiroEmi += usd;
-      else if (motivo.includes('ina')) retiroIña += usd;
+      const usd = aUsd(m.monto, m.moneda, m.cotizacion_usada);
+      let socio = m.retiro_socio;
+      if (!socio) {
+        // Retiros viejos sin el campo estructurado: se intenta inferir del motivo.
+        const motivo = normalizarTexto(m.motivo);
+        if (motivo.includes('ambos')) socio = 'ambos';
+        else if (motivo.includes('emi')) socio = 'emi';
+        else if (motivo.includes('ina')) socio = 'ina';
+      }
+      if (socio === 'ambos') { retiroEmi += usd / 2; retiroIña += usd / 2; }
+      else if (socio === 'emi') retiroEmi += usd;
+      else if (socio === 'ina') retiroIña += usd;
       else retiroOtros += usd;
     });
   const totalRetiros = retiroEmi + retiroIña + retiroOtros;
