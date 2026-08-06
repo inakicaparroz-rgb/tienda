@@ -481,6 +481,18 @@
       </div>
     </div>
 
+    <div class="border border-border p-3 mt-3">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="font-mono text-xs uppercase">No pasar a Flujo de caja</p>
+          <p class="text-muted text-xs mt-0.5">Para cargar ventas atrasadas sin tocar el saldo actual de Caja (ya está correcto). No genera movimiento de caja ni deuda.</p>
+        </div>
+        <button type="button" id="v-no-caja-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+    </div>
+
     <div class="flex gap-2 mt-5">
       <button id="v-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Confirmar venta</button>
       <button id="v-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
@@ -1773,6 +1785,11 @@ document.getElementById('v-abona-hoy').addEventListener('input', actualizarPrevi
 document.getElementById('v-abona-moneda').addEventListener('change', actualizarPreviewDeuda);
 document.getElementById('v-cotizacion').addEventListener('input', actualizarPreviewDeuda);
 
+// Temporal, para cargar ventas atrasadas sin tocar el saldo de Caja (que ya
+// está correcto) — sacar cuando se termine de cargar el backlog.
+const vNoCajaSwitch = document.getElementById('v-no-caja-switch');
+vNoCajaSwitch.addEventListener('click', () => setSwitch(vNoCajaSwitch, vNoCajaSwitch.dataset.on !== 'true'));
+
 async function abrirModalVenta(venta) {
   EDITANDO_VENTA = venta || null;
   document.getElementById('modal-venta-titulo').textContent = venta ? 'Editar venta' : 'Nueva venta';
@@ -1784,6 +1801,7 @@ async function abrirModalVenta(venta) {
   document.getElementById('v-abona-hoy').value = venta?.monto_abonado ?? '';
   document.getElementById('v-abona-moneda').value = venta?.abonado_moneda || 'USD';
   setCuentaCorriente(!!venta?.cuenta_corriente);
+  setSwitch(vNoCajaSwitch, false);
   modalVenta.classList.remove('hidden');
 
   if (venta) {
@@ -1948,12 +1966,16 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     itemsFinales.push({ moneda, monto: precioVenta });
   }
 
-  if (cuentaCorrienteActiva) {
-    await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda, cotizacion);
-  } else {
-    await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales, cotizacion);
+  // Temporal: para cargar ventas atrasadas sin tocar Caja/Deudas (que ya
+  // están correctas). Ver comentario en el switch "v-no-caja-switch".
+  if (vNoCajaSwitch.dataset.on !== 'true') {
+    if (cuentaCorrienteActiva) {
+      await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda, cotizacion);
+    } else {
+      await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales, cotizacion);
+    }
+    await regenerarDeudaDeVenta(ventaId, cliente.id, ventaFecha, deudaUsd);
   }
-  await regenerarDeudaDeVenta(ventaId, cliente.id, ventaFecha, deudaUsd);
 
   boton.disabled = false;
   modalVenta.classList.add('hidden');
