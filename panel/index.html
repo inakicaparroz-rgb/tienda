@@ -247,7 +247,55 @@
         <p id="caja-empty" class="p-6 text-center text-muted text-sm hidden">Todavía no hay movimientos.</p>
       </div>
     </section>
-    <section id="tab-reportes" class="tab-section hidden"><p class="text-muted font-mono text-sm">Próximamente.</p></section>
+    <!-- REPORTES -->
+    <section id="tab-reportes" class="tab-section hidden">
+      <div class="flex items-center justify-center gap-4 mb-6">
+        <button id="reportes-mes-anterior" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-2">◀</button>
+        <h3 id="reportes-mes-label" class="font-bold font-mono text-sm uppercase tracking-wide w-56 text-center"></h3>
+        <button id="reportes-mes-siguiente" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-2">▶</button>
+      </div>
+
+      <div class="border border-border p-5 mb-8 max-w-lg mx-auto">
+        <h3 class="font-bold font-mono text-sm uppercase tracking-wide mb-4">Ganancia mensual</h3>
+        <div class="space-y-2 text-sm font-mono">
+          <div class="flex justify-between"><span class="text-muted">Ganancia bruta</span><span id="rep-ganancia-bruta">USD 0.00</span></div>
+          <div class="flex justify-between"><span class="text-muted">− Gastos operativos</span><span id="rep-gastos-operativos" class="text-red-400">USD 0.00</span></div>
+          <div class="flex justify-between border-t border-border pt-2 font-bold"><span>= Ganancia operativa</span><span id="rep-ganancia-operativa">USD 0.00</span></div>
+          <div class="flex justify-between"><span class="text-muted">− Retiro Emi</span><span id="rep-retiro-emi" class="text-red-400">USD 0.00</span></div>
+          <div class="flex justify-between"><span class="text-muted">− Retiro Iña</span><span id="rep-retiro-ina" class="text-red-400">USD 0.00</span></div>
+          <div id="rep-retiro-otros-wrap" class="hidden justify-between"><span class="text-muted">− Retiros sin identificar</span><span id="rep-retiro-otros" class="text-red-400">USD 0.00</span></div>
+          <div class="flex justify-between border-t border-border pt-2 font-bold"><span>= Ganancia real</span><span id="rep-ganancia-real">USD 0.00</span></div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-border space-y-1 text-xs font-mono text-muted">
+          <div class="flex justify-between"><span>% Emi sobre ganancia operativa</span><span id="rep-pct-emi">0%</span></div>
+          <div class="flex justify-between"><span>% Iña sobre ganancia operativa</span><span id="rep-pct-ina">0%</span></div>
+          <div class="flex justify-between font-bold text-white"><span>% Total retiros sobre ganancia operativa</span><span id="rep-pct-total">0%</span></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="border border-border p-4">
+          <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Clientes con más gastado</h4>
+          <ol id="rep-ranking-clientes" class="text-sm space-y-1"></ol>
+        </div>
+        <div class="border border-border p-4">
+          <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Marca más vendida</h4>
+          <ol id="rep-ranking-marca-vendida" class="text-sm space-y-1"></ol>
+        </div>
+        <div class="border border-border p-4">
+          <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Categoría más vendida</h4>
+          <ol id="rep-ranking-categoria-vendida" class="text-sm space-y-1"></ol>
+        </div>
+        <div class="border border-border p-4">
+          <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Marca más comprada (stock ingresado)</h4>
+          <ol id="rep-ranking-marca-comprada" class="text-sm space-y-1"></ol>
+        </div>
+        <div class="border border-border p-4">
+          <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Categoría más comprada (stock ingresado)</h4>
+          <ol id="rep-ranking-categoria-comprada" class="text-sm space-y-1"></ol>
+        </div>
+      </div>
+    </section>
     <!-- DEUDAS Y DEUDORES -->
     <section id="tab-deudas" class="tab-section hidden">
       <div class="mb-8">
@@ -823,6 +871,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
     if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); }
+    if (btn.dataset.tab === 'reportes') { cargarConfiguracion(); cargarReportes(); }
   });
 });
 
@@ -2306,6 +2355,7 @@ async function cargarConfiguracion() {
     ? `$${COTIZACION_ACTUAL.toFixed(2)}`
     : 'Sin cargar';
   renderResumenCaja();
+  if (!document.getElementById('tab-reportes').classList.contains('hidden')) cargarReportes();
 }
 
 async function cargarInversores() {
@@ -2940,6 +2990,148 @@ document.getElementById('ni-guardar').addEventListener('click', async () => {
   modalNuevoInversor.classList.add('hidden');
   await cargarInversores();
   await cargarDeudas();
+});
+
+// ── REPORTES ───────────────────────────────────────────────────────────────
+let REPORTE_MES = new Date();
+
+function normalizarTexto(texto) {
+  return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function aUsd(monto, moneda) {
+  if (moneda === 'USD') return Number(monto);
+  return COTIZACION_ACTUAL ? Number(monto) / COTIZACION_ACTUAL : 0;
+}
+
+function rangoMes(fecha) {
+  const inicio = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+  const fin = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 1);
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  return { inicio: fmt(inicio), fin: fmt(fin) };
+}
+
+async function cargarReportes() {
+  const { inicio, fin } = rangoMes(REPORTE_MES);
+  document.getElementById('reportes-mes-label').textContent =
+    REPORTE_MES.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).toUpperCase();
+
+  const { data: ventasMes, error: errorVentas } = await supabase
+    .from('ventas')
+    .select(`
+      id, fecha, cliente_id, clientes(nombre),
+      venta_items(precio_venta_usd, costo_usd_snapshot, unidades(productos(marca, categoria)))
+    `)
+    .gte('fecha', inicio).lt('fecha', fin);
+  if (errorVentas) { console.error(errorVentas); return; }
+
+  const { data: cajaMes, error: errorCaja } = await supabase
+    .from('caja_movimientos')
+    .select('*')
+    .gte('fecha', inicio).lt('fecha', fin);
+  if (errorCaja) { console.error(errorCaja); return; }
+
+  const { data: unidadesMes, error: errorUnidades } = await supabase
+    .from('unidades')
+    .select('fecha_ingreso, productos(marca, categoria)')
+    .gte('fecha_ingreso', inicio).lt('fecha_ingreso', fin);
+  if (errorUnidades) { console.error(errorUnidades); return; }
+
+  renderGananciaMensual(ventasMes || [], cajaMes || []);
+  renderRankingsReportes(ventasMes || [], unidadesMes || []);
+}
+
+function renderGananciaMensual(ventasMes, cajaMes) {
+  const gananciaBruta = ventasMes.reduce((s, v) =>
+    s + (v.venta_items || []).reduce((s2, i) => s2 + (Number(i.precio_venta_usd || 0) - Number(i.costo_usd_snapshot || 0)), 0), 0);
+
+  const gastosOperativos = cajaMes
+    .filter(m => m.categoria === 'gasto_operativo' && m.tipo === 'gasto')
+    .reduce((s, m) => s + aUsd(m.monto, m.moneda), 0);
+
+  const gananciaOperativa = gananciaBruta - gastosOperativos;
+
+  let retiroEmi = 0, retiroIña = 0, retiroOtros = 0;
+  cajaMes
+    .filter(m => m.categoria === 'retiro' && m.tipo === 'gasto')
+    .forEach(m => {
+      const motivo = normalizarTexto(m.motivo);
+      const usd = aUsd(m.monto, m.moneda);
+      if (motivo.includes('emi')) retiroEmi += usd;
+      else if (motivo.includes('ina')) retiroIña += usd;
+      else retiroOtros += usd;
+    });
+  const totalRetiros = retiroEmi + retiroIña + retiroOtros;
+  const gananciaReal = gananciaOperativa - totalRetiros;
+
+  const pct = (parte) => gananciaOperativa ? (parte / gananciaOperativa * 100) : 0;
+
+  document.getElementById('rep-ganancia-bruta').textContent = `USD ${gananciaBruta.toFixed(2)}`;
+  document.getElementById('rep-gastos-operativos').textContent = `USD ${gastosOperativos.toFixed(2)}`;
+  document.getElementById('rep-ganancia-operativa').textContent = `USD ${gananciaOperativa.toFixed(2)}`;
+  document.getElementById('rep-retiro-emi').textContent = `USD ${retiroEmi.toFixed(2)}`;
+  document.getElementById('rep-retiro-ina').textContent = `USD ${retiroIña.toFixed(2)}`;
+  document.getElementById('rep-retiro-otros-wrap').classList.toggle('flex', retiroOtros > 0.01);
+  document.getElementById('rep-retiro-otros-wrap').classList.toggle('hidden', retiroOtros <= 0.01);
+  document.getElementById('rep-retiro-otros').textContent = `USD ${retiroOtros.toFixed(2)}`;
+  document.getElementById('rep-ganancia-real').textContent = `USD ${gananciaReal.toFixed(2)}`;
+  document.getElementById('rep-pct-emi').textContent = `${pct(retiroEmi).toFixed(1)}%`;
+  document.getElementById('rep-pct-ina').textContent = `${pct(retiroIña).toFixed(1)}%`;
+  document.getElementById('rep-pct-total').textContent = `${pct(totalRetiros).toFixed(1)}%`;
+}
+
+function renderRankingLista(elId, entradas, formatoValor) {
+  const el = document.getElementById(elId);
+  if (entradas.length === 0) { el.innerHTML = '<li class="text-muted">Sin datos este mes.</li>'; return; }
+  el.innerHTML = entradas.map(([nombre, valor], i) =>
+    `<li class="flex justify-between gap-2"><span>${i + 1}. ${nombre}</span><span class="text-muted whitespace-nowrap">${formatoValor(valor)}</span></li>`
+  ).join('');
+}
+
+function topEntradas(mapa, n = 10) {
+  return Object.entries(mapa).sort((a, b) => b[1] - a[1]).slice(0, n);
+}
+
+function renderRankingsReportes(ventasMes, unidadesMes) {
+  const porCliente = {};
+  ventasMes.forEach(v => {
+    const nombre = v.clientes?.nombre || 'Sin cliente';
+    const total = (v.venta_items || []).reduce((s, i) => s + Number(i.precio_venta_usd || 0), 0);
+    porCliente[nombre] = (porCliente[nombre] || 0) + total;
+  });
+
+  const marcaVendida = {}, categoriaVendida = {};
+  ventasMes.forEach(v => {
+    (v.venta_items || []).forEach(i => {
+      const marca = i.unidades?.productos?.marca || 'Sin marca';
+      const categoria = i.unidades?.productos?.categoria || 'Sin categoría';
+      marcaVendida[marca] = (marcaVendida[marca] || 0) + 1;
+      categoriaVendida[categoria] = (categoriaVendida[categoria] || 0) + 1;
+    });
+  });
+
+  const marcaComprada = {}, categoriaComprada = {};
+  unidadesMes.forEach(u => {
+    const marca = u.productos?.marca || 'Sin marca';
+    const categoria = u.productos?.categoria || 'Sin categoría';
+    marcaComprada[marca] = (marcaComprada[marca] || 0) + 1;
+    categoriaComprada[categoria] = (categoriaComprada[categoria] || 0) + 1;
+  });
+
+  renderRankingLista('rep-ranking-clientes', topEntradas(porCliente), v => `USD ${v.toFixed(2)}`);
+  renderRankingLista('rep-ranking-marca-vendida', topEntradas(marcaVendida), v => `${v} und.`);
+  renderRankingLista('rep-ranking-categoria-vendida', topEntradas(categoriaVendida), v => `${v} und.`);
+  renderRankingLista('rep-ranking-marca-comprada', topEntradas(marcaComprada), v => `${v} und.`);
+  renderRankingLista('rep-ranking-categoria-comprada', topEntradas(categoriaComprada), v => `${v} und.`);
+}
+
+document.getElementById('reportes-mes-anterior').addEventListener('click', () => {
+  REPORTE_MES = new Date(REPORTE_MES.getFullYear(), REPORTE_MES.getMonth() - 1, 1);
+  cargarReportes();
+});
+document.getElementById('reportes-mes-siguiente').addEventListener('click', () => {
+  REPORTE_MES = new Date(REPORTE_MES.getFullYear(), REPORTE_MES.getMonth() + 1, 1);
+  cargarReportes();
 });
 </script>
 </body>
