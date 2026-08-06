@@ -738,21 +738,21 @@
 </div>
 
 <!-- Menú flotante: Ordenar (Stock) -->
-<div id="orden-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-32">
+<div id="orden-stock-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-52">
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated">
-    <span>📅↑</span>
+    <span>📅 Más viejo primero</span>
     <button type="button" id="orden-stock-fecha-asc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
   </div>
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
-    <span>📅↓</span>
+    <span>📅 Más nuevo primero</span>
     <button type="button" id="orden-stock-fecha-desc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
   </div>
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
-    <span>🔤</span>
+    <span>🔤 Alfabético A-Z</span>
     <button type="button" id="orden-stock-alfa" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
@@ -782,21 +782,21 @@
 </div>
 
 <!-- Menú flotante: Ordenar (Ventas) -->
-<div id="orden-ventas-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-32">
+<div id="orden-ventas-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-52">
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated">
-    <span>📅↑</span>
+    <span>📅 Más vieja primero</span>
     <button type="button" id="orden-ventas-fecha-asc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
   </div>
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
-    <span>📅↓</span>
+    <span>📅 Más nueva primero</span>
     <button type="button" id="orden-ventas-fecha-desc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
   </div>
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
-    <span>🔤</span>
+    <span>🔤 Alfabético A-Z</span>
     <button type="button" id="orden-ventas-alfa" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
@@ -822,21 +822,21 @@
 </div>
 
 <!-- Menú flotante: Ordenar (Caja) -->
-<div id="orden-caja-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-32">
+<div id="orden-caja-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-52">
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated">
-    <span>📅↑</span>
+    <span>📅 Más viejo primero</span>
     <button type="button" id="orden-caja-fecha-asc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
   </div>
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
-    <span>📅↓</span>
+    <span>📅 Más nuevo primero</span>
     <button type="button" id="orden-caja-fecha-desc" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
   </div>
   <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
-    <span>🔤</span>
+    <span>🔤 Alfabético A-Z</span>
     <button type="button" id="orden-caja-alfa" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
       <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
     </button>
@@ -1064,11 +1064,12 @@ switchFiltroStock.addEventListener('click', () => {
   FILTRO_STOCK_ACTIVO = !FILTRO_STOCK_ACTIVO;
   setSwitch(switchFiltroStock, FILTRO_STOCK_ACTIVO);
   filtrar();
+  cerrarMenusFlotantes();
 });
 
 // ── Ordenar (Stock) ──
 document.getElementById('btn-ordenar-stock').addEventListener('click', (e) => {
-  abrirMenuFlotante(e.currentTarget, ordenStockMenu, 128);
+  abrirMenuFlotante(e.currentTarget, ordenStockMenu, 208);
 });
 const switchOrdenStockFechaAsc = document.getElementById('orden-stock-fecha-asc');
 const switchOrdenStockFechaDesc = document.getElementById('orden-stock-fecha-desc');
@@ -1079,17 +1080,20 @@ switchOrdenStockFechaAsc.addEventListener('click', () => {
   setSwitch(switchOrdenStockFechaAsc, ORDEN_STOCK_FECHA === 'asc');
   setSwitch(switchOrdenStockFechaDesc, false);
   filtrar();
+  cerrarMenusFlotantes();
 });
 switchOrdenStockFechaDesc.addEventListener('click', () => {
   ORDEN_STOCK_FECHA = ORDEN_STOCK_FECHA === 'desc' ? null : 'desc';
   setSwitch(switchOrdenStockFechaDesc, ORDEN_STOCK_FECHA === 'desc');
   setSwitch(switchOrdenStockFechaAsc, false);
   filtrar();
+  cerrarMenusFlotantes();
 });
 switchOrdenStockAlfa.addEventListener('click', () => {
   ORDEN_STOCK_ALFA = !ORDEN_STOCK_ALFA;
   setSwitch(switchOrdenStockAlfa, ORDEN_STOCK_ALFA);
   filtrar();
+  cerrarMenusFlotantes();
 });
 
 // ── STOCK: detalle de producto (lista plana de unidades) ────────────────
@@ -2167,7 +2171,7 @@ filtroVentasClienteClear.addEventListener('click', () => {
 
 // ── Ordenar (Ventas) ──
 document.getElementById('btn-ordenar-ventas').addEventListener('click', (e) => {
-  abrirMenuFlotante(e.currentTarget, ordenVentasMenu, 128);
+  abrirMenuFlotante(e.currentTarget, ordenVentasMenu, 208);
 });
 const switchOrdenVentasFechaAsc = document.getElementById('orden-ventas-fecha-asc');
 const switchOrdenVentasFechaDesc = document.getElementById('orden-ventas-fecha-desc');
@@ -2178,17 +2182,20 @@ switchOrdenVentasFechaAsc.addEventListener('click', () => {
   setSwitch(switchOrdenVentasFechaAsc, ORDEN_VENTAS_FECHA === 'asc');
   setSwitch(switchOrdenVentasFechaDesc, false);
   filtrarVentas();
+  cerrarMenusFlotantes();
 });
 switchOrdenVentasFechaDesc.addEventListener('click', () => {
   ORDEN_VENTAS_FECHA = ORDEN_VENTAS_FECHA === 'desc' ? null : 'desc';
   setSwitch(switchOrdenVentasFechaDesc, ORDEN_VENTAS_FECHA === 'desc');
   setSwitch(switchOrdenVentasFechaAsc, false);
   filtrarVentas();
+  cerrarMenusFlotantes();
 });
 switchOrdenVentasAlfa.addEventListener('click', () => {
   ORDEN_VENTAS_ALFA = !ORDEN_VENTAS_ALFA;
   setSwitch(switchOrdenVentasAlfa, ORDEN_VENTAS_ALFA);
   filtrarVentas();
+  cerrarMenusFlotantes();
 });
 
 let VENTA_ACTUAL = null;
@@ -2550,7 +2557,7 @@ poblarGrupoFiltroCaja('filtro-caja-categoria-opciones', Object.entries(CATEGORIA
 
 // ── Ordenar (Caja) ──
 document.getElementById('btn-ordenar-caja').addEventListener('click', (e) => {
-  abrirMenuFlotante(e.currentTarget, ordenCajaMenu, 128);
+  abrirMenuFlotante(e.currentTarget, ordenCajaMenu, 208);
 });
 const switchOrdenCajaFechaAsc = document.getElementById('orden-caja-fecha-asc');
 const switchOrdenCajaFechaDesc = document.getElementById('orden-caja-fecha-desc');
@@ -2561,17 +2568,20 @@ switchOrdenCajaFechaAsc.addEventListener('click', () => {
   setSwitch(switchOrdenCajaFechaAsc, ORDEN_CAJA_FECHA === 'asc');
   setSwitch(switchOrdenCajaFechaDesc, false);
   filtrarCaja();
+  cerrarMenusFlotantes();
 });
 switchOrdenCajaFechaDesc.addEventListener('click', () => {
   ORDEN_CAJA_FECHA = ORDEN_CAJA_FECHA === 'desc' ? null : 'desc';
   setSwitch(switchOrdenCajaFechaDesc, ORDEN_CAJA_FECHA === 'desc');
   setSwitch(switchOrdenCajaFechaAsc, false);
   filtrarCaja();
+  cerrarMenusFlotantes();
 });
 switchOrdenCajaAlfa.addEventListener('click', () => {
   ORDEN_CAJA_ALFA = !ORDEN_CAJA_ALFA;
   setSwitch(switchOrdenCajaAlfa, ORDEN_CAJA_ALFA);
   filtrarCaja();
+  cerrarMenusFlotantes();
 });
 
 // ── Nuevo/editar movimiento manual ──

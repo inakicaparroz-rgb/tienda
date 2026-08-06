@@ -35,6 +35,11 @@ Sistema de stock/ventas/caja de uso interno. Separado de la web pública (`/inde
 - ✅ Caja: la categoría **Retiro** ahora pide marcar de quién es con dos interruptores (Emi / Iña) — hay que marcar al menos uno, y si se marcan los dos se cuenta como retiro de ambos (se reparte 50/50 en Reportes). Reemplaza a la vieja heurística de buscar el nombre en el texto del motivo.
 - ⏳ Conexión con la web pública (para que index.html lea `productos_publicos` / `stock_publico` en vez del CSV de Google Sheets): pendiente.
 
+## Fixes recientes
+
+- **Menú Filtrar/Ordenar quedaba abierto y tapaba la lista.** Los interruptores de Ordenar (Stock, Ventas, Caja) y el de "En stock" en Stock ahora cierran el menú flotante solo al tocarlos, en vez de quedar abierto encima de la tabla — eso hacía que el primer click sobre una fila "no hiciera nada" (el click lo agarraba el menú invisible, no la fila). Los menús de Filtrar con selección múltiple (Año/Mes en Ventas, Tipo/Moneda/Categoría en Caja) siguen abiertos a propósito, para poder marcar varias opciones sin que se cierre — si ahí pasa lo mismo, avisar.
+- **Flechas de orden por fecha poco claras.** Los íconos 📅↑ / 📅↓ ahora tienen texto ("Más viejo primero" / "Más nuevo primero") en vez de ser solo el ícono.
+
 ## Pendientes puntuales de Stock
 
 Ninguno por ahora.
