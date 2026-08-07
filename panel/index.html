@@ -447,6 +447,10 @@
 
     <div class="flex items-end gap-3 mb-4">
       <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
+        <input id="v-fecha" type="date" class="w-40 px-3 py-2 text-sm" />
+      </div>
+      <div>
         <label class="block text-muted font-mono text-xs uppercase mb-1">Cotización USD hoy</label>
         <input id="v-cotizacion" type="number" step="0.01" class="w-32 px-3 py-2 text-sm" />
       </div>
@@ -1802,6 +1806,7 @@ async function abrirModalVenta(venta) {
   document.getElementById('v-cliente-email').value = venta?.clientes?.email || '';
   CLIENTE_SELECCIONADO = null;
   document.getElementById('v-items').innerHTML = '';
+  document.getElementById('v-fecha').value = venta?.fecha || new Date().toISOString().slice(0, 10);
   document.getElementById('v-abona-hoy').value = venta?.monto_abonado ?? '';
   document.getElementById('v-abona-moneda').value = venta?.abonado_moneda || 'USD';
   setCuentaCorriente(!!venta?.cuenta_corriente);
@@ -1908,13 +1913,14 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   const abonadoRaw = cuentaCorrienteActiva ? (parseFloat(document.getElementById('v-abona-hoy').value) || 0) : totalUsdVentaModal;
   const abonadoMoneda = cuentaCorrienteActiva ? document.getElementById('v-abona-moneda').value : 'USD';
   const deudaUsd = cuentaCorrienteActiva ? Math.max(0, totalUsdVentaModal - abonadoHoyEnUsd()) : 0;
+  const ventaFecha = document.getElementById('v-fecha').value || new Date().toISOString().slice(0, 10);
 
-  let ventaId, ventaFecha;
+  let ventaId;
   if (EDITANDO_VENTA) {
     ventaId = EDITANDO_VENTA.id;
-    ventaFecha = EDITANDO_VENTA.fecha;
     await supabase.from('ventas').update({
       cliente_id: cliente.id,
+      fecha: ventaFecha,
       cuenta_corriente: cuentaCorrienteActiva,
       monto_abonado: cuentaCorrienteActiva ? abonadoRaw : null,
       abonado_moneda: cuentaCorrienteActiva ? abonadoMoneda : null,
@@ -1932,13 +1938,13 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
       cliente_id: cliente.id,
       canal: 'local',
+      fecha: ventaFecha,
       cuenta_corriente: cuentaCorrienteActiva,
       monto_abonado: cuentaCorrienteActiva ? abonadoRaw : null,
       abonado_moneda: cuentaCorrienteActiva ? abonadoMoneda : null,
     }).select().single();
     if (errorVenta) { alert('Error al crear la venta.'); console.error(errorVenta); boton.disabled = false; return; }
     ventaId = venta.id;
-    ventaFecha = venta.fecha;
   }
 
   const itemsFinales = [];
