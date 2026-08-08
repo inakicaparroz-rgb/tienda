@@ -1702,8 +1702,10 @@ document.getElementById('accion-eliminar').addEventListener('click', async () =>
   }
 
   if (tipo === 'movimiento') {
-    if (obj.venta_id) { alert('Este movimiento pertenece a una venta y se administra desde la pestaña Ventas.'); return; }
-    if (!confirm(`¿Eliminar el movimiento "${obj.motivo}"? Esta acción no se puede deshacer.`)) return;
+    const aviso = obj.venta_id
+      ? ` Este movimiento viene de una venta — si esa venta se vuelve a editar y guardar, el movimiento se recrea solo.`
+      : '';
+    if (!confirm(`¿Eliminar el movimiento "${obj.motivo}"?${aviso} Esta acción no se puede deshacer.`)) return;
     await supabase.from('deudas_movimientos').delete().eq('caja_movimiento_id', obj.id);
     const { error } = await supabase.from('caja_movimientos').delete().eq('id', obj.id);
     if (error) { alert('Error al eliminar el movimiento.'); console.error(error); return; }
@@ -2844,18 +2846,14 @@ function renderCaja(lista) {
       <td class="p-2 text-muted">${CATEGORIA_LABEL[m.categoria] || m.categoria}</td>
       <td class="p-2">${m.motivo}</td>
       <td class="p-2 ${colorMonto}">${signo}${m.moneda} ${Number(m.monto).toFixed(2)}</td>
-      <td class="p-2 text-right">${
-        m.venta_id
-          ? '<span class="text-muted text-xs font-mono uppercase">🔗 Venta</span>'
-          : '<button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button>'
-      }</td>
+      <td class="p-2 text-right flex items-center justify-end gap-2">${
+        m.venta_id ? '<span class="text-muted text-xs font-mono uppercase">🔗 Venta</span>' : ''
+      }<button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button></td>
     `;
-    if (!m.venta_id) {
-      tr.querySelector('.btn-acciones').addEventListener('click', (e) => {
-        e.stopPropagation();
-        abrirMenuAcciones(e.currentTarget, 'movimiento', m);
-      });
-    }
+    tr.querySelector('.btn-acciones').addEventListener('click', (e) => {
+      e.stopPropagation();
+      abrirMenuAcciones(e.currentTarget, 'movimiento', m);
+    });
     tbody.appendChild(tr);
   });
 }
@@ -3030,7 +3028,6 @@ document.addEventListener('click', (e) => {
 });
 
 function abrirModalMovimiento(movimiento) {
-  if (movimiento?.venta_id) { alert('Este movimiento pertenece a una venta y se administra desde la pestaña Ventas.'); return; }
   EDITANDO_MOVIMIENTO = movimiento || null;
   document.getElementById('modal-movimiento-titulo').textContent = movimiento ? 'Editar movimiento' : 'Nuevo movimiento';
   document.getElementById('m-monto').value = movimiento
