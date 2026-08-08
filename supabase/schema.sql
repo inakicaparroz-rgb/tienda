@@ -479,6 +479,33 @@ alter table productos add column if not exists slug_web text;
 
 create unique index if not exists idx_productos_slug_web on productos(slug_web) where slug_web is not null;
 
+-- producto_fotos: fotos adicionales de un producto (además de la principal
+-- en productos.imagen_url), para el carrusel de la web. Se cargan desde el
+-- panel al crear/editar un producto.
+
+create table if not exists producto_fotos (
+  id uuid primary key default gen_random_uuid(),
+  producto_id uuid not null references productos(id) on delete cascade,
+  url text not null,
+  orden int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_producto_fotos_producto on producto_fotos(producto_id);
+
+alter table producto_fotos enable row level security;
+
+drop policy if exists "producto_fotos_authenticated_all" on producto_fotos;
+create policy "producto_fotos_authenticated_all" on producto_fotos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+drop policy if exists "producto_fotos_anon_select" on producto_fotos;
+create policy "producto_fotos_anon_select" on producto_fotos
+  for select using (true);
+
+grant select, insert, update, delete on producto_fotos to authenticated;
+grant select on producto_fotos to anon;
+
 -- productos_publicos (la vista que lee la web) necesita nombre_web y stock
 -- total además de lo que ya exponía.
 create or replace view productos_publicos as

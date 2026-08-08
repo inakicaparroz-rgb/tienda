@@ -85,6 +85,9 @@
         <button id="btn-vincular-web" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
           Vincular con la web
         </button>
+        <button id="btn-sync-web" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Sincronizar precios/categorías
+        </button>
       </div>
       <p id="stock-contador" class="text-muted font-mono text-xs mb-3"></p>
 
@@ -401,11 +404,23 @@
         <p class="text-muted text-xs mt-1">Obligatorio en productos nuevos. Si queda vacío en uno viejo, la web usa el Nombre de arriba.</p>
       </div>
       <input id="p-marca" placeholder="Marca" class="w-full px-3 py-2" />
-      <input id="p-categoria" placeholder="Categoría" class="w-full px-3 py-2" />
+      <select id="p-categoria" class="w-full px-3 py-2">
+        <option value="">Categoría…</option>
+        <option value="remeras">Remeras</option>
+        <option value="pantalones">Pantalones</option>
+        <option value="buzos">Buzos</option>
+        <option value="zapatillas">Zapatillas</option>
+        <option value="accesorios">Accesorios</option>
+      </select>
       <div>
-        <label class="block text-muted font-mono text-xs uppercase mb-1">Foto</label>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Foto principal</label>
         <input id="p-imagen-file" type="file" accept="image/*" class="w-full text-sm" />
         <img id="p-imagen-preview" class="hidden w-24 h-24 object-cover mt-2 bg-surface-elevated" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Fotos adicionales (carrusel web)</label>
+        <input id="p-fotos-file" type="file" accept="image/*" multiple class="w-full text-sm" />
+        <div id="p-fotos-grid" class="flex flex-wrap gap-2 mt-2"></div>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <input id="p-precio" type="number" step="0.01" placeholder="Precio venta USD" class="w-full px-3 py-2" />
@@ -545,6 +560,21 @@
     <p id="vw-vacio" class="hidden text-center text-muted text-sm py-8">
       No quedan productos de la web sin vincular. Ya podés avisarle a Claude que termine el corte a Supabase.
     </p>
+  </div>
+</div>
+
+<!-- Modal: sincronizar precios/categorías con la web (herramienta de un solo uso) -->
+<div id="modal-sync-web" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
+    <h3 class="font-bold mb-3">Sincronizar precios/categorías con la web</h3>
+    <p class="text-muted text-xs mb-4 leading-relaxed">
+      Para cada producto ya vinculado con la web: si el precio en USD difiere, se actualiza acá al precio de la web. Si la categoría está vacía, se completa con la categoría de la web. Lo que ya está cargado en el sistema no se toca.
+    </p>
+    <div id="sync-web-log" class="font-mono text-xs text-muted space-y-1 max-h-64 overflow-y-auto mb-4"></div>
+    <div class="flex gap-2">
+      <button id="sync-web-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Sincronizar</button>
+      <button id="sync-web-cerrar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -1268,7 +1298,55 @@ let EDITANDO_PRODUCTO = null; // null = alta nueva; objeto = edición
 
 let VW_CREANDO_DESDE = null; // producto de la web desde el que se está creando un producto nuevo (o null)
 
-function abrirModalProducto(producto, webPrellenado) {
+// Fotos adicionales del producto (carrusel web): las que ya estaban guardadas
+// (se borran al toque si se saca la ×) y las nuevas elegidas en este modal
+// (se suben recién al guardar, porque hace falta el id del producto).
+let FOTOS_EXISTENTES = [];
+let FOTOS_NUEVAS = [];
+
+function renderFotosGrid() {
+  const cont = document.getElementById('p-fotos-grid');
+  const existentes = FOTOS_EXISTENTES.map(f => `
+    <div class="relative w-16 h-16">
+      <img src="${f.url}" class="w-16 h-16 object-cover bg-surface-elevated" />
+      <button type="button" data-foto-existente="${f.id}" class="absolute -top-1.5 -right-1.5 bg-black text-white w-5 h-5 rounded-full text-xs leading-none">×</button>
+    </div>
+  `).join('');
+  const nuevas = FOTOS_NUEVAS.map((file, i) => `
+    <div class="relative w-16 h-16">
+      <img src="${URL.createObjectURL(file)}" class="w-16 h-16 object-cover bg-surface-elevated" />
+      <button type="button" data-foto-nueva="${i}" class="absolute -top-1.5 -right-1.5 bg-black text-white w-5 h-5 rounded-full text-xs leading-none">×</button>
+    </div>
+  `).join('');
+  cont.innerHTML = existentes + nuevas;
+  cont.querySelectorAll('[data-foto-existente]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.fotoExistente;
+      const foto = FOTOS_EXISTENTES.find(f => f.id === id);
+      await supabase.from('producto_fotos').delete().eq('id', id);
+      if (foto) {
+        const ruta = foto.url.split('/productos/')[1];
+        if (ruta) await supabase.storage.from('productos').remove([ruta]);
+      }
+      FOTOS_EXISTENTES = FOTOS_EXISTENTES.filter(f => f.id !== id);
+      renderFotosGrid();
+    });
+  });
+  cont.querySelectorAll('[data-foto-nueva]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      FOTOS_NUEVAS.splice(Number(btn.dataset.fotoNueva), 1);
+      renderFotosGrid();
+    });
+  });
+}
+
+document.getElementById('p-fotos-file').addEventListener('change', (e) => {
+  FOTOS_NUEVAS.push(...e.target.files);
+  e.target.value = '';
+  renderFotosGrid();
+});
+
+async function abrirModalProducto(producto, webPrellenado) {
   EDITANDO_PRODUCTO = producto || null;
   VW_CREANDO_DESDE = webPrellenado || null;
   document.getElementById('modal-producto-titulo').textContent = producto ? 'Editar producto' : 'Nuevo producto';
@@ -1286,6 +1364,15 @@ function abrirModalProducto(producto, webPrellenado) {
   const imagenPrevia = producto?.imagen_url || (webPrellenado ? WEB_IMG_BASE + webPrellenado.slug + '.jpg' : null);
   if (imagenPrevia) { preview.src = imagenPrevia; preview.classList.remove('hidden'); }
   else { preview.classList.add('hidden'); }
+
+  FOTOS_NUEVAS = [];
+  FOTOS_EXISTENTES = [];
+  if (producto) {
+    const { data } = await supabase.from('producto_fotos').select('*').eq('producto_id', producto.id).order('orden', { ascending: true });
+    FOTOS_EXISTENTES = data || [];
+  }
+  renderFotosGrid();
+
   modalProducto.classList.remove('hidden');
 }
 
@@ -1341,14 +1428,29 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
   };
   if (!EDITANDO_PRODUCTO && VW_CREANDO_DESDE) producto.slug_web = VW_CREANDO_DESDE.slug;
 
-  let error;
+  let error, productoId = EDITANDO_PRODUCTO?.id;
   if (EDITANDO_PRODUCTO) {
     ({ error } = await supabase.from('productos').update(producto).eq('id', EDITANDO_PRODUCTO.id));
   } else {
     producto.slug = slugify(nombre) + '-' + Date.now().toString(36);
-    ({ error } = await supabase.from('productos').insert(producto));
+    const { data, error: insertError } = await supabase.from('productos').insert(producto).select().single();
+    error = insertError;
+    productoId = data?.id;
   }
   if (error) { alert('Error al guardar el producto.'); console.error(error); return; }
+
+  if (FOTOS_NUEVAS.length > 0 && productoId) {
+    let orden = FOTOS_EXISTENTES.length;
+    for (const foto of FOTOS_NUEVAS) {
+      const ruta = `fotos/${productoId}-${Date.now()}-${foto.name}`;
+      const { error: uploadError } = await supabase.storage.from('productos').upload(ruta, foto);
+      if (uploadError) { console.error(uploadError); continue; }
+      const url = supabase.storage.from('productos').getPublicUrl(ruta).data.publicUrl;
+      await supabase.from('producto_fotos').insert({ producto_id: productoId, url, orden: orden++ });
+    }
+  }
+  FOTOS_NUEVAS = [];
+  FOTOS_EXISTENTES = [];
 
   modalProducto.classList.add('hidden');
   EDITANDO_PRODUCTO = null;
@@ -1482,6 +1584,58 @@ document.getElementById('vw-saltear').addEventListener('click', () => {
 document.getElementById('vw-crear-nuevo').addEventListener('click', () => {
   document.getElementById('modal-vincular-web').classList.add('hidden');
   abrirModalProducto(null, VW_ACTUAL);
+});
+
+// ── STOCK: sincronizar precios/categorías con la web (herramienta de un solo uso) ──
+document.getElementById('btn-sync-web').addEventListener('click', () => {
+  document.getElementById('sync-web-log').innerHTML = '';
+  document.getElementById('modal-sync-web').classList.remove('hidden');
+});
+
+document.getElementById('sync-web-cerrar').addEventListener('click', () => {
+  document.getElementById('modal-sync-web').classList.add('hidden');
+});
+
+document.getElementById('sync-web-confirmar').addEventListener('click', async () => {
+  const log = document.getElementById('sync-web-log');
+  log.innerHTML = 'Descargando catálogo de la web…';
+
+  let filasWeb;
+  try {
+    const resp = await fetch(WEB_SHEETS_CSV);
+    if (!resp.ok) throw new Error('No se pudo leer el Google Sheet');
+    filasWeb = parsearCSVWeb(await resp.text());
+  } catch (e) {
+    log.innerHTML = 'No se pudo cargar el catálogo de la web. Revisá la conexión e intentá de nuevo.';
+    console.error(e);
+    return;
+  }
+  const porSlug = {};
+  filasWeb.forEach(f => { porSlug[f.slug] = f; });
+
+  await cargarProductos();
+  const vinculados = PRODUCTOS.filter(p => p.slug_web && porSlug[p.slug_web]);
+
+  log.innerHTML = '';
+  let cambiosPrecio = 0, cambiosCategoria = 0;
+  for (const p of vinculados) {
+    const web = porSlug[p.slug_web];
+    const payload = {};
+    const precioWeb = parseFloat(web.precioUSD) || 0;
+    if (precioWeb && precioWeb !== Number(p.precio_venta_usd)) payload.precio_venta_usd = precioWeb;
+    if ((!p.categoria || !p.categoria.trim()) && web.categoria) payload.categoria = web.categoria.trim();
+    if (Object.keys(payload).length === 0) continue;
+
+    const { error } = await supabase.from('productos').update(payload).eq('id', p.id);
+    if (error) { log.innerHTML += `<p class="text-red-400">Error en ${p.nombre}: ${error.message}</p>`; continue; }
+
+    const partes = [];
+    if (payload.precio_venta_usd !== undefined) { partes.push(`precio USD ${p.precio_venta_usd} → ${payload.precio_venta_usd}`); cambiosPrecio++; }
+    if (payload.categoria !== undefined) { partes.push(`categoría → ${payload.categoria}`); cambiosCategoria++; }
+    log.innerHTML += `<p>${p.nombre}: ${partes.join(', ')}</p>`;
+  }
+  log.innerHTML += `<p class="mt-3 font-bold text-white">Listo. ${cambiosPrecio} precios actualizados, ${cambiosCategoria} categorías completadas.</p>`;
+  await cargarProductos();
 });
 
 // ── STOCK: menú de acciones (⋮) — editar / historial / eliminar ─────────
