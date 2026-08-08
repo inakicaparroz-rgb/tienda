@@ -1164,6 +1164,10 @@ async function abrirDetalle(producto, filaClickeada) {
     .order('talle', { ascending: true })
     .order('fecha_ingreso', { ascending: true });
 
+  // Si mientras esperábamos esta respuesta se abrió otro producto (ej. se
+  // clickeó una fila distinta), esta respuesta ya está obsoleta — descartarla
+  // en vez de pisar el detalle del producto que se está mostrando ahora.
+  if (PRODUCTO_ACTUAL?.id !== producto.id) return;
   PRODUCTO_ACTUAL._unidades = unidades || [];
   renderUnidades();
 }
@@ -1255,7 +1259,7 @@ document.getElementById('btn-agregar-unidad').addEventListener('click', async ()
   document.getElementById('nueva-unidad-fecha').value = new Date().toISOString().slice(0, 10);
   await cargarProductos();
   const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
-  abrirDetalle(actualizado);
+  await abrirDetalle(actualizado);
 });
 
 // ── STOCK: nuevo producto / editar producto ─────────────────────────────
@@ -1566,7 +1570,7 @@ document.getElementById('accion-eliminar').addEventListener('click', async () =>
   } else {
     await cargarProductos();
     const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
-    abrirDetalle(actualizado);
+    await abrirDetalle(actualizado);
   }
 });
 
@@ -1645,7 +1649,7 @@ document.getElementById('u-guardar').addEventListener('click', async () => {
   EDITANDO_UNIDAD = null;
   await cargarProductos();
   const actualizado = PRODUCTOS.find(p => p.id === PRODUCTO_ACTUAL.id);
-  abrirDetalle(actualizado);
+  await abrirDetalle(actualizado);
 });
 
 // ── STOCK: importar desde CSV (carga del Excel viejo) ────────────────────

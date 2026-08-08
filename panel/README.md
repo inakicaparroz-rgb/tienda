@@ -42,6 +42,8 @@ Sistema de stock/ventas/caja de uso interno. Separado de la web pública (`/inde
 
 - **Menú Filtrar/Ordenar quedaba abierto y tapaba la lista.** Los interruptores de Ordenar (Stock, Ventas, Caja) y el de "En stock" en Stock ahora cierran el menú flotante solo al tocarlos, en vez de quedar abierto encima de la tabla — eso hacía que el primer click sobre una fila "no hiciera nada" (el click lo agarraba el menú invisible, no la fila). Los menús de Filtrar con selección múltiple (Año/Mes en Ventas, Tipo/Moneda/Categoría en Caja) siguen abiertos a propósito, para poder marcar varias opciones sin que se cierre — si ahí pasa lo mismo, avisar.
 - **Flechas de orden por fecha poco claras.** Los íconos 📅↑ / 📅↓ ahora tienen texto ("Más viejo primero" / "Más nuevo primero") en vez de ser solo el ícono.
+- **Fotos cargando todas de golpe (lentitud en Stock).** Con ~100+ productos ya vinculados a la web (muchas fotos en `copordropstore.com`), cada actualización de la lista de Stock disparaba la carga de todas las fotos aunque no estuvieran a la vista. Ahora usan `loading="lazy"`, solo cargan las que se ven.
+- **Detalle de producto mostraba/no mostraba lo que no correspondía después de agregar una unidad.** Condición de carrera: al agregar una unidad, el código volvía a abrir el detalle del producto sin esperar a que la consulta terminara — si mientras tanto se clickeaba otro producto, las dos consultas (la vieja y la nueva) se pisaban entre sí y terminaba mostrando datos mezclados o nada. Ahora cada apertura de detalle descarta su propia respuesta si mientras esperaba se abrió otro producto distinto.
 
 ## Pendientes puntuales de Stock
 
