@@ -995,7 +995,7 @@ function renderProductos(lista) {
     tr.className = 'cursor-pointer hover:bg-surface-elevated';
     tr.dataset.id = p.id;
     tr.innerHTML = `
-      <td class="p-2"><img src="${p.imagen_url || ''}" class="w-10 h-10 object-cover bg-surface-elevated" onerror="this.style.opacity=0"/></td>
+      <td class="p-2"><img src="${p.imagen_url || ''}" loading="lazy" class="w-10 h-10 object-cover bg-surface-elevated" onerror="this.style.opacity=0"/></td>
       <td class="p-2">${p.nombre}</td>
       <td class="p-2 text-muted">${p.marca || '-'}</td>
       <td class="p-2 text-muted">${p.categoria || '-'}</td>
@@ -1443,7 +1443,7 @@ document.getElementById('vw-buscar').addEventListener('input', () => {
   const resultados = PRODUCTOS.filter(p => p.nombre.toLowerCase().includes(q)).slice(0, 8);
   cont.innerHTML = resultados.map(p => `
     <button type="button" class="vw-opcion flex items-center gap-2 w-full text-left px-2 py-1.5 hover:bg-surface-elevated border border-border" data-id="${p.id}">
-      <img src="${p.imagen_url || ''}" class="w-8 h-8 object-cover bg-surface-elevated flex-shrink-0" onerror="this.style.opacity=0" />
+      <img src="${p.imagen_url || ''}" loading="lazy" class="w-8 h-8 object-cover bg-surface-elevated flex-shrink-0" onerror="this.style.opacity=0" />
       <span class="text-sm">${p.nombre}${p.marca ? ' — ' + p.marca : ''}</span>
     </button>
   `).join('') || '<p class="text-muted text-sm px-2 py-1.5">Sin resultados.</p>';
