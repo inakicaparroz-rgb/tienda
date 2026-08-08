@@ -465,3 +465,33 @@ update caja_movimientos set retiro_socio = 'emi'
   where categoria = 'retiro' and retiro_socio is null and motivo ~* 'emi';
 update caja_movimientos set retiro_socio = 'ina'
   where categoria = 'retiro' and retiro_socio is null and motivo ~* 'i[ñn]a';
+
+-- ═══ MÓDULO WEB (conexión con copordropstore.com) ═══════════════════════
+
+-- nombre_web: nombre a mostrar al cliente (si está vacío, la web usa el
+-- nombre interno como respaldo). slug_web: el slug que tenía el producto
+-- en el catálogo viejo (Google Sheets) — solo sirve para que la
+-- herramienta de vinculación sepa cuáles ya están vinculados y no los
+-- vuelva a preguntar.
+
+alter table productos add column if not exists nombre_web text;
+alter table productos add column if not exists slug_web text;
+
+create unique index if not exists idx_productos_slug_web on productos(slug_web) where slug_web is not null;
+
+-- productos_publicos (la vista que lee la web) necesita nombre_web y stock
+-- total además de lo que ya exponía.
+create or replace view productos_publicos as
+select
+  id,
+  slug,
+  coalesce(nullif(nombre_web, ''), nombre) as nombre,
+  marca,
+  categoria,
+  imagen_url,
+  precio_venta_usd,
+  precio_promocional_usd,
+  tiene_talles,
+  fit
+from productos
+where activo = true;

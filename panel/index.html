@@ -82,6 +82,9 @@
         <button id="btn-nuevo-producto" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nuevo producto
         </button>
+        <button id="btn-vincular-web" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Vincular con la web
+        </button>
       </div>
       <p id="stock-contador" class="text-muted font-mono text-xs mb-3"></p>
 
@@ -393,6 +396,10 @@
     <h3 id="modal-producto-titulo" class="font-bold mb-4">Nuevo producto</h3>
     <div class="space-y-3 text-sm">
       <input id="p-nombre" placeholder="Nombre" class="w-full px-3 py-2" />
+      <div>
+        <input id="p-nombre-web" placeholder="Nombre web (como lo ve el cliente)" class="w-full px-3 py-2" />
+        <p class="text-muted text-xs mt-1">Obligatorio en productos nuevos. Si queda vacío en uno viejo, la web usa el Nombre de arriba.</p>
+      </div>
       <input id="p-marca" placeholder="Marca" class="w-full px-3 py-2" />
       <input id="p-categoria" placeholder="Categoría" class="w-full px-3 py-2" />
       <div>
@@ -501,6 +508,38 @@
       <button id="v-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Confirmar venta</button>
       <button id="v-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal: vincular catálogo web con productos de Stock (herramienta de un solo uso) -->
+<div id="modal-vincular-web" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-1">
+      <h3 class="font-bold">Vincular con la web</h3>
+      <button id="vw-cerrar" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+    </div>
+    <p id="vw-progreso" class="text-muted font-mono text-xs uppercase mb-4"></p>
+
+    <div id="vw-contenido">
+      <div class="border border-border bg-surface-elevated aspect-square mb-3 flex items-center justify-center overflow-hidden">
+        <img id="vw-foto" class="w-full h-full object-cover" />
+      </div>
+      <p id="vw-marca" class="text-muted font-mono text-xs uppercase"></p>
+      <h4 id="vw-nombre" class="font-bold text-lg mb-1"></h4>
+      <p id="vw-precio" class="text-accent font-mono text-sm mb-4"></p>
+
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Buscar en Stock</label>
+      <input id="vw-buscar" placeholder="Escribí el nombre del producto…" class="w-full px-3 py-2 text-sm mb-2" autocomplete="off" />
+      <div id="vw-resultados" class="space-y-1 max-h-56 overflow-y-auto mb-4"></div>
+
+      <button id="vw-saltear" class="w-full border border-border font-mono uppercase text-xs tracking-wide py-2.5">
+        No existe en Stock — saltear
+      </button>
+    </div>
+
+    <p id="vw-vacio" class="hidden text-center text-muted text-sm py-8">
+      No quedan productos de la web sin vincular. Ya podés avisarle a Claude que termine el corte a Supabase.
+    </p>
   </div>
 </div>
 
@@ -1221,6 +1260,7 @@ function abrirModalProducto(producto) {
   EDITANDO_PRODUCTO = producto || null;
   document.getElementById('modal-producto-titulo').textContent = producto ? 'Editar producto' : 'Nuevo producto';
   document.getElementById('p-nombre').value = producto?.nombre || '';
+  document.getElementById('p-nombre-web').value = producto?.nombre_web || '';
   document.getElementById('p-marca').value = producto?.marca || '';
   document.getElementById('p-categoria').value = producto?.categoria || '';
   document.getElementById('p-precio').value = producto?.precio_venta_usd ?? '';
@@ -1255,6 +1295,8 @@ document.getElementById('p-imagen-file').addEventListener('change', (e) => {
 document.getElementById('p-guardar').addEventListener('click', async () => {
   const nombre = document.getElementById('p-nombre').value.trim();
   if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  const nombreWeb = document.getElementById('p-nombre-web').value.trim();
+  if (!EDITANDO_PRODUCTO && !nombreWeb) { alert('El nombre web es obligatorio en productos nuevos.'); return; }
 
   let imagenUrl = EDITANDO_PRODUCTO?.imagen_url || null;
   const file = document.getElementById('p-imagen-file').files[0];
@@ -1267,6 +1309,7 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
 
   const producto = {
     nombre,
+    nombre_web: nombreWeb || null,
     marca: document.getElementById('p-marca').value.trim() || null,
     categoria: document.getElementById('p-categoria').value.trim() || null,
     imagen_url: imagenUrl,
@@ -1289,6 +1332,123 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
   modalProducto.classList.add('hidden');
   EDITANDO_PRODUCTO = null;
   cargarProductos();
+});
+
+// ── STOCK: vincular catálogo web con productos existentes (herramienta temporal) ──
+const WEB_SHEETS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfBmxBQgdQJb5_CkPfoMzR2G_r1_zFCX1K4hiANpUKt7IKohRQ80LQDYUlMcH5EfaQE92at5iW0xM8/pub?gid=2088560133&single=true&output=csv";
+const WEB_IMG_BASE = "https://copordropstore.com/img/";
+
+let WEB_PRODUCTOS_PENDIENTES = [];
+let VW_ACTUAL = null;
+let VW_PRODUCTO_ELEGIDO = null;
+
+function parsearCSVWeb(texto) {
+  const lineas = texto.trim().split('\n');
+  const partirLinea = (linea) => {
+    const campos = linea.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
+    return campos.map(c => c.replace(/^"|"$/g, '').trim());
+  };
+  const encabezados = partirLinea(lineas[0]);
+  return lineas.slice(1).map(linea => {
+    const valores = partirLinea(linea);
+    const fila = {};
+    encabezados.forEach((h, i) => { fila[h] = valores[i] || ''; });
+    return fila;
+  }).filter(f => f.slug && f.nombre);
+}
+
+document.getElementById('btn-vincular-web').addEventListener('click', async () => {
+  const modal = document.getElementById('modal-vincular-web');
+  modal.classList.remove('hidden');
+  document.getElementById('vw-progreso').textContent = 'Cargando catálogo de la web…';
+  document.getElementById('vw-contenido').classList.add('hidden');
+  document.getElementById('vw-vacio').classList.add('hidden');
+
+  await cargarProductos();
+  const slugsYaVinculados = new Set(PRODUCTOS.filter(p => p.slug_web).map(p => p.slug_web));
+
+  try {
+    const resp = await fetch(WEB_SHEETS_CSV);
+    if (!resp.ok) throw new Error('No se pudo leer el Google Sheet');
+    const filas = parsearCSVWeb(await resp.text());
+    WEB_PRODUCTOS_PENDIENTES = filas.filter(f => !slugsYaVinculados.has(f.slug));
+  } catch (e) {
+    alert('No se pudo cargar el catálogo de la web. Revisá la conexión e intentá de nuevo.');
+    console.error(e);
+    modal.classList.add('hidden');
+    return;
+  }
+
+  mostrarSiguienteProductoWeb();
+});
+
+document.getElementById('vw-cerrar').addEventListener('click', () => {
+  document.getElementById('modal-vincular-web').classList.add('hidden');
+});
+
+function mostrarSiguienteProductoWeb() {
+  const contenido = document.getElementById('vw-contenido');
+  const vacio = document.getElementById('vw-vacio');
+
+  if (WEB_PRODUCTOS_PENDIENTES.length === 0) {
+    contenido.classList.add('hidden');
+    vacio.classList.remove('hidden');
+    document.getElementById('vw-progreso').textContent = '';
+    return;
+  }
+
+  contenido.classList.remove('hidden');
+  vacio.classList.add('hidden');
+  VW_ACTUAL = WEB_PRODUCTOS_PENDIENTES[0];
+  VW_PRODUCTO_ELEGIDO = null;
+
+  document.getElementById('vw-progreso').textContent = `Quedan ${WEB_PRODUCTOS_PENDIENTES.length} productos de la web sin vincular`;
+  document.getElementById('vw-foto').src = WEB_IMG_BASE + VW_ACTUAL.slug + '.jpg';
+  document.getElementById('vw-marca').textContent = VW_ACTUAL.marca || '';
+  document.getElementById('vw-nombre').textContent = VW_ACTUAL.nombre;
+  document.getElementById('vw-precio').textContent = VW_ACTUAL.precioUSD ? `USD ${VW_ACTUAL.precioUSD}` : '';
+  document.getElementById('vw-buscar').value = '';
+  document.getElementById('vw-resultados').innerHTML = '';
+  document.getElementById('vw-buscar').focus();
+}
+
+document.getElementById('vw-buscar').addEventListener('input', () => {
+  const q = document.getElementById('vw-buscar').value.trim().toLowerCase();
+  const cont = document.getElementById('vw-resultados');
+  if (!q) { cont.innerHTML = ''; return; }
+  const resultados = PRODUCTOS.filter(p => p.nombre.toLowerCase().includes(q)).slice(0, 8);
+  cont.innerHTML = resultados.map(p => `
+    <button type="button" class="vw-opcion flex items-center gap-2 w-full text-left px-2 py-1.5 hover:bg-surface-elevated border border-border" data-id="${p.id}">
+      <img src="${p.imagen_url || ''}" class="w-8 h-8 object-cover bg-surface-elevated flex-shrink-0" onerror="this.style.opacity=0" />
+      <span class="text-sm">${p.nombre}${p.marca ? ' — ' + p.marca : ''}</span>
+    </button>
+  `).join('') || '<p class="text-muted text-sm px-2 py-1.5">Sin resultados.</p>';
+  cont.querySelectorAll('.vw-opcion').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const producto = PRODUCTOS.find(p => p.id === btn.dataset.id);
+      await vincularProductoWeb(producto);
+    });
+  });
+});
+
+async function vincularProductoWeb(producto) {
+  const payload = {
+    nombre_web: VW_ACTUAL.nombre,
+    slug_web: VW_ACTUAL.slug,
+  };
+  if (!producto.imagen_url) payload.imagen_url = WEB_IMG_BASE + VW_ACTUAL.slug + '.jpg';
+
+  const { error } = await supabase.from('productos').update(payload).eq('id', producto.id);
+  if (error) { alert('Error al vincular el producto.'); console.error(error); return; }
+
+  producto.slug_web = VW_ACTUAL.slug; // para que no vuelva a contarlo si se recarga PRODUCTOS
+  WEB_PRODUCTOS_PENDIENTES.shift();
+  mostrarSiguienteProductoWeb();
+}
+
+document.getElementById('vw-saltear').addEventListener('click', () => {
+  WEB_PRODUCTOS_PENDIENTES.shift();
+  mostrarSiguienteProductoWeb();
 });
 
 // ── STOCK: menú de acciones (⋮) — editar / historial / eliminar ─────────
