@@ -13,7 +13,6 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/png" href="img/favicon.png" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -660,6 +659,7 @@
         : [];
       const words = p.nombre ? p.nombre.split(" ") : ["", ""];
       return {
+        id: p.id,
         slug: p.slug,
         name: p.nombre,
         brand: p.marca || "",
@@ -685,11 +685,6 @@
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
 const WA_NUMBER = "541134435571";
-  const EMAILJS_SERVICE  = "service_323iemj";
-  const EMAILJS_TEMPLATE = "ctl6bnh";
-  const EMAILJS_PUBKEY   = "RkTdp6hovNqBxd2Kr_yfM";
-  const STORE_EMAIL      = "copordrop.ar@gmail.com";
-  emailjs.init({ publicKey: EMAILJS_PUBKEY });
 
   const grid = document.getElementById("product-grid");
   const resultsCount = document.getElementById("results-count");
@@ -1143,35 +1138,16 @@ const WA_NUMBER = "541134435571";
       deliveryLines = horario ? `Horario de retiro: ${horario}` : "";
     }
 
-    const orderSummary = cart.map(p => `• ${p.name}${p.talle ? ` (Talle ${p.talle})` : ""} — USD ${p.priceUSD}`).join("\n")
-      + `\n\nTOTAL: USD ${cart.reduce((s,p)=>s+p.priceUSD,0)}`;
-
-    // Guardamos los datos para enviar el email después del pago
-    window._pendingOrder = {
-      customerEmail,
-      templateParams: {
-        customer_name:   nombre,
-        order_summary:   orderSummary,
-        delivery_method: methodLabels[checkoutDelivery],
-        delivery_details: `Teléfono: ${tel}\n${deliveryLines}`,
-      }
-    };
-
-    // Guardamos en sessionStorage para recuperar al volver de MP
-    sessionStorage.setItem("pendingOrder", JSON.stringify(window._pendingOrder));
-
-    // Procesamos el pago con MP
+    // Procesamos el pago con MP. El precio y el detalle de la venta se
+    // recalculan del lado del servidor (create-preference.js) a partir del
+    // producto/talle real — acá solo mandamos qué se quiere comprar, nunca
+    // el precio. El mail de confirmación lo manda el webhook cuando el pago
+    // se aprueba, no hace falta hacer nada al volver de Mercado Pago.
     const submitBtn = document.querySelector("#checkout-inner .btn-primary");
     submitBtn.textContent = "Generando link de pago...";
     submitBtn.disabled = true;
 
-    const items = cart.map(p => ({
-      title: p.name,
-      quantity: 1,
-      unit_price: effectiveARS(p),
-      currency_id: "ARS",
-    }));
-
+    const items = cart.map(p => ({ producto_id: p.id, talle: p.talle || null }));
     const successUrl = location.href + (location.href.includes("?") ? "&" : "?") + "order=success";
 
     fetch("/.netlify/functions/create-preference", {
@@ -1180,24 +1156,25 @@ const WA_NUMBER = "541134435571";
       body: JSON.stringify({
         items,
         payer: { name: nombre, email: customerEmail || "cliente@copordrop.ar" },
+        customer_phone: tel,
         back_urls: { success: successUrl, failure: location.href, pending: location.href },
-        metadata: {
-          order_summary:    window._pendingOrder?.templateParams?.order_summary   || "",
-          delivery_method:  window._pendingOrder?.templateParams?.delivery_method || "",
-          delivery_details: window._pendingOrder?.templateParams?.delivery_details|| "",
-          customer_name:    window._pendingOrder?.templateParams?.customer_name   || "",
-        },
+        delivery_method: methodLabels[checkoutDelivery],
+        delivery_details: `Teléfono: ${tel}\n${deliveryLines}`,
       }),
     })
-    .then(r => r.json())
-    .then(data => {
-      if (data.init_point) {
+    .then(async r => {
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.init_point) {
         closeCheckout();
         window.location.href = data.init_point;
+        return;
+      }
+      if (r.status === 409 && data.error === "sin_stock") {
+        alert(`"${data.nombre}"${data.talle ? ` talle ${data.talle}` : ""} se acaba de agotar. Sacalo del carrito para poder pagar el resto.`);
       } else {
         alert("Error al generar el link de pago.");
-        console.error(data);
       }
+      console.error(data);
     })
     .catch(() => alert("Error de conexión con Mercado Pago."))
     .finally(() => {
@@ -1206,20 +1183,9 @@ const WA_NUMBER = "541134435571";
     });
   }
 
-  // Enviamos el email de confirmación al volver de MP con ?order=success
   if (new URLSearchParams(location.search).get("order") === "success") {
-    const order = JSON.parse(sessionStorage.getItem("pendingOrder") || "null");
-    if (order) {
-      const { customerEmail, templateParams } = order;
-      const sends = [emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, { ...templateParams, to_email: STORE_EMAIL })];
-      if (customerEmail) {
-        sends.push(emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, { ...templateParams, to_email: customerEmail }));
-      }
-      Promise.all(sends).catch(console.error);
-      sessionStorage.removeItem("pendingOrder");
-      history.replaceState(null, "", location.pathname);
-      setTimeout(() => alert("¡Pago confirmado! Te mandamos un mail con el detalle del pedido."), 500);
-    }
+    history.replaceState(null, "", location.pathname);
+    setTimeout(() => alert("¡Pago confirmado! Te mandamos un mail con el detalle del pedido."), 500);
   }
   window.submitCheckout = submitCheckout;
 
