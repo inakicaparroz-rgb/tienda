@@ -639,6 +639,7 @@
   async function cargarProductosDesdeSupabase() {
     const { data: productos, error } = await supabase.from("productos_publicos").select("*");
     if (error || !productos) { console.error(error); return []; }
+    if (productos.length === 0) return [];
 
     const ids = productos.map(p => p.id);
     const [{ data: stock }, { data: fotos }] = await Promise.all([
