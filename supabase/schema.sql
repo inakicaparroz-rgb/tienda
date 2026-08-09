@@ -506,6 +506,33 @@ create policy "producto_fotos_anon_select" on producto_fotos
 grant select, insert, update, delete on producto_fotos to authenticated;
 grant select on producto_fotos to anon;
 
+-- alguna_vez_en_stock: se pone en true la primera vez que un producto recibe
+-- una unidad, y nunca se vuelve a apagar. Así, un producto recién creado (sin
+-- unidades todavía) no aparece en la web hasta que se le carga stock, pero
+-- una vez que apareció, si con el tiempo se vende todo, queda visible como
+-- "sin stock" en vez de desaparecer.
+
+alter table productos add column if not exists alguna_vez_en_stock boolean not null default false;
+
+update productos set alguna_vez_en_stock = true
+where id in (select distinct producto_id from unidades);
+
+create or replace function marcar_producto_en_stock()
+returns trigger
+language plpgsql
+as $$
+begin
+  update productos set alguna_vez_en_stock = true
+  where id = new.producto_id and alguna_vez_en_stock = false;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_marcar_producto_en_stock on unidades;
+create trigger trg_marcar_producto_en_stock
+after insert on unidades
+for each row execute function marcar_producto_en_stock();
+
 -- productos_publicos (la vista que lee la web) necesita nombre_web y stock
 -- total además de lo que ya exponía.
 create or replace view productos_publicos as
@@ -521,4 +548,4 @@ select
   tiene_talles,
   fit
 from productos
-where activo = true;
+where activo = true and alguna_vez_en_stock = true;

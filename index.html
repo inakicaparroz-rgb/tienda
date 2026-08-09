@@ -159,6 +159,8 @@
     .talle-chip{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:.6rem 1rem;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;transition:all .2s;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
     .talle-chip:hover{border-color:var(--ink);color:var(--ink)}
     .talle-chip.selected{border-color:var(--accent);color:var(--accent);background:rgba(87,190,161,.08)}
+    .talle-chip-encargo{border-style:dashed}
+    .talle-chip-encargo.selected{border-color:var(--muted);color:var(--muted);background:transparent}
     .chip{border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:all .2s ease;white-space:nowrap}
     .chip:hover{border-color:var(--ink);color:var(--ink)}
     .chip.active{border-color:var(--accent);background:var(--accent);color:var(--bg)}
@@ -626,151 +628,52 @@
   </div>
 </aside>
 
-<script>
-  const SHEETS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfBmxBQgdQJb5_CkPfoMzR2G_r1_zFCX1K4hiANpUKt7IKohRQ80LQDYUlMcH5EfaQE92at5iW0xM8/pub?gid=2088560133&single=true&output=csv";
-  const PRODUCTS_FALLBACK = [
-    {slug:"maison-mihara-350usd-usdt",name:"MAISON MIHARA",brand:"Maison Mihara",category:"zapatillas",priceARS:678000,priceUSD:350,status:"sin-stock",w1:"MAISON",w2:"MIHARA"},
-    {slug:"mixed-emotion-black-end-tee-150usd-usdt",name:'MIXED EMOTION BLACK "END" TEE',brand:"Mixed Emotion",category:"remeras",priceARS:0,priceUSD:150,status:"stock",w1:"MIXED",w2:"EMOTION"},
-    {slug:"essentials-jersey-sand-120usd-usdt",name:"ESSENTIALS JERSEY SAND",brand:"Essentials",category:"remeras",priceARS:0,priceUSD:120,status:"stock",w1:"ESSENTIAL",w2:"JERSEY"},
-    {slug:"essentials-hoodie-light-oatmeal-160usd-usdt",name:"ESSENTIALS HOODIE LIGHT OATMEAL",brand:"Essentials",category:"buzos",priceARS:0,priceUSD:160,status:"sin-stock",w1:"ESSENTIAL",w2:"HOODIE"},
-    {slug:"kith-tee-doghouse-120usd-usdt",name:"KITH TEE DOGHOUSE",brand:"Kith",category:"remeras",priceARS:0,priceUSD:120,status:"stock",w1:"KITH",w2:"DOGHOUSE"},
-    {slug:"tee-quinn-kith-120usd-usdt",name:"TEE QUINN KITH",brand:"Kith",category:"remeras",priceARS:0,priceUSD:120,status:"stock",w1:"KITH",w2:"QUINN"},
-    {slug:"supreme-boxers-black-100usd-usdt",name:"SUPREME BOXERS BLACK",brand:"Supreme",category:"accesorios",priceARS:0,priceUSD:100,status:"stock",w1:"SUPREME",w2:"BOXERS"},
-    {slug:"supreme-boxers-white-100usd-usdt",name:"SUPREME BOXERS WHITE",brand:"Supreme",category:"accesorios",priceARS:0,priceUSD:100,status:"stock",w1:"SUPREME",w2:"BOXERS"},
-    {slug:"supreme-pilled-sweater-300usd-usdt",name:"SUPREME PILLED SWEATER",brand:"Supreme",category:"buzos",priceARS:0,priceUSD:300,status:"stock",w1:"SUPREME",w2:"PILLED"},
-    {slug:"supreme-classic-logo-hoodie-300usd-usdt",name:"SUPREME CLASSIC LOGO HOODIE",brand:"Supreme",category:"buzos",priceARS:0,priceUSD:300,status:"stock",w1:"SUPREME",w2:"CLASSIC"},
-    {slug:"supreme-small-box-zip-hoodie-300usd-usdt",name:"SUPREME SMALL BOX ZIP HOODIE",brand:"Supreme",category:"buzos",priceARS:0,priceUSD:300,status:"stock",w1:"SUPREME",w2:"ZIP"},
-    {slug:"tee-diesel-100usd-usdt",name:"TEE DIESEL",brand:"Diesel",category:"remeras",priceARS:0,priceUSD:100,status:"stock",w1:"DIESEL",w2:"TEE"},
-    {slug:"nike-polo-green-80usd-usdt",name:"NIKE POLO GREEN",brand:"Nike",category:"remeras",priceARS:0,priceUSD:80,status:"stock",w1:"NIKE",w2:"POLO"},
-    {slug:"jordan-hoodie-chimney-80usd-usdt",name:"JORDAN HOODIE CHIMNEY",brand:"Jordan",category:"buzos",priceARS:0,priceUSD:80,status:"stock",w1:"JORDAN",w2:"HOODIE"},
-    {slug:"pant-michigan-jordan-80usd-usdt",name:"PANT MICHIGAN JORDAN",brand:"Jordan",category:"pantalones",priceARS:0,priceUSD:80,status:"stock",w1:"JORDAN",w2:"MICHIGAN"},
-    {slug:"jogger-nike-65usd-usdt",name:"JOGGER NIKE",brand:"Nike",category:"pantalones",priceARS:0,priceUSD:65,status:"stock",w1:"NIKE",w2:"JOGGER"},
-    {slug:"short-adidas-x-bape-100usd-usdt",name:"SHORT ADIDAS X BAPE",brand:"Adidas × Bape",category:"pantalones",priceARS:193000,priceUSD:100,status:"sin-stock",w1:"ADIDAS",w2:"×BAPE"},
-    {slug:"casa-blanca-tee-montangne-280usd-usdt",name:"CASA BLANCA TEE MONTAGNE",brand:"Casablanca",category:"remeras",priceARS:542000,priceUSD:280,status:"stock",w1:"CASA",w2:"MONTAGNE"},
-    {slug:"casa-blanca-tee-casa-way-mountain-280usd-usdt",name:"CASA BLANCA TEE CASA WAY MOUNTAIN",brand:"Casablanca",category:"remeras",priceARS:542000,priceUSD:280,status:"stock",w1:"CASA",w2:"WAY"},
-    {slug:"mixed-emotion-tee-rhinestone-cropped-150usd-usdt",name:"MIXED EMOTION TEE RHINESTONE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"RHINESTONE"},
-    {slug:"mixed-emotion-sweatpants-pearls-220usd-usdt",name:"MIXED EMOTION SWEATPANTS PEARLS",brand:"Mixed Emotion",category:"pantalones",priceARS:426000,priceUSD:220,status:"stock",w1:"MIXED",w2:"PEARLS"},
-    {slug:"mixed-emotion-pearl-hoodie-220usd-usdt",name:"MIXED EMOTION PEARL HOODIE",brand:"Mixed Emotion",category:"buzos",priceARS:426000,priceUSD:220,status:"stock",w1:"MIXED",w2:"PEARL"},
-    {slug:"mixed-emotion-paisley-denim-black-shirt-150usd-usdt",name:"MIXED EMOTION PAISLEY DENIM BLACK",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"PAISLEY"},
-    {slug:"supreme-zip-hoodie-collegiate-blue-usd-usdt-250",name:"SUPREME ZIP HOODIE COLLEGIATE BLUE",brand:"Supreme",category:"buzos",priceARS:484000,priceUSD:250,status:"stock",w1:"SUPREME",w2:"COLLEGIATE"},
-    {slug:"corteiz-tee-dog-usd-usdt-120",name:"CORTEIZ TEE DOG",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"DOG"},
-    {slug:"denim-tears-crewneck-blue-usd-usdt-200",name:"DENIM TEARS CREWNECK BLUE",brand:"Denim Tears",category:"buzos",priceARS:387000,priceUSD:200,status:"stock",w1:"DENIM",w2:"TEARS"},
-    {slug:"corteiz-artillerey-white-tee-120usd-usdt",name:"CORTEIZ ARTILLERY WHITE TEE",brand:"Corteiz",category:"remeras",priceARS:0,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"ARTILLERY"},
-    {slug:"adidas-x-bape-tee-160usd-usdt",name:"ADIDAS X BAPE TEE",brand:"Adidas × Bape",category:"remeras",priceARS:0,priceUSD:160,status:"sin-stock",w1:"ADIDAS",w2:"×BAPE"},
-    {slug:"corteiz-island-pink-camo-120usd-usdt",name:"CORTEIZ ISLAND PINK CAMO",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"ISLAND"},
-    {slug:"mixed-emotion-paisley-denim-blue-shirt-150usd-usdt",name:"MIXED EMOTION PAISLEY DENIM BLUE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"BLUE"},
-    {slug:"mixed-emotion-dove-tee-150usd-usdt",name:"MIXED EMOTION DOVE TEE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"DOVE"},
-    {slug:"mixed-emotion-angel-tee-150usd-usdt",name:"MIXED EMOTION ANGEL TEE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"ANGEL"},
-    {slug:"mixed-emotion-me-zip-up-shirt-150usd-usdt",name:'MIXED EMOTION "ME" ZIP UP SHIRT',brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"MIXED",w2:"ZIP"},
-    {slug:"mixed-emotion-black-beanie-100usd-usdt",name:"MIXED EMOTION BLACK BEANIE",brand:"Mixed Emotion",category:"accesorios",priceARS:193000,priceUSD:100,status:"stock",w1:"MIXED",w2:"BEANIE"},
-    {slug:"mixed-emotion-white-end-tee-150usd-usdt",name:'MIXED EMOTION WHITE "END" TEE',brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"WHITE"},
-    {slug:"mixed-emotion-blue-end-tee-150usd-usdt",name:'MIXED EMOTION BLUE "END" TEE',brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"MIXED",w2:"BLUE"},
-    {slug:"mixed-emotion-arch-angel-tee-150usd-usdt",name:"MIXED EMOTION ARCH ANGEL TEE",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"MIXED",w2:"ARCH"},
-    {slug:"mixed-emotion-angel-tee-150usd-usdt1",name:"MIXED EMOTION ANGEL TEE (ROSA)",brand:"Mixed Emotion",category:"remeras",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"MIXED",w2:"ANGEL"},
-    {slug:"mixed-emotion-blue-end-hoodie-220-usd-usdt",name:'MIXED EMOTION BLUE "END" HOODIE',brand:"Mixed Emotion",category:"buzos",priceARS:426000,priceUSD:220,status:"stock",w1:"MIXED",w2:"HOODIE"},
-    {slug:"corteiz-artillery-tee-120usd-usdt",name:"CORTEIZ ARTILLERY TEE",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"ARTILLERY"},
-    {slug:"corteiz-island-tee-reflective-120usd-usdt",name:"CORTEIZ ISLAND TEE REFLECTIVE",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"REFLECTIVE"},
-    {slug:"hellstar-moto-jersey-280usd-usdt",name:"HELLSTAR MOTO JERSEY",brand:"Hellstar",category:"remeras",priceARS:542000,priceUSD:280,status:"stock",w1:"HELLSTAR",w2:"MOTO"},
-    {slug:"hellstar-snapback-hat-220usd-usdt",name:"HELLSTAR SNAPBACK HAT",brand:"Hellstar",category:"accesorios",priceARS:426000,priceUSD:220,status:"sin-stock",w1:"HELLSTAR",w2:"SNAPBACK"},
-    {slug:"sprayground-the-phanton-toiletry-bag-150usd-usdt",name:"SPRAYGROUND PHANTOM TOILETRY BAG",brand:"Sprayground",category:"accesorios",priceARS:290625,priceUSD:150,status:"sin-stock",w1:"SPRAY",w2:"GROUND"},
-    {slug:"hellstar-og-logo-59fifty-160usd-usdt",name:"HELLSTAR OG LOGO 59FIFTY",brand:"Hellstar",category:"accesorios",priceARS:310000,priceUSD:160,status:"sin-stock",w1:"HELLSTAR",w2:"59FIFTY"},
-    {slug:"sprayground-the-phantom-backpack-200usd-usdt",name:"SPRAYGROUND PHANTOM BACKPACK",brand:"Sprayground",category:"accesorios",priceARS:387500,priceUSD:200,status:"sin-stock",w1:"SPRAY",w2:"BACKPACK"},
-    {slug:"vale-forever-crystal-camo-jacket-380usd-usdt",name:"VALE FOREVER CRYSTAL CAMO JACKET",brand:"Vale Forever",category:"buzos",priceARS:736500,priceUSD:380,status:"sin-stock",w1:"VALE",w2:"CRYSTAL"},
-    {slug:"hellstar-camo-sport-tee-250usd-usdt",name:"HELLSTAR CAMO SPORT TEE",brand:"Hellstar",category:"remeras",priceARS:484375,priceUSD:250,status:"sin-stock",w1:"HELLSTAR",w2:"CAMO"},
-    {slug:"vale-forever-polo-bling-tee-200usd-usdt",name:"VALE FOREVER POLO BLING TEE",brand:"Vale Forever",category:"remeras",priceARS:387500,priceUSD:200,status:"stock",w1:"VALE",w2:"BLING"},
-    {slug:"prada-eyewear-sunglasses-bone-300usd-usdt1",name:"PRADA EYEWEAR SUNGLASSES BONE",brand:"Prada",category:"accesorios",priceARS:581000,priceUSD:300,status:"stock",w1:"PRADA",w2:"SUNGLASS"},
-    {slug:"nocta-cap-black-50usd-usdt",name:"NOCTA CAP BLACK",brand:"Nocta",category:"accesorios",priceARS:97000,priceUSD:50,status:"stock",w1:"NOCTA",w2:"CAP"},
-    {slug:"syna-star-cap-black-120usd-usdt",name:"SYNA STAR CAP BLACK",brand:"Syna",category:"accesorios",priceARS:232000,priceUSD:120,status:"stock",w1:"SYNA",w2:"CAP"},
-    {slug:"syna-world-menasyn-tee-navy-130usd-usdt",name:"SYNA WORLD MENASYN TEE NAVY",brand:"Syna",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"SYNA",w2:"MENASYN"},
-    {slug:"syna-world-menasyn-tee-grey-130usd-usdt",name:"SYNA WORLD MENASYN TEE GREY",brand:"Syna",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"SYNA",w2:"MENASYN"},
-    {slug:"syna-college-tee-blue-100usd-usdt",name:"SYNA COLLEGE TEE BLUE",brand:"Syna",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"SYNA",w2:"COLLEGE"},
-    {slug:"syna-world-play-boy-tee-white-100usd-usdt",name:"SYNA WORLD PLAY BOY TEE WHITE",brand:"Syna",category:"remeras",priceARS:194000,priceUSD:100,status:"sin-stock",w1:"SYNA",w2:"PLAYBOY"},
-    {slug:"supreme-chorme-tee-100usd-usdt",name:"SUPREME CHROME TEE",brand:"Supreme",category:"remeras",priceARS:194000,priceUSD:100,status:"sin-stock",w1:"SUPREME",w2:"CHROME"},
-    {slug:"eric-emanuel-hawaiian-short-yellow-100usd-usdt",name:"ERIC EMANUEL HAWAIIAN SHORT YELLOW",brand:"Eric Emanuel",category:"pantalones",priceARS:194000,priceUSD:100,status:"stock",w1:"ERIC",w2:"HAWAIIAN"},
-    {slug:"supreme-tee-cartoon-100usd-usdt",name:"SUPREME TEE CARTOON",brand:"Supreme",category:"remeras",priceARS:290000,priceUSD:100,status:"sin-stock",w1:"SUPREME",w2:"CARTOON"},
-    {slug:"broken-planet-fast-boyz-tee-black-120usd-usdt",name:"BROKEN PLANET FAST BOYZ TEE BLACK",brand:"Broken Planet",category:"remeras",priceARS:232000,priceUSD:120,status:"stock",w1:"BROKEN",w2:"PLANET"},
-    {slug:"broken-planet-bp-sport-tee-grey-120usd-usdt",name:"BROKEN PLANET BP SPORT TEE GREY",brand:"Broken Planet",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"BROKEN",w2:"PLANET"},
-    {slug:"eric-emanuel-bagy-short-baby-blue-160usd-usdt",name:"ERIC EMANUEL BAGGY SHORT BABY BLUE",brand:"Eric Emanuel",category:"pantalones",priceARS:310000,priceUSD:160,status:"stock",w1:"ERIC",w2:"BAGGY"},
-    {slug:"nike-naos-short-80usd-usdt",name:"NIKE NAOS SHORT",brand:"Nike",category:"pantalones",priceARS:155000,priceUSD:80,status:"stock",w1:"NIKE",w2:"NAOS"},
-    {slug:"all-saints-snake-bite-oversized-tee-150usd-usdt",name:"ALL SAINTS SNAKE BITE OVERSIZED TEE",brand:"All Saints",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"ALL",w2:"SAINTS"},
-    {slug:"all-saints-underground-oversized-tee-pink-150usd-usdt",name:"ALL SAINTS UNDERGROUND TEE PINK",brand:"All Saints",category:"remeras",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"ALL",w2:"SAINTS"},
-    {slug:"all-saints-underground-oversized-tee-olive-150usd-usdt",name:"ALL SAINTS UNDERGROUND TEE OLIVE",brand:"All Saints",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"ALL",w2:"SAINTS"},
-    {slug:"eric-emanuel-cargo-short-black-160usd-usdt",name:"ERIC EMANUEL CARGO SHORT BLACK",brand:"Eric Emanuel",category:"pantalones",priceARS:310000,priceUSD:160,status:"stock",w1:"ERIC",w2:"CARGO"},
-    {slug:"vale-forever-94-olympia-tee-white-120usd-usdt",name:"VALE FOREVER 94' OLYMPIA TEE WHITE",brand:"Vale Forever",category:"remeras",priceARS:232000,priceUSD:120,status:"stock",w1:"VALE",w2:"OLYMPIA"},
-    {slug:"vale-forever-crash-tee-120usd-usdt",name:"VALE FOREVER CRASH TEE",brand:"Vale Forever",category:"remeras",priceARS:232000,priceUSD:120,status:"stock",w1:"VALE",w2:"CRASH"},
-    {slug:"jordan-diamond-real-tree-short-80usd-usdt",name:"JORDAN DIAMOND REAL TREE SHORT",brand:"Jordan",category:"pantalones",priceARS:155000,priceUSD:80,status:"stock",w1:"JORDAN",w2:"DIAMOND"},
-    {slug:"vale-forever-dreams-futball-jersey-150usd-usdt",name:"VALE FOREVER DREAMS FUTBALL JERSEY",brand:"Vale Forever",category:"remeras",priceARS:290000,priceUSD:150,status:"stock",w1:"VALE",w2:"DREAMS"},
-    {slug:"essentials-abbey-stone-basket-short-1500usd-usdt",name:"ESSENTIALS ABBEY STONE BASKET SHORT",brand:"Essentials",category:"pantalones",priceARS:290000,priceUSD:150,status:"stock",w1:"ESSENTIAL",w2:"ABBEY"},
-    {slug:"vale-forever-insignia-crewneck-purple-250usd-usdt",name:"VALE FOREVER INSIGNIA CREWNECK PURPLE",brand:"Vale Forever",category:"buzos",priceARS:484000,priceUSD:250,status:"sin-stock",w1:"VALE",w2:"INSIGNIA"},
-    {slug:"essentials-abbey-stone-tee-120usd-usdt",name:"ESSENTIALS ABBEY STONE TEE",brand:"Essentials",category:"remeras",priceARS:232000,priceUSD:120,status:"stock",w1:"ESSENTIAL",w2:"ABBEY"},
-    {slug:"vale-forever-techwood-pullover-red-250usd-usdt",name:"VALE FOREVER TECHWOOD PULLOVER RED",brand:"Vale Forever",category:"buzos",priceARS:484000,priceUSD:250,status:"stock",w1:"VALE",w2:"TECHWOOD"},
-    {slug:"vale-forever-anthem-pullover-black-280usd-usdt",name:"VALE FOREVER ANTHEM PULLOVER BLACK",brand:"Vale Forever",category:"buzos",priceARS:542000,priceUSD:280,status:"sin-stock",w1:"VALE",w2:"ANTHEM"},
-    {slug:"vale-forever-angry-bee-jacket-black-300usd-usdt",name:"VALE FOREVER ANGRY BEE JACKET BLACK",brand:"Vale Forever",category:"buzos",priceARS:581000,priceUSD:300,status:"sin-stock",w1:"VALE",w2:"ANGRYBEE"},
-    {slug:"essentials-embroidered-tee-grey-130usd-usdt",name:"ESSENTIALS EMBROIDERED TEE GREY",brand:"Essentials",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"ESSENTIAL",w2:"EMBROID"},
-    {slug:"essentials-lounge-fleece-sweatpant-180usd-usdt",name:"ESSENTIALS LOUNGE FLEECE SWEATPANT",brand:"Essentials",category:"pantalones",priceARS:348000,priceUSD:180,status:"stock",w1:"ESSENTIAL",w2:"LOUNGE"},
-    {slug:"essentials-crewneck-heather-stone-150usd-usdt",name:"ESSENTIALS CREWNECK HEATHER STONE",brand:"Essentials",category:"buzos",priceARS:290000,priceUSD:150,status:"stock",w1:"ESSENTIAL",w2:"CREWNECK"},
-    {slug:"essentials-crewneck-timber-1500usd-usdt",name:"ESSENTIALS CREWNECK TIMBER",brand:"Essentials",category:"buzos",priceARS:290000,priceUSD:150,status:"stock",w1:"ESSENTIAL",w2:"TIMBER"},
-    {slug:"corteiz-island-puff-print-zip-black-260usd-usdt",name:"CORTEIZ ISLAND PUFF PRINT ZIP BLACK",brand:"Corteiz",category:"buzos",priceARS:504000,priceUSD:260,status:"sin-stock",w1:"CORTEIZ",w2:"ISLAND"},
-    {slug:"corteiz-island-puff-print-zip-baby-blue-220usd-usdt",name:"CORTEIZ ISLAND PUFF PRINT ZIP BLUE",brand:"Corteiz",category:"buzos",priceARS:426000,priceUSD:220,status:"sin-stock",w1:"CORTEIZ",w2:"ISLAND"},
-    {slug:"corteiz-c-star-hoodie-240usd-usdt",name:"CORTEIZ C STAR HOODIE",brand:"Corteiz",category:"buzos",priceARS:387500,priceUSD:240,status:"stock",w1:"CORTEIZ",w2:"C★STAR"},
-    {slug:"corteiz-arch-logo-zip-grey-240usd-usdt",name:"CORTEIZ ARCH LOGO ZIP GREY",brand:"Corteiz",category:"buzos",priceARS:465000,priceUSD:240,status:"sin-stock",w1:"CORTEIZ",w2:"ARCH"},
-    {slug:"corteiz-alcatraz-grey-hoodie-240usd-usdt",name:"CORTEIZ ALCATRAZ GREY HOODIE",brand:"Corteiz",category:"buzos",priceARS:465000,priceUSD:240,status:"stock",w1:"CORTEIZ",w2:"ALCATRAZ"},
-    {slug:"corteiz-baby-tee-allztarz-100usd-usdt",name:"CORTEIZ BABY TEE ALLZTARZ",brand:"Corteiz",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"CORTEIZ",w2:"ALLZTARZ"},
-    {slug:"corteiz-tank-tee-black-80usd-usdt",name:"CORTEIZ TANK TEE BLACK",brand:"Corteiz",category:"remeras",priceARS:155000,priceUSD:80,status:"stock",w1:"CORTEIZ",w2:"TANK"},
-    {slug:"corteiz-tee-island-white-120usd-usdt",name:"CORTEIZ TEE ISLAND WHITE",brand:"Corteiz",category:"remeras",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"ISLAND"},
-    {slug:"nocta-hoodie-champions-league-250usd-usdt",name:"NOCTA HOODIE CHAMPIONS LEAGUE",brand:"Nocta",category:"buzos",priceARS:484000,priceUSD:250,status:"sin-stock",w1:"NOCTA",w2:"CHAMPIONS"},
-    {slug:"casa-blanca-tee-nature-teacher-printed-280usd-usdt",name:"CASA BLANCA TEE NATURE TEACHER",brand:"Casablanca",category:"remeras",priceARS:542000,priceUSD:280,status:"stock",w1:"CASA",w2:"NATURE"},
-    {slug:"off-white-helvetica-hoodie-white-350usd-usdt",name:"OFF-WHITE HELVETICA HOODIE WHITE",brand:"Off-White",category:"buzos",priceARS:678000,priceUSD:350,status:"stock",w1:"OFF",w2:"WHITE"},
-    {slug:"off-white-tee-bacchus-300usd-usdt",name:"OFF-WHITE TEE BACCHUS",brand:"Off-White",category:"remeras",priceARS:581000,priceUSD:300,status:"stock",w1:"OFF",w2:"WHITE"},
-    {slug:"off-white-short-caravag-paint-250usd-usdt",name:"OFF-WHITE SHORT CARAVAG PAINT",brand:"Off-White",category:"pantalones",priceARS:484000,priceUSD:250,status:"stock",w1:"OFF",w2:"WHITE"},
-    {slug:"corteiz-trucker-black-120usd-usdt",name:"CORTEIZ TRUCKER BLACK",brand:"Corteiz",category:"accesorios",priceARS:232000,priceUSD:120,status:"sin-stock",w1:"CORTEIZ",w2:"TRUCKER"},
-    {slug:"jordan-4-rare-air-330usd-usdt",name:"JORDAN 4 RARE AIR",brand:"Jordan",category:"zapatillas",priceARS:640000,priceUSD:330,status:"stock",w1:"JORDAN",w2:"RARE AIR"},
-    {slug:"stussy-wourld-tour-crewneck-100usd-usdt",name:"STÜSSY WORLD TOUR CREWNECK",brand:"Stüssy",category:"buzos",priceARS:194000,priceUSD:100,status:"sin-stock",w1:"STÜSSY",w2:"WORLD"},
-    {slug:"adidas-gazelle-bad-bunny-cabo-rojo-250usd-usdt",name:"ADIDAS GAZELLE BAD BUNNY CABO ROJO",brand:"Adidas",category:"zapatillas",priceARS:484000,priceUSD:250,status:"sin-stock",w1:"ADIDAS",w2:"GAZELLE"},
-    {slug:"syna-track-jacket-blue-200usd-usdt",name:"SYNA TRACK JACKET BLUE",brand:"Syna",category:"buzos",priceARS:387000,priceUSD:200,status:"stock",w1:"SYNA",w2:"TRACK"},
-    {slug:"corteiz-allstarz-tee-green-100usd-usdt",name:"CORTEIZ ALLSTARZ TEE GREEN",brand:"Corteiz",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"CORTEIZ",w2:"ALLSTARZ"},
-    {slug:"corteiz-allstarz-tee-grey-100usd-usdt",name:"CORTEIZ ALLSTARZ TEE GREY",brand:"Corteiz",category:"remeras",priceARS:194000,priceUSD:100,status:"sin-stock",w1:"CORTEIZ",w2:"ALLSTARZ"},
-    {slug:"north-face-700-puffer-black-350usd-usdt",name:"NORTH FACE 700 PUFFER BLACK",brand:"North Face",category:"buzos",priceARS:678000,priceUSD:350,status:"stock",w1:"NORTH",w2:"FACE"},
-    {slug:"corteiz-3-pack-boxers-black-70usd-usdt",name:"CORTEIZ 3 PACK BOXERS BLACK",brand:"Corteiz",category:"accesorios",priceARS:135000,priceUSD:70,status:"sin-stock",w1:"CORTEIZ",w2:"BOXERS"},
-    {slug:"sp5der-atlanta-jacket-white-330usd-usdt",name:"SP5DER ATLANTA JACKET WHITE",brand:"Sp5der",category:"buzos",priceARS:640000,priceUSD:330,status:"stock",w1:"SP5DER",w2:"ATLANTA"},
-    {slug:"corteiz-gradient-jacket-black-270usd-usdt",name:"CORTEIZ GRADIENT JACKET BLACK",brand:"Corteiz",category:"buzos",priceARS:523000,priceUSD:270,status:"stock",w1:"CORTEIZ",w2:"GRADIENT"},
-    {slug:"sp5der-web-hoodie-red-300usd-usdt",name:"SP5DER WEB HOODIE RED",brand:"Sp5der",category:"buzos",priceARS:581000,priceUSD:300,status:"sin-stock",w1:"SP5DER",w2:"WEB"},
-    {slug:"hoodie-denim-tears1",name:"DENIM TEARS HOODIE GREY",brand:"Denim Tears",category:"buzos",priceARS:678000,priceUSD:350,status:"stock",w1:"DENIM",w2:"TEARS"},
-    {slug:"syna-vortex-short-black-red-80usd-usdt",name:"SYNA VORTEX SHORT BLACK/RED",brand:"Syna",category:"pantalones",priceARS:155000,priceUSD:80,status:"stock",w1:"SYNA",w2:"VORTEX"},
-    {slug:"denim-tears-hoodie-brown-320usd-usdt",name:"DENIM TEARS HOODIE BROWN",brand:"Denim Tears",category:"buzos",priceARS:620000,priceUSD:320,status:"stock",w1:"DENIM",w2:"TEARS"},
-    {slug:"essentials-fleece-hoodie-grey-150usd-usdt",name:"ESSENTIALS FLEECE HOODIE GREY",brand:"Essentials",category:"buzos",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"ESSENTIAL",w2:"FLEECE"},
-    {slug:"essentials-fleece-pant-grey-1500usd-usdt",name:"ESSENTIALS FLEECE PANT GREY",brand:"Essentials",category:"pantalones",priceARS:290000,priceUSD:150,status:"sin-stock",w1:"ESSENTIAL",w2:"FLEECE"},
-    {slug:"corteiz-gradient-pant-black-250usd-usdt",name:"CORTEIZ GRADIENT PANT BLACK",brand:"Corteiz",category:"pantalones",priceARS:484000,priceUSD:250,status:"stock",w1:"CORTEIZ",w2:"GRADIENT"},
-    {slug:"syna-no-gimmicks-tee-black-100usd-usdt",name:"SYNA NO GIMMICKS TEE BLACK",brand:"Syna",category:"remeras",priceARS:194000,priceUSD:100,status:"stock",w1:"SYNA",w2:"NOGIMMICKS"},
-    {slug:"syna-x-psg-tee-black-130usd-usdt",name:"SYNA X PSG TEE BLACK",brand:"Syna",category:"remeras",priceARS:252000,priceUSD:130,status:"stock",w1:"SYNA",w2:"PSG"}
-  ];
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  const SUPABASE_URL = 'https://anaonrcaxhwxvuqcsyfg.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_AtXbDqxcTzPve4vnbo3zNw_vGa-QPwz';
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let PRODUCTS = PRODUCTS_FALLBACK;
+  let PRODUCTS = [];
 
-  function parseCSV(text) {
-    const lines = text.trim().split("\n");
-    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g,""));
-    return lines.slice(1).map(line => {
-      const vals = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
-      const obj = {};
-      headers.forEach((h,i) => { obj[h] = (vals[i]||"").replace(/^"|"$/g,"").trim(); });
-      const words = obj.nombre ? obj.nombre.split(" ") : ["",""];
+  async function cargarProductosDesdeSupabase() {
+    const { data: productos, error } = await supabase.from("productos_publicos").select("*");
+    if (error || !productos) { console.error(error); return []; }
+
+    const ids = productos.map(p => p.id);
+    const [{ data: stock }, { data: fotos }] = await Promise.all([
+      supabase.from("stock_publico").select("*").in("producto_id", ids),
+      supabase.from("producto_fotos").select("*").in("producto_id", ids).order("orden", { ascending: true }),
+    ]);
+
+    const stockPorProducto = {};
+    (stock || []).forEach(s => { (stockPorProducto[s.producto_id] ||= []).push(s); });
+    const fotosPorProducto = {};
+    (fotos || []).forEach(f => { (fotosPorProducto[f.producto_id] ||= []).push(f.url); });
+
+    return productos.map(p => {
+      const filasStock = stockPorProducto[p.id] || [];
+      const totalDisponible = filasStock.reduce((s, f) => s + Number(f.cantidad_disponible || 0), 0);
+      const talles = p.tiene_talles
+        ? filasStock.filter(f => f.talle).map(f => ({ talle: f.talle, disponible: Number(f.cantidad_disponible || 0) > 0 }))
+        : [];
+      const words = p.nombre ? p.nombre.split(" ") : ["", ""];
       return {
-        slug: obj.slug,
-        name: obj.nombre,
-        brand: obj.marca,
-        category: obj.categoria,
-        priceUSD: parseFloat(obj.precioUSD)||0,
-        priceARS: 0,
-        status: obj.stock || "sin-stock",
-        description: obj.descripcion || "",
-        talles: obj.talles ? obj.talles.split(/[,/]/).map(t => t.trim()).filter(Boolean) : [],
-        fit: obj.fit ? obj.fit.trim() : "",
-        w1: words[0]||"",
-        w2: words[1]||words[0]||""
+        slug: p.slug,
+        name: p.nombre,
+        brand: p.marca || "",
+        category: p.categoria || "",
+        priceUSD: Number(p.precio_venta_usd) || 0,
+        status: totalDisponible > 0 ? "stock" : "sin-stock",
+        fit: p.fit || "",
+        talles,
+        fotos: [p.imagen_url, ...(fotosPorProducto[p.id] || [])].filter(Boolean),
+        w1: words[0] || "",
+        w2: words[1] || words[0] || "",
       };
-    }).filter(p => p.slug && p.name);
+    });
   }
+
 
   const BRANDS = ["HELLSTAR","SUPREME","CORTEIZ","DENIM TEARS","CASABLANCA","BAPE","ADIDAS","VALE FOREVER","STÜSSY","OFF-WHITE","MIXED EMOTION","ESSENTIALS","KITH","JORDAN","NIKE","SYNA","ERIC EMANUEL","BROKEN PLANET","ALL SAINTS","NOCTA","PRADA","SP5DER","NORTH FACE","SPRAYGROUND","DIESEL"];
 
@@ -786,7 +689,6 @@ const WA_NUMBER = "541134435571";
   const EMAILJS_PUBKEY   = "RkTdp6hovNqBxd2Kr_yfM";
   const STORE_EMAIL      = "copordrop.ar@gmail.com";
   emailjs.init({ publicKey: EMAILJS_PUBKEY });
-  const IMGS ={"essentials-jersey-sand-120usd-usdt":1,"essentials-hoodie-light-oatmeal-160usd-usdt":1,"kith-tee-doghouse-120usd-usdt":1,"tee-quinn-kith-120usd-usdt":1,"supreme-boxers-black-100usd-usdt":1,"supreme-boxers-white-100usd-usdt":1,"supreme-pilled-sweater-300usd-usdt":1,"supreme-classic-logo-hoodie-300usd-usdt":1,"supreme-small-box-zip-hoodie-300usd-usdt":1,"tee-diesel-100usd-usdt":1,"nike-polo-green-80usd-usdt":1,"pant-michigan-jordan-80usd-usdt":1,"jogger-nike-65usd-usdt":1,"casa-blanca-tee-montangne-280usd-usdt":1,"casa-blanca-tee-casa-way-mountain-280usd-usdt":1,"mixed-emotion-tee-rhinestone-cropped-150usd-usdt":1,"mixed-emotion-sweatpants-pearls-220usd-usdt":1,"mixed-emotion-paisley-denim-black-shirt-150usd-usdt":1,"supreme-zip-hoodie-collegiate-blue-usd-usdt-250":1,"denim-tears-crewneck-blue-usd-usdt-200":1,"mixed-emotion-paisley-denim-blue-shirt-150usd-usdt":1,"mixed-emotion-dove-tee-150usd-usdt":1,"mixed-emotion-black-beanie-100usd-usdt":1,"hellstar-moto-jersey-280usd-usdt":1,"syna-star-cap-black-120usd-usdt":1,"syna-world-menasyn-tee-navy-130usd-usdt":1,"syna-world-menasyn-tee-grey-130usd-usdt":1,"syna-college-tee-blue-100usd-usdt":1,"eric-emanuel-bagy-short-baby-blue-160usd-usdt":1,"nike-naos-short-80usd-usdt":1,"all-saints-underground-oversized-tee-olive-150usd-usdt":1,"eric-emanuel-cargo-short-black-160usd-usdt":1,"vale-forever-94-olympia-tee-white-120usd-usdt":1,"vale-forever-bling-tee-150usd-usdt":1,"jordan-diamond-real-tree-short-80usd-usdt":1,"vale-forever-dreams-futball-jersey-150usd-usdt":1,"essentials-abbey-stone-basket-short-1500usd-usdt":1,"vale-forever-techwood-pullover-red-250usd-usdt":1,"essentials-crewneck-heather-stone-150usd-usdt":1,"essentials-crewneck-timber-1500usd-usdt":1,"corteiz-alcatraz-grey-hoodie-240usd-usdt":1,"corteiz-tank-tee-black-80usd-usdt":1,"casa-blanca-tee-nature-teacher-printed-280usd-usdt":1,"off-white-helvetica-hoodie-white-350usd-usdt":1,"off-white-short-caravag-paint-250usd-usdt":1,"jordan-4-rare-air-330usd-usdt":1,"syna-track-jacket-blue-200usd-usdt":1,"corteiz-allstarz-tee-green-100usd-usdt":1,"sp5der-atlanta-jacket-white-330usd-usdt":1,"corteiz-gradient-jacket-black-270usd-usdt":1,"hoodie-denim-tears1":1,"syna-vortex-short-black-red-80usd-usdt":1,"denim-tears-hoodie-brown-320usd-usdt":1,"corteiz-gradient-pant-black-250usd-usdt":1,"syna-no-gimmicks-tee-black-100usd-usdt":1,"syna-x-psg-tee-black-130usd-usdt":1,"eme-studios-crewneck-brown-220usd-usdt":1,"mixed-emotion-end-tee-blue-150usd-usdt":1,"mixed-emotion-end-tee-white-150usd-usdt":1,"mixed-emotion-end-tee-black-150usd-usdt":1,"broken-planet-bp-sport-tee-grey-120usd-usdt":1,"syna-world-arc-tee-navy-100usd-usdt":1,"essentials-hoodie-cocoa-160usd-usdt":1,"supreme-tape-65usd-usdt":1,"corteiz-vs-everybody-tee-white-120usd-usdt":1,"essentials-hoodie-taupe-160usd-usdt":1,"essentials-hoodie-coral-160usd-usdt":1,"essentials-1977-hoodie-black-160usd-usdt":1,"essentials-hoodie-plum-160usd-usdt":1,"supreme-cap-arabic-black-125usd-usdt":1,"supreme-camp-cap-camo-125usd-usdt":1,"nike-club-cap-black-40usd-usdt":1,"nike-zip-hoodie-black-80usd-usdt":1,"jordan-jumpman-crewneck-black-50usd-usdt":1,"essentials-hoodie-sage-160usd-usdt":1,"corteiz-alcatraz-tee-orange-100usd-usdt":1,"supreme-fuckem-tee-navy-150usd-usdt":1,"yeezy-slides-black-120usd-usdt":1,"yeezy-slides-bone-120usd-usdt":1,"essentials-jogger-black-65usd-usdt":1,"eric-emanuel-short-floral-orange-100usd-usdt":1,"broken-planet-fast-boyz-tee-black-120usd-usdt":1,"prada-sunglasses-white-300usd-usdt":1,"broken-planet-sport-tee-grey-120usd-usdt":1,"prada-eyewear-sunglasses-bone-300usd-usdt":1};
 
   const grid = document.getElementById("product-grid");
   const resultsCount = document.getElementById("results-count");
@@ -810,8 +712,8 @@ const WA_NUMBER = "541134435571";
       return `
       <div class="pcard fade-card">
         <div class="pimg" style="cursor:pointer" onclick="openPDP('${p.slug}')" role="button" aria-label="Ver detalle de ${p.name}">
-          ${IMGS[p.slug]
-            ? `<img src="img/${p.slug}.jpg" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">`
+          ${p.fotos && p.fotos.length > 0
+            ? `<img src="${p.fotos[0]}" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">`
             : `<div class="ph ph-art">
             <div class="ph-brand">${p.brand.toUpperCase()}</div>
             <div class="ph-num">${String(i+1).padStart(2,"0")} / ${String(filtered.length).padStart(2,"0")}</div>
@@ -930,14 +832,10 @@ const WA_NUMBER = "541134435571";
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
-  // Carga productos desde Google Sheets, fallback al array hardcodeado
-  fetch(SHEETS_CSV)
-    .then(r => r.ok ? r.text() : Promise.reject())
-    .then(text => {
-      const parsed = parseCSV(text);
-      if (parsed.length > 0) PRODUCTS = parsed;
-    })
-    .catch(() => {}) // usa fallback si falla
+  // Carga productos desde el sistema (Supabase) — reemplaza al viejo Google Sheets
+  cargarProductosDesdeSupabase()
+    .then(productos => { PRODUCTS = productos; })
+    .catch(err => console.error(err))
     .finally(() => {
       document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
       render();
@@ -1045,14 +943,14 @@ const WA_NUMBER = "541134435571";
     </div>`;
   }
 
+  let pdpProducto = null;
+
   function openPDP(slug) {
     const p = PRODUCTS.find(x => x.slug === slug);
     if (!p) return;
+    pdpProducto = p;
     pdpIdx = 0;
-    const count = IMGS[slug] || 0;
-    const photos = count > 0
-      ? Array.from({length: count}, (_, i) => i === 0 ? `img/${slug}.jpg` : `img/${slug}-${i+1}.jpg`)
-      : [];
+    const photos = p.fotos || [];
 
     // Slides
     if (photos.length > 0) {
@@ -1098,8 +996,9 @@ const WA_NUMBER = "541134435571";
       <div class="flex flex-col gap-2 border-t border-border pt-4">
         <span class="spec-label">Seleccioná tu talle</span>
         <div class="flex flex-wrap gap-2" id="pdp-talles">
-          ${p.talles.map(t => `<button class="talle-chip" data-talle="${t}" onclick="selectTalle(this)">${t}</button>`).join("")}
+          ${p.talles.map(t => `<button class="talle-chip${t.disponible ? "" : " talle-chip-encargo"}" data-talle="${t.talle}" data-encargo="${!t.disponible}" onclick="selectTalle(this)">${t.talle}</button>`).join("")}
         </div>
+        ${p.talles.some(t => !t.disponible) ? `<span class="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Talles marcados: disponible por encargo</span>` : ""}
       </div>` : ""}
       <ul class="flex flex-col gap-2 border-t border-border pt-4">
         ${["Producto 100% original y verificado","Envíos a todo el país","Asesoramiento personalizado","Disponible por encargo en todos los talles"].map(t =>
@@ -1136,12 +1035,22 @@ const WA_NUMBER = "541134435571";
   function selectTalle(el) {
     document.querySelectorAll("#pdp-talles .talle-chip").forEach(c => c.classList.remove("selected"));
     el.classList.add("selected");
-    pdpSelectedTalle = el.dataset.talle;
     const btn = document.getElementById("pdp-cart-btn");
-    if (btn && !cart.some(c => c.slug === btn.dataset.slug)) {
+
+    if (el.dataset.encargo === "true") {
+      pdpSelectedTalle = null;
+      if (btn) { btn.disabled = true; btn.style.opacity = ".4"; btn.style.cursor = "not-allowed"; btn.textContent = "DISPONIBLE POR ENCARGO"; }
+      openEncargo(pdpProducto?.name, el.dataset.talle);
+      return;
+    }
+
+    pdpSelectedTalle = el.dataset.talle;
+    if (btn) {
       btn.disabled = false;
       btn.style.opacity = "";
       btn.style.cursor = "";
+      const inCart = cart.some(c => c.slug === `${pdpProducto.slug}__${pdpSelectedTalle}`);
+      btn.textContent = inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO";
     }
   }
   window.selectTalle = selectTalle;
@@ -1319,8 +1228,9 @@ const WA_NUMBER = "541134435571";
   const encargoClose   = document.getElementById("encargo-close");
   const encargoForm    = document.getElementById("encargo-form");
 
-  function openEncargo(productoPreset) {
+  function openEncargo(productoPreset, tallePreset) {
     if (productoPreset) document.getElementById("encargo-producto").value = productoPreset;
+    if (tallePreset) document.getElementById("encargo-talle").value = tallePreset;
     encargoOverlay.classList.add("open");
     encargoModal.classList.add("open");
     document.body.style.overflow = "hidden";
