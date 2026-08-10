@@ -549,3 +549,80 @@ select
   fit
 from productos
 where activo = true and alguna_vez_en_stock = true;
+
+-- ═══ MÓDULO VENTAS WEB (Mercado Pago) ═══════════════════════════════════
+
+-- reservado_hasta: cuando un cliente arranca un pago en la web, la unidad
+-- elegida pasa a "reservado" con un vencimiento (por defecto 20 minutos).
+-- Mientras no venza, esa unidad no se le ofrece a otro comprador. Si el
+-- cliente no termina de pagar, al vencer vuelve a contar como disponible
+-- sola — no hace falta ningún proceso corriendo aparte para liberarla.
+alter table unidades add column if not exists reservado_hasta timestamptz;
+
+-- mp_payment_id: id del pago de Mercado Pago que generó esta venta. Sirve
+-- para que si Mercado Pago reintenta el aviso del mismo pago (pasa seguido),
+-- no se cargue la venta dos veces.
+alter table ventas add column if not exists mp_payment_id text;
+create unique index if not exists idx_ventas_mp_payment_id on ventas(mp_payment_id) where mp_payment_id is not null;
+
+-- stock_publico: una unidad reservada cuyo vencimiento ya pasó vuelve a
+-- contar como disponible (para que el catálogo de la web no muestre "sin
+-- stock" por una reserva abandonada).
+create or replace view stock_publico as
+select
+  producto_id,
+  talle,
+  count(*) filter (where estado = 'disponible' or (estado = 'reservado' and reservado_hasta < now())) as cantidad_disponible
+from unidades
+group by producto_id, talle;
+
+-- reservar_unidad: elige la unidad disponible más vieja (mismo criterio que
+-- el resto del sistema: primero la que entró antes) para un producto/talle
+-- y la reserva de forma atómica (protegida contra dos compradores pidiendo
+-- la misma unidad al mismo tiempo). Devuelve la unidad reservada, o ninguna
+-- fila si no hay stock real.
+create or replace function reservar_unidad(p_producto_id uuid, p_talle text, p_minutos int default 20)
+returns setof unidades
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+begin
+  select id into v_id
+  from unidades
+  where producto_id = p_producto_id
+    and talle is not distinct from p_talle
+    and (estado = 'disponible' or (estado = 'reservado' and reservado_hasta < now()))
+  order by fecha_ingreso asc
+  for update skip locked
+  limit 1;
+
+  if v_id is null then
+    return;
+  end if;
+
+  return query
+    update unidades
+    set estado = 'reservado', reservado_hasta = now() + (p_minutos || ' minutes')::interval
+    where id = v_id
+    returning *;
+end;
+$$;
+
+-- liberar_unidad: cancela una reserva a mano (pago rechazado/cancelado en
+-- Mercado Pago) para que la unidad vuelva a estar disponible al instante,
+-- en vez de esperar a que venza la reserva sola.
+create or replace function liberar_unidad(p_unidad_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update unidades
+  set estado = 'disponible', reservado_hasta = null
+  where id = p_unidad_id and estado = 'reservado';
+end;
+$$;
