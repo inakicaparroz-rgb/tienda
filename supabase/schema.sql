@@ -534,7 +534,10 @@ after insert on unidades
 for each row execute function marcar_producto_en_stock();
 
 -- productos_publicos (la vista que lee la web) necesita nombre_web y stock
--- total además de lo que ya exponía.
+-- total además de lo que ya exponía. origen = 'manual' es clave: excluye los
+-- productos que se crearon solos al importar el historial viejo de ventas
+-- (son registros contables, no catálogo real — no tienen por qué aparecer
+-- en la web aunque técnicamente hayan tenido una "unidad" alguna vez).
 create or replace view productos_publicos as
 select
   id,
@@ -548,7 +551,7 @@ select
   tiene_talles,
   fit
 from productos
-where activo = true and alguna_vez_en_stock = true;
+where activo = true and alguna_vez_en_stock = true and origen = 'manual';
 
 -- ═══ MÓDULO VENTAS WEB (Mercado Pago) ═══════════════════════════════════
 
