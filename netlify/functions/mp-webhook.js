@@ -188,6 +188,11 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: "ya procesado" };
     }
 
+    // Ignorar pagos con monto cero (pings de prueba de MP)
+    if (payment.transaction_amount <= 0) {
+      return { statusCode: 200, body: "skipped: zero amount" };
+    }
+
     await registrarVentaWeb({ paymentId, metadata, totalArs: payment.transaction_amount });
 
     const customerEmail = payment.payer?.email || "";
