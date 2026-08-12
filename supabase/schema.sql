@@ -551,7 +551,8 @@ select
   precio_venta_usd,
   precio_promocional_usd,
   tiene_talles,
-  fit
+  fit,
+  estado
 from productos
 where activo = true and alguna_vez_en_stock = true
   and nombre_web is not null and nombre_web <> '';

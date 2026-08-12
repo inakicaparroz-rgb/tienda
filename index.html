@@ -6,6 +6,31 @@
   <title>Cop or Drop — Únicamente Productos Originales</title>
   <meta name="description" content="Cop or Drop. Streetwear y sneakers 100% originales en CABA. Hellstar, Supreme, Corteiz, Denim Tears, Casablanca, Bape, Adidas y más. Envíos a todo el país." />
   <meta name="theme-color" content="#000000" />
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-EFDJSJ8H2Q"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-EFDJSJ8H2Q');
+  </script>
+  <!-- Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '1023940523964047');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1023940523964047&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- End Meta Pixel Code -->
   <meta property="og:title" content="Cop or Drop — Únicamente Productos Originales" />
   <meta property="og:description" content="Streetwear y sneakers hype, 100% originales. Envíos a toda Argentina." />
   <meta property="og:type" content="website" />
@@ -87,7 +112,9 @@
     .pcard:hover .pimg{border-color:var(--border)}
     .pcard .pimg .ph{position:absolute;inset:0;transition:transform .8s cubic-bezier(0.16,1,0.3,1);will-change:transform}
     .pcard:hover .pimg .ph{transform:scale(1.045)}
-    .pcard h3{font-family:'Archivo',sans-serif;font-weight:500;text-transform:uppercase;line-height:1.1;letter-spacing:-0.005em;color:var(--ink);font-size:14px}
+    .pcard h3{font-family:'Archivo',sans-serif;font-weight:500;text-transform:uppercase;line-height:1.2;letter-spacing:-0.005em;color:var(--ink);font-size:14px;min-height:2.4em;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+    .pcard-cuotas{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+    @media(max-width:480px){.pcard-cuotas{font-size:7.5px}}
     .btn-add-cart{width:100%;margin-top:.25rem;padding:.55rem;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;border:1px solid var(--accent);color:var(--accent);background:transparent;transition:background .2s ease,color .2s ease;cursor:pointer}
     .btn-add-cart:hover{background:var(--accent);color:var(--bg)}
     .btn-add-cart.in-cart{background:var(--accent);color:var(--bg)}
@@ -137,30 +164,39 @@
     #pdp-overlay.open{opacity:1;pointer-events:auto}
     #pdp-modal{position:fixed;inset:0;z-index:201;display:flex;align-items:center;justify-content:center;padding:1rem;pointer-events:none}
     #pdp-modal.open{pointer-events:auto}
-    #pdp-inner{background:var(--surface);border:1px solid var(--border);width:100%;max-width:960px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;grid-template-columns:1fr;transform:translateY(24px);opacity:0;transition:transform .35s cubic-bezier(0.16,1,0.3,1),opacity .35s ease}
-    @media(max-width:639px){#pdp-inner{max-height:85vh;grid-template-columns:1fr}}
-    @media(min-width:640px){#pdp-inner{grid-template-columns:1fr 1fr}}
+    #pdp-inner{background:var(--surface);border:1px solid var(--border);width:100%;max-width:960px;max-height:92vh;overflow:hidden;display:grid;grid-template-columns:1fr;transform:translateY(24px);opacity:0;transition:transform .35s cubic-bezier(0.16,1,0.3,1),opacity .35s ease}
+    @media(max-width:639px){#pdp-inner{max-height:92vh;grid-template-columns:1fr 1fr;align-items:stretch}}
+    @media(min-width:640px){#pdp-inner{grid-template-columns:1fr 1fr;max-height:90vh;overflow:hidden;align-items:stretch}}
     #pdp-modal.open #pdp-inner{transform:translateY(0);opacity:1}
     #pdp-inner::-webkit-scrollbar{width:4px}
     #pdp-inner::-webkit-scrollbar-thumb{background:var(--border)}
     .pdp-gallery{position:relative;aspect-ratio:4/5;background:var(--bg);overflow:hidden}
-    @media(max-width:639px){.pdp-gallery{aspect-ratio:3/2;max-height:35vh}}
-    @media(min-width:640px){.pdp-gallery{aspect-ratio:auto;height:100%;min-height:480px}}
+    @media(max-width:639px){.pdp-gallery{aspect-ratio:unset;height:100%;width:100%}}
+    @media(min-width:640px){.pdp-gallery{aspect-ratio:4/5;max-height:90vh;width:100%}}
     .pdp-slides{display:flex;height:100%;transition:transform .4s cubic-bezier(0.16,1,0.3,1)}
     .pdp-slide{min-width:100%;height:100%;position:relative}
-    .pdp-slide img{width:100%;height:100%;object-fit:cover}
+    .pdp-slide img{width:100%;height:100%;object-fit:cover;object-position:center;} /* v6 */
+    @media(max-width:639px){.pdp-slide img{object-fit:cover;}}
     .pdp-slide .ph{position:absolute;inset:0}
-    .pdp-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.6);border:1px solid var(--border);color:var(--ink);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1;transition:background .2s;z-index:2}
-    .pdp-nav:hover{background:rgba(0,0,0,.9)}
-    .pdp-nav-prev{left:.75rem}
-    .pdp-nav-next{right:.75rem}
-    .pdp-dots{position:absolute;bottom:.75rem;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2}
-    .pdp-dot{width:6px;height:6px;background:rgba(255,255,255,.3);cursor:pointer;transition:background .2s}
-    .pdp-dot.active{background:var(--accent)}
-    .pdp-info{padding:1.75rem;display:flex;flex-direction:column;gap:1.25rem}
+    .pcard-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);transition:background .2s}
+    .pcard-dot-active{background:#fff}
+    .pimg:hover .pcard-dot-active{background:rgba(255,255,255,.35)}
+    .pimg:hover .pcard-dot:not(.pcard-dot-active){background:#fff}
+    .pdp-dots{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:10;pointer-events:none}
+    .pdp-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .25s;box-shadow:0 0 3px rgba(0,0,0,.4)}
+    .pdp-dot.active{background:#fff}
+    .pdp-info{padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;overflow:hidden;min-height:0;justify-content:space-between}
+    @media(max-width:639px){.pdp-info{padding:.75rem;gap:0.4rem;align-self:stretch}}
+    @media(min-width:640px){.pdp-info{align-self:stretch;height:100%}}
+    .badge-condition{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;padding:.25rem .6rem;border:1px solid;display:inline-flex;align-items:center;gap:.35rem;position:relative;cursor:default}
+    .badge-condition--new{color:#57BEA1;border-color:#57BEA1}
+    .badge-condition--vnds{color:#f59e0b;border-color:#f59e0b}
+    .badge-condition--used{color:#9ca3af;border-color:#9ca3af}
+    .badge-condition .cond-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#111;border:1px solid var(--border);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:none;letter-spacing:.04em;white-space:nowrap;padding:.5rem .75rem;pointer-events:none;opacity:0;transition:opacity .2s ease;z-index:10;line-height:1.5}
+    .badge-condition:hover .cond-tip{opacity:1}
     .pdp-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:24px;line-height:1;z-index:5;transition:color .2s}
     .pdp-close:hover{color:var(--ink)}
-    .talle-chip{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:.6rem 1rem;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;transition:all .2s;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+    .talle-chip{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:.4rem .8rem;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;transition:all .2s;min-width:40px;min-height:36px;display:inline-flex;align-items:center;justify-content:center;}
     .talle-chip:hover{border-color:var(--ink);color:var(--ink)}
     .talle-chip.selected{border-color:var(--accent);color:var(--accent);background:rgba(87,190,161,.08)}
     .talle-chip-encargo{border-style:dashed}
@@ -196,14 +232,30 @@
     .faq-icon{transition:transform .35s ease}
     .faq-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
     .nav-blur{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+    body.menu-open,html.menu-open{overflow:hidden!important;touch-action:none}
+    body.menu-open #nav{background:#000000!important;border-color:var(--border);backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
     .burger span{display:block;width:24px;height:1px;background:var(--ink);transition:transform .3s ease,opacity .25s ease}
     .burger span:nth-child(2){width:16px;margin-left:auto}
-    .menu-open .burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
-    .menu-open .burger span:nth-child(2){opacity:0}
-    .menu-open .burger span:nth-child(3){transform:translateY(-5px) rotate(-45deg);width:24px}
+    .menu-open .burger span:nth-child(1),.burger.menu-open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .menu-open .burger span:nth-child(2),.burger.menu-open span:nth-child(2){opacity:0}
+    .menu-open .burger span:nth-child(3),.burger.menu-open span:nth-child(3){transform:translateY(-5px) rotate(-45deg);width:24px}
     a,button{cursor:pointer}
     a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}.marquee-track{animation:none!important}.hero-glow{animation:none!important}}
+    /* Mobile PDP full-screen page */
+    #mobile-pdp{position:fixed;inset:0;z-index:250;background:var(--bg);transform:translateX(100%);transition:transform .35s cubic-bezier(0.16,1,0.3,1);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+    #mobile-pdp.open{transform:translateX(0)}
+    #mpdp-bar{position:sticky;top:0;z-index:20;background:#000;border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0}
+    #mpdp-bar button{background:none;border:none;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;display:flex;align-items:center;gap:.4rem;padding:4px;min-width:64px}
+    #mpdp-title-block{padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0}
+    #mpdp-dropdown{position:fixed;top:64px;left:0;right:0;bottom:0;background:rgba(0,0,0,0.80);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:300;display:none;flex-direction:column;justify-content:space-between;padding:2.5rem 1.25rem 2.5rem}
+    #mpdp-dropdown.open{display:flex}
+    #mpdp-gallery{width:100%;aspect-ratio:4/5;position:relative;overflow:hidden;background:var(--surface);flex-shrink:0}
+    #mpdp-slides{position:absolute;inset:0;display:flex;transition:transform .4s cubic-bezier(0.16,1,0.3,1);will-change:transform}
+    .mpdp-slide{min-width:100%;height:100%;position:relative;flex-shrink:0;overflow:hidden}
+    .mpdp-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
+    #mpdp-dots{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:10;pointer-events:none}
+    #mpdp-info{padding:1.25rem 1rem;display:flex;flex-direction:column;gap:.875rem;flex:1;padding-bottom:2.5rem}
   </style>
 </head>
 <body class="min-h-screen bg-bg text-ink">
@@ -212,21 +264,25 @@
   <div class="container-edge h-16 md:h-20 flex items-center justify-between">
     <a href="#top" aria-label="Cop or Drop — Inicio"><img src="img/logo.png" alt="Cop or Drop" style="height:75px;width:auto;display:block;"></a>
     <nav class="hidden md:flex items-center gap-10" aria-label="Navegación principal">
-      <a href="#catalogo" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">CATÁLOGO</a>
-      <button onclick="openEncargo()" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors" style="background:none;border:none;cursor:pointer;padding:0">ENCARGOS</button>
+      <a href="#catalogo" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors" onclick="if(window.fbq)fbq('trackCustom','ClickCatalogo');">CATÁLOGO</a>
+      <button onclick="openEncargo();if(window.fbq)fbq('trackCustom','ClickEncargos');" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors" style="background:none;border:none;cursor:pointer;padding:0">ENCARGOS</button>
       <a href="#categorias" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">CATEGORÍAS</a>
       <a href="#manifesto" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">MANIFIESTO</a>
       <a href="#faq" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">FAQ</a>
       <a href="#contacto" class="font-mono text-xs uppercase tracking-[0.18em] text-ink hover:text-accent transition-colors">CONTACTO</a>
     </nav>
     <div class="hidden md:flex items-center gap-4">
+      <button onclick="document.getElementById('search-input').closest('section')?.scrollIntoView({behavior:'smooth'});setTimeout(()=>document.getElementById('search-input').focus(),400)" aria-label="Buscar" style="background:none;border:none;padding:6px;color:var(--ink);display:flex;align-items:center;cursor:pointer;opacity:.7;transition:opacity .2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
       <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary">WhatsApp →</a>
     </div>
-    <button id="menu-toggle" class="md:hidden w-10 h-10 flex items-center justify-center burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu">
-      <div class="flex flex-col items-end gap-[6px]"><span></span><span></span><span></span></div>
-    </button>
+    <div class="md:hidden flex items-center gap-1">
+      <button onclick="document.getElementById('search-input').closest('section')?.scrollIntoView({behavior:'smooth'});setTimeout(()=>document.getElementById('search-input').focus(),400)" aria-label="Buscar" style="background:none;border:none;padding:8px;color:var(--ink);display:flex;align-items:center;cursor:pointer;opacity:.7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+      <button id="menu-toggle" class="w-10 h-10 flex items-center justify-center burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu">
+        <div class="flex flex-col items-end gap-[6px]"><span></span><span></span><span></span></div>
+      </button>
+    </div>
   </div>
-  <div id="mobile-menu" class="fixed inset-x-0 top-16 bottom-0 z-40 bg-bg opacity-0 pointer-events-none transition-opacity duration-300 md:hidden" aria-hidden="true">
+  <div id="mobile-menu" class="fixed inset-x-0 top-16 bottom-0 z-40 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden" style="background:rgba(0,0,0,0.80);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" aria-hidden="true">
     <div class="container-edge h-full flex flex-col justify-between py-10">
       <nav class="flex flex-col gap-5" aria-label="Navegación móvil">
         <a href="#catalogo" class="menu-link group flex items-baseline gap-4"><span class="font-mono text-xs text-muted">01</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATÁLOGO</span></a>
@@ -238,7 +294,7 @@
       <div class="flex flex-col gap-3">
         <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary w-full">WhatsApp →</a>
         <button onclick="openEncargo()" class="btn-primary w-full">Encargos →</button>
-        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary justify-center">Unirse a la comunidad →</a>
+        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary justify-center" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Unirse a la comunidad →</a>
       </div>
     </div>
   </div>
@@ -270,9 +326,9 @@
     </div>
     <div class="hero-cta flex flex-col gap-6 opacity-0">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <a href="#catalogo" class="btn-primary">Ver catálogo →</a>
-        <button onclick="openEncargo()" class="btn-primary">Encargos →</button>
-        <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary">Unirse a la comunidad</a>
+        <a href="#catalogo" class="btn-primary" onclick="if(window.fbq)fbq('trackCustom','ClickCatalogo');">Ver catálogo →</a>
+        <button onclick="openEncargo();if(window.fbq)fbq('trackCustom','ClickEncargos');" class="btn-primary">Encargos →</button>
+        <a id="comunidad" href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Unirse a la comunidad</a>
       </div>
       <div class="hairline"></div>
       <div class="flex flex-wrap items-center justify-between gap-4">
@@ -288,9 +344,9 @@
 </section>
 <section class="border-b border-border">
   <div class="container-edge grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
-    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 pr-6 pl-0 md:pl-0 md:pr-10"><span class="display text-4xl md:text-6xl text-accent" data-counter="100" data-suffix="%">0%</span><span class="spec-label">ORIGINAL</span></div>
+    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:pl-0 md:pr-10"><span class="display text-4xl md:text-6xl text-accent" data-counter="100" data-suffix="%">0%</span><span class="spec-label">ORIGINAL</span></div>
     <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink" data-counter="500" data-suffix="+">0+</span><span class="spec-label">PIEZAS VENDIDAS</span></div>
-    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink" data-counter="24" data-suffix="H">0H</span><span class="spec-label">RESPUESTA WHATSAPP</span></div>
+    <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10" style="border-left-width:0"><span class="display text-4xl md:text-6xl text-ink" data-counter="24" data-suffix="H">0H</span><span class="spec-label">RESPUESTA WHATSAPP</span></div>
     <div class="reveal flex flex-col items-start gap-2 py-8 md:py-10 px-6 md:px-10"><span class="display text-4xl md:text-6xl text-ink">GRATIS</span><span class="spec-label">ENVÍOS A TODO EL PAÍS</span></div>
   </div>
 </section>
@@ -328,6 +384,9 @@
         <button class="chip" data-status="encargo" aria-pressed="false">Por encargo</button>
         <button class="chip" data-status="sin-stock" aria-pressed="false">Sin stock</button>
       </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <input id="search-input" type="search" placeholder="BUSCAR PRODUCTO..." autocomplete="off" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;padding:.5rem .75rem;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
     </div>
     <div class="flex items-center justify-between gap-4">
       <span class="spec-label" id="results-count" aria-live="polite">MOSTRANDO 114 / 114 PRODUCTOS</span>
@@ -394,7 +453,7 @@
   </div>
   <div class="container-edge mt-10 flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
     <p class="reveal max-w-xl text-sm leading-relaxed text-muted">Curado preciso de marcas hype. Stüssy, Palace, Off-White y más por encargo. Si la querés, la conseguimos.</p>
-    <button onclick="openEncargo()" class="btn-primary">Hacé tu encargo →</button>
+    <button onclick="openEncargo();if(window.fbq)fbq('trackCustom','ClickEncargos');" class="btn-primary">Hacé tu encargo →</button>
   </div>
 </section>
 <section id="faq" class="container-edge py-20 md:py-28">
@@ -405,8 +464,8 @@
   <div class="reveal divide-y divide-border border-y border-border">
     <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Tienen local físico?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí, estamos ubicados en Villa Urquiza, CABA. Coordinamos citas todos los días de 13 a 19 hs por WhatsApp e Instagram. Podés retirar tu compra y probar los items que quieras.</p></div></div>
     <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Son 100% originales?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Trabajamos únicamente con piezas originales verificadas por nosotros antes del envío. Cada producto incluye etiqueta, packaging y todos los detalles de fábrica.</p></div></div>
-    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Cómo es el envío?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Operamos desde CABA y enviamos a toda la Argentina. Coordinamos por WhatsApp para confirmar dirección, tiempos (24-72 hs en AMBA, 3-7 días al interior) y costo según destino.</p></div></div>
-    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Aceptan USDT o USD?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Cada producto tiene su referencia en USD/USDT. El pago se coordina por WhatsApp: transferencia, USDT (red TRC20 / BEP20) o efectivo en CABA.</p></div></div>    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Qué pasa si no tienen mi talle?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Tomamos encargos. Si la pieza existe en el mercado, la conseguimos. Tiempo estimado: 2 a 4 semanas según marca y disponibilidad global. Seña del 50% para arrancar el pedido.</p></div></div>
+    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Cómo es el envío?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Operamos desde CABA y enviamos a toda la Argentina. Coordinamos por WhatsApp para confirmar dirección, tiempos (24-72 hs en AMBA, 3-7 días al interior) sin ningún costo.</p></div></div>
+    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Aceptan USDT o USD?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Sí. Cada producto tiene su referencia en USD/USDT. El pago se coordina por WhatsApp: transferencia, USDT o efectivo en CABA.</p></div></div>    <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Qué pasa si no tienen mi talle?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Tomamos encargos. Si la pieza existe en el mercado, la conseguimos. Tiempo estimado: 2 a 4 semanas según marca y disponibilidad global. Seña del 50% para arrancar el pedido.</p></div></div>
     <div class="faq-item"><button class="faq-btn w-full flex items-center justify-between py-6 md:py-7 text-left" aria-expanded="false"><span class="display text-xl md:text-2xl text-ink">¿Hay cambios o devoluciones?</span><span class="faq-icon display text-3xl text-accent">+</span></button><div class="faq-content"><p class="pb-6 max-w-3xl text-sm md:text-base leading-relaxed text-muted">Cambio de talle dentro de las 48 hs de recibido, siempre que la prenda esté sin uso, con tags y packaging original. Devoluciones no, salvo defecto de fábrica.</p></div></div>
   </div>
 </section>
@@ -417,7 +476,7 @@
   </div>
   <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border border-y border-border">
     <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">01</span><span class="spec-label">WHATSAPP</span></div><h3 class="display text-3xl md:text-4xl text-ink">Hablá con nosotros.</h3><p class="flex-1 text-sm leading-relaxed text-muted">Respondemos rápido. Consultas, encargos y coordinación de envíos.</p><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Abrir chat →</a></div>
-    <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">02</span><span class="spec-label">COMUNIDAD</span></div><h3 class="display text-3xl md:text-4xl text-ink">Sumate al grupo.</h3><p class="flex-1 text-sm leading-relaxed text-muted">Grupo privado, encargos diarios, drops exclusivos y acceso anticipado. Contacto directo con nosotros en todo momento.</p><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Unirme →</a></div>
+    <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">02</span><span class="spec-label">COMUNIDAD</span></div><h3 class="display text-3xl md:text-4xl text-ink">Sumate al grupo.</h3><p class="flex-1 text-sm leading-relaxed text-muted">Grupo privado, encargos diarios, drops exclusivos y acceso anticipado. Contacto directo con nosotros en todo momento.</p><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary self-start" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Unirme →</a></div>
     <div class="reveal flex flex-col gap-6 p-8 md:p-10"><div class="flex items-center justify-between"><span class="section-number text-accent">03</span><span class="spec-label">INSTAGRAM</span></div><h3 class="display text-3xl md:text-4xl text-ink">@copordrop_ar</h3><p class="flex-1 text-sm leading-relaxed text-muted">Cada pieza nueva, restocks y previews. DM para consultas rápidas.</p><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="btn-primary self-start">Seguinos →</a></div>
   </div>
   <div class="reveal mt-20 md:mt-28 border-t border-border pt-10 md:pt-14">
@@ -572,11 +631,45 @@
     <button class="pdp-close" id="pdp-close" aria-label="Cerrar">×</button>
     <div class="pdp-gallery" id="pdp-gallery">
       <div class="pdp-slides" id="pdp-slides"></div>
-      <button class="pdp-nav pdp-nav-prev hidden" id="pdp-prev">‹</button>
-      <button class="pdp-nav pdp-nav-next hidden" id="pdp-next">›</button>
       <div class="pdp-dots hidden" id="pdp-dots"></div>
     </div>
     <div class="pdp-info" id="pdp-info"></div>
+  </div>
+</div>
+
+<!-- Mobile PDP full-screen page (only on mobile) -->
+<div id="mobile-pdp" role="dialog" aria-modal="true" aria-label="Detalle de producto">
+  <div id="mpdp-bar">
+    <button id="mpdp-back">← VOLVER</button>
+    <a href="#top" onclick="closeMobilePDP(false)" style="position:absolute;left:50%;transform:translateX(-50%)">
+      <img src="img/logo.png" alt="Cop or Drop" style="height:52px;width:auto;display:block;">
+    </a>
+    <button id="mpdp-menu-btn" aria-label="Menú" class="burger" style="justify-content:flex-end;width:40px;height:40px">
+      <div class="flex flex-col items-end gap-[6px]"><span></span><span></span><span></span></div>
+    </button>
+  </div>
+  <div id="mpdp-title-block"></div>
+
+  <div id="mpdp-gallery">
+    <div id="mpdp-slides"></div>
+    <div id="mpdp-dots"></div>
+  </div>
+  <div id="mpdp-info"></div>
+</div>
+
+<!-- Mobile PDP nav dropdown (outside #mobile-pdp to avoid transform clipping) -->
+<div id="mpdp-dropdown">
+  <nav class="flex flex-col gap-5">
+    <a href="#catalogo" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">01</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATÁLOGO</span></a>
+    <a href="#categorias" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">02</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CATEGORÍAS</span></a>
+    <a href="#manifesto" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">03</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">MANIFIESTO</span></a>
+    <a href="#faq" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">04</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">FAQ</span></a>
+    <a href="#contacto" class="group flex items-baseline gap-4" onclick="closeMobilePDP(false);closeMpdpDropdown()"><span class="font-mono text-xs text-muted">05</span><span class="display text-4xl text-ink group-hover:text-accent transition-colors">CONTACTO</span></a>
+  </nav>
+  <div class="flex flex-col gap-3">
+    <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="btn-primary w-full">WhatsApp →</a>
+    <button onclick="openEncargo();closeMpdpDropdown()" class="btn-primary w-full">Encargos →</button>
+    <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="btn-primary justify-center">Unirse a la comunidad →</a>
   </div>
 </div>
 
@@ -588,7 +681,7 @@
     <div class="hairline mt-12"></div>
     <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-10">
       <div class="flex flex-col gap-3"><span class="spec-label">/01 NAVEGACIÓN</span><a href="#top" class="text-sm text-ink hover:text-accent transition-colors">Inicio</a><a href="#catalogo" class="text-sm text-ink hover:text-accent transition-colors">Catálogo</a><a href="#manifesto" class="text-sm text-ink hover:text-accent transition-colors">Manifiesto</a><a href="#faq" class="text-sm text-ink hover:text-accent transition-colors">FAQ</a></div>
-      <div class="flex flex-col gap-3"><span class="spec-label">/02 COMUNIDAD</span><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">WhatsApp directo</a><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">Grupo WhatsApp</a><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">@copordrop_ar</a></div>
+      <div class="flex flex-col gap-3"><span class="spec-label">/02 COMUNIDAD</span><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">WhatsApp directo</a><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Grupo WhatsApp</a><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">@copordrop_ar</a></div>
       <div class="flex flex-col gap-3"><span class="spec-label">/03 UBICACIÓN</span><p class="text-sm text-ink">CABA, Argentina</p><p class="text-xs text-muted">Operamos desde CABA y enviamos GRATIS a toda la Argentina. Coordinamos por WhatsApp e Instagram para confirmar dirección y tiempos (24-72 hs en AMBA, 2-7 días al interior).</p></div>
       <div class="flex flex-col gap-3"><span class="spec-label">/04 PAGOS</span><p class="text-sm text-ink">Efectivo · Transferencia</p><p class="text-sm text-ink">3 cuotas sin interés</p><p class="text-xs text-muted">Coordiná por WhatsApp.</p></div>
     </div>
@@ -668,9 +761,10 @@
         slug: p.slug,
         name: p.nombre,
         brand: p.marca || "",
-        category: p.categoria || "",
+        category: (p.categoria || "").toLowerCase().trim(),
         priceUSD: Number(p.precio_venta_usd) || 0,
         status: totalDisponible > 0 ? "stock" : "sin-stock",
+        condition: p.estado ? p.estado.toLowerCase().trim() : "",
         fit: p.fit || "",
         talles,
         fotos: [p.imagen_url, ...(fotosPorProducto[p.id] || [])].filter(Boolean),
@@ -679,7 +773,6 @@
       };
     });
   }
-
 
   const BRANDS = ["HELLSTAR","SUPREME","CORTEIZ","DENIM TEARS","CASABLANCA","BAPE","ADIDAS","VALE FOREVER","STÜSSY","OFF-WHITE","MIXED EMOTION","ESSENTIALS","KITH","JORDAN","NIKE","SYNA","ERIC EMANUEL","BROKEN PLANET","ALL SAINTS","NOCTA","PRADA","SP5DER","NORTH FACE","SPRAYGROUND","DIESEL"];
 
@@ -690,20 +783,22 @@
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
 const WA_NUMBER = "541134435571";
-
   const grid = document.getElementById("product-grid");
   const resultsCount = document.getElementById("results-count");
   const clearBtn = document.getElementById("clear-filters");
-  let activeCat = "todas", activeStatus = "todos";
+  const searchInput = document.getElementById("search-input");
+  let activeCat = "todas", activeStatus = "todos", searchQuery = "";
 
   function render() {
+    const q = searchQuery.toLowerCase();
     const filtered = PRODUCTS.filter(p => {
       const okCat = activeCat==="todas" || p.category===activeCat;
       const okSt = activeStatus==="todos" || p.status===activeStatus;
-      return okCat && okSt;
+      const okQ = !q || p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q);
+      return okCat && okSt && okQ;
     });
     resultsCount.textContent = `MOSTRANDO ${filtered.length} / ${PRODUCTS.length} PRODUCTOS`;
-    clearBtn.classList.toggle("hidden", activeCat==="todas" && activeStatus==="todos");
+    clearBtn.classList.toggle("hidden", activeCat==="todas" && activeStatus==="todos" && !searchQuery);
     if (filtered.length === 0) {
       grid.innerHTML = `<div class="col-span-full border border-border p-12 text-center"><p class="font-mono text-xs uppercase tracking-[0.18em] text-muted">No hay productos para los filtros actuales.</p></div>`;
       return;
@@ -712,9 +807,16 @@ const WA_NUMBER = "541134435571";
       const inCart = cart.some(c => c.slug === p.slug || c.slug.startsWith(p.slug + '__'));
       return `
       <div class="pcard fade-card">
-        <div class="pimg" style="cursor:pointer" onclick="openPDP('${p.slug}')" role="button" aria-label="Ver detalle de ${p.name}">
+        <div class="pimg" style="cursor:pointer" onclick="openPDP('${p.slug}')" role="button" aria-label="Ver detalle de ${p.name}"
+          ${p.fotos && p.fotos.length >= 2 ? `
+            onmouseenter="this.querySelector('img').src='${p.fotos[1]}'"
+            onmouseleave="this.querySelector('img').src='${p.fotos[0]}'"
+          ` : ''}>
           ${p.fotos && p.fotos.length > 0
-            ? `<img src="${p.fotos[0]}" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">`
+            ? `<img src="${p.fotos[0]}" data-primary="${p.fotos[0]}" data-secondary="${p.fotos[1] || ""}" alt="${p.name}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;">
+               ${p.fotos.length >= 2 ? `<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2;pointer-events:none">
+                 <div class="pcard-dot pcard-dot-active"></div><div class="pcard-dot"></div>
+               </div>` : ''}`
             : `<div class="ph ph-art">
             <div class="ph-brand">${p.brand.toUpperCase()}</div>
             <div class="ph-num">${String(i+1).padStart(2,"0")} / ${String(filtered.length).padStart(2,"0")}</div>
@@ -726,14 +828,18 @@ const WA_NUMBER = "541134435571";
             : `<span class="badge ${statusClass(p.status)}" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>`
           }</div>
         </div>
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-0.5">
           <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
           <h3>${p.name}</h3>
-          <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
+          <span class="pcard-cuotas">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
         </div>
         ${p.status === "encargo"
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
-          : `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
+          : p.status === "sin-stock"
+            ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
+            : (!p.talles || p.talles.length === 0)
+              ? `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="event.stopPropagation();cartToggle('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
+              : `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
         }
       </div>`;
     }).join("");
@@ -758,10 +864,11 @@ const WA_NUMBER = "541134435571";
   });
 
   clearBtn.addEventListener("click", () => {
-    activeCat = "todas"; activeStatus = "todos";
+    activeCat = "todas"; activeStatus = "todos"; searchQuery = ""; searchInput.value = "";
     document.querySelectorAll(".chip").forEach(b => { b.classList.toggle("active", b.dataset.cat==="todas" || b.dataset.status==="todos"); b.setAttribute("aria-pressed", b.classList.contains("active") ? "true" : "false"); });
     render();
   });
+  searchInput.addEventListener("input", () => { searchQuery = searchInput.value.trim(); render(); });
 
   document.querySelectorAll(".cat-jump").forEach(a => {
     a.addEventListener("click", () => {
@@ -798,17 +905,17 @@ const WA_NUMBER = "541134435571";
   document.querySelectorAll("[data-counter]").forEach(el => counterIO.observe(el));
 
   const nav = document.getElementById("nav");
-  const onScroll = () => { if (window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.background="rgba(0,0,0,0.78)"; } else { nav.classList.remove("border-border","nav-blur"); nav.style.background="transparent"; } };
-  window.addEventListener("scroll",onScroll,{passive:true}); onScroll();
-
   const menuToggle = document.getElementById("menu-toggle");
   const mobileMenu = document.getElementById("mobile-menu");
   let menuOpen = false;
+  const onScroll = () => { if (document.body.classList.contains("menu-open")) return; if (window.scrollY > 8) { nav.classList.add("border-border","nav-blur"); nav.style.setProperty("background","rgba(0,0,0,0.78)","important"); } else { nav.classList.remove("border-border","nav-blur"); nav.style.removeProperty("background"); } };
+  window.addEventListener("scroll",onScroll,{passive:true}); onScroll();
   function toggleMenu(force) {
     menuOpen = typeof force==="boolean" ? force : !menuOpen;
     document.body.classList.toggle("menu-open",menuOpen);
-    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; }
-    else { mobileMenu.classList.add("opacity-0","pointer-events-none"); mobileMenu.classList.remove("opacity-100"); mobileMenu.setAttribute("aria-hidden","true"); menuToggle.setAttribute("aria-expanded","false"); document.body.style.overflow=""; }
+    document.documentElement.classList.toggle("menu-open",menuOpen);
+    if (menuOpen) { mobileMenu.classList.remove("opacity-0","pointer-events-none"); mobileMenu.classList.add("opacity-100"); mobileMenu.setAttribute("aria-hidden","false"); menuToggle.setAttribute("aria-expanded","true"); document.body.style.overflow="hidden"; document.documentElement.style.overflow="hidden"; nav.classList.remove("nav-blur"); nav.classList.add("border-border"); nav.style.setProperty("background","#000000","important"); }
+    else { mobileMenu.classList.add("opacity-0","pointer-events-none"); mobileMenu.classList.remove("opacity-100"); mobileMenu.setAttribute("aria-hidden","true"); menuToggle.setAttribute("aria-expanded","false"); document.body.style.overflow=""; document.documentElement.style.overflow=""; nav.style.removeProperty("background"); onScroll(); }
   }
   menuToggle.addEventListener("click",()=>toggleMenu());
   document.querySelectorAll(".menu-link").forEach(a=>a.addEventListener("click",()=>toggleMenu(false)));
@@ -874,6 +981,12 @@ const WA_NUMBER = "541134435571";
   document.getElementById("cart-close").addEventListener("click", closeCart);
   cartOverlay.addEventListener("click", closeCart);
 
+  function cartRemove(slug) {
+    const idx = cart.findIndex(c => c.slug === slug);
+    if (idx >= 0) { cart.splice(idx, 1); updateCart(); render(); }
+  }
+  window.cartRemove = cartRemove;
+
   function cartToggle(slug) {
     const p = PRODUCTS.find(x => x.slug === slug);
     if (!p) return;
@@ -907,7 +1020,7 @@ const WA_NUMBER = "541134435571";
             <div class="cart-item-name">${p.name}</div>
             <div class="cart-item-price">${formatARS(effectiveARS(p))} · USD ${p.priceUSD}</div>
           </div>
-          <button class="cart-item-remove" onclick="cartToggle('${p.slug}')" aria-label="Quitar ${p.name}">×</button>
+          <button class="cart-item-remove" onclick="cartRemove('${p.slug}')" aria-label="Quitar ${p.name}">×</button>
         </div>
       `).join("");
 
@@ -930,11 +1043,10 @@ const WA_NUMBER = "541134435571";
   const pdpModal   = document.getElementById("pdp-modal");
   const pdpClose   = document.getElementById("pdp-close");
   const pdpSlides  = document.getElementById("pdp-slides");
-  const pdpPrev    = document.getElementById("pdp-prev");
-  const pdpNext    = document.getElementById("pdp-next");
   const pdpDotsEl  = document.getElementById("pdp-dots");
   const pdpInfo    = document.getElementById("pdp-info");
   let pdpIdx = 0;
+  let mpdpOpen = false;
 
   function buildPlaceholder(p) {
     return `<div class="ph ph-art" style="position:absolute;inset:0">
@@ -944,9 +1056,12 @@ const WA_NUMBER = "541134435571";
     </div>`;
   }
 
+  function isMobile() { return window.innerWidth < 640; }
+
   let pdpProducto = null;
 
   function openPDP(slug) {
+    if (isMobile()) { openMobilePDP(slug); return; }
     const p = PRODUCTS.find(x => x.slug === slug);
     if (!p) return;
     pdpProducto = p;
@@ -963,20 +1078,13 @@ const WA_NUMBER = "541134435571";
     }
     pdpSlides.style.transform = "translateX(0)";
 
-    // Nav arrows & dots
+    // Dots + hover/tap to advance
     if (photos.length > 1) {
-      pdpPrev.classList.remove("hidden");
-      pdpNext.classList.remove("hidden");
       pdpDotsEl.classList.remove("hidden");
       pdpDotsEl.innerHTML = photos.map((_, i) =>
-        `<div class="pdp-dot${i===0?" active":""}" data-i="${i}"></div>`
+        `<div class="pdp-dot${i===0?" active":""}"></div>`
       ).join("");
-      pdpDotsEl.querySelectorAll(".pdp-dot").forEach(d =>
-        d.addEventListener("click", () => goSlide(+d.dataset.i))
-      );
     } else {
-      pdpPrev.classList.add("hidden");
-      pdpNext.classList.add("hidden");
       pdpDotsEl.classList.add("hidden");
     }
 
@@ -985,30 +1093,36 @@ const WA_NUMBER = "541134435571";
     pdpInfo.innerHTML = `
       <div>
         <span class="spec-label">${p.brand}</span>
-        <h2 class="display text-ink mt-1" style="font-size:clamp(1.75rem,4vw,2.75rem)">${p.name}</h2>
+        <h2 class="display text-ink mt-1" style="font-size:clamp(.85rem,3.5vw,1.6rem);line-height:1.15">${p.name}</h2>
       </div>
-      <span class="badge ${statusClass(p.status)}" style="width:fit-content"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="badge ${statusClass(p.status)}" style="width:fit-content"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>
+        ${p.condition ? `<span class="badge-condition badge-condition--${p.condition}">${p.condition.toUpperCase()}<span class="cond-tip">${{new:"Sin uso, con tags y packaging original",vnds:"Very Near Deadstock · Probado una o dos veces",used:"Usado, en buen estado"}[p.condition]||""}</span></span>` : ""}
+      </div>
       <div class="flex flex-col gap-1">
-        <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
+        <span class="font-mono text-xl font-semibold text-accent">USD ${p.priceUSD}</span>
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
-      ${p.talles && p.talles.length > 0 ? `
-      <div class="flex flex-col gap-2 border-t border-border pt-4">
+      ${p.status !== "encargo" && p.talles && p.talles.length > 0 ? `
+      <div class="flex flex-col gap-2 border-t border-border pt-2">
         <span class="spec-label">Seleccioná tu talle</span>
         <div class="flex flex-wrap gap-2" id="pdp-talles">
           ${p.talles.map(t => `<button class="talle-chip${t.disponible ? "" : " talle-chip-encargo"}" data-talle="${t.talle}" data-encargo="${!t.disponible}" onclick="selectTalle(this)">${t.talle}</button>`).join("")}
         </div>
         ${p.talles.some(t => !t.disponible) ? `<span class="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Talles marcados: disponible por encargo</span>` : ""}
       </div>` : ""}
-      <ul class="flex flex-col gap-2 border-t border-border pt-4">
+      <ul class="flex flex-col gap-1.5 border-t border-border pt-2">
         ${["Producto 100% original y verificado","Envíos a todo el país","Asesoramiento personalizado","Disponible por encargo en todos los talles"].map(t =>
-          `<li class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.12em]"><span style="color:var(--accent)">✓</span><span class="text-muted">${t}</span></li>`
+          `<li class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.1em]"><span style="color:var(--accent)">✓</span><span class="text-muted">${t}</span></li>`
         ).join("")}
       </ul>
-      <button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>
-        ${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}
-      </button>
+      ${p.status === "encargo"
+        ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
+        : p.status === "sin-stock"
+          ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
+          : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
+      }
     `;
 
     pdpSelectedTalle = null;
@@ -1017,6 +1131,33 @@ const WA_NUMBER = "541134435571";
     document.body.style.overflow = "hidden";
   }
   window.openPDP = openPDP;
+
+  // Mobile: slide finger over cards to preview second photo
+  let _lastPimg = null;
+  document.addEventListener('touchmove', function(e) {
+    const t = e.touches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    if (!el) return;
+    const pimg = el.closest('.pimg');
+    if (pimg === _lastPimg) return;
+    if (_lastPimg) {
+      const img = _lastPimg.querySelector('img');
+      if (img && img.dataset.primary) img.src = img.dataset.primary;
+    }
+    _lastPimg = pimg;
+    if (!pimg) return;
+    const img = pimg.querySelector('img');
+    if (!img) return;
+    if (img.dataset.secondary) img.src = img.dataset.secondary;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function() {
+    if (_lastPimg) {
+      const img = _lastPimg.querySelector('img');
+      if (img && img.dataset.primary) img.src = img.dataset.primary;
+      _lastPimg = null;
+    }
+  }, { passive: true });
 
   function closePDP() {
     pdpOverlay.classList.remove("open");
@@ -1050,7 +1191,7 @@ const WA_NUMBER = "541134435571";
       btn.disabled = false;
       btn.style.opacity = "";
       btn.style.cursor = "";
-      const inCart = cart.some(c => c.slug === `${pdpProducto.slug}__${pdpSelectedTalle}`);
+      const inCart = pdpProducto && cart.some(c => c.slug === `${pdpProducto.slug}__${pdpSelectedTalle}`);
       btn.textContent = inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO";
     }
   }
@@ -1063,7 +1204,7 @@ const WA_NUMBER = "541134435571";
     const itemSlug = hasTalles ? `${slug}__${pdpSelectedTalle}` : slug;
     const baseP = {...p, slug: itemSlug, talle: pdpSelectedTalle || null};
     const idx = cart.findIndex(c => c.slug === itemSlug);
-    if (idx >= 0) { cart.splice(idx, 1); } else { cart.push(baseP); closePDP(); }
+    if (idx >= 0) { cart.splice(idx, 1); } else { cart.push(baseP); closePDP(); closeMobilePDP(false); }
     updateCart();
     render();
     const inCart = cart.some(c => c.slug === itemSlug);
@@ -1230,12 +1371,169 @@ const WA_NUMBER = "541134435571";
     encargoForm.reset();
   });
 
+  const pdpGallery = document.getElementById("pdp-gallery");
+  pdpGallery.addEventListener("mouseenter", () => { if(pdpSlides.children.length > 1) goSlide(1); });
+  pdpGallery.addEventListener("mouseleave", () => { if(pdpSlides.children.length > 1) goSlide(0); });
+  pdpGallery.addEventListener("click", () => { if(pdpSlides.children.length > 1) goSlide(pdpIdx + 1); });
   pdpClose.addEventListener("click", closePDP);
   pdpOverlay.addEventListener("click", closePDP);
   pdpModal.addEventListener("click", e => { if (e.target === pdpModal) closePDP(); });
-  pdpPrev.addEventListener("click", () => goSlide(pdpIdx - 1));
-  pdpNext.addEventListener("click", () => goSlide(pdpIdx + 1));
-  document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("open")) return; if (e.key === "Escape") closePDP(); if (e.key === "ArrowLeft") goSlide(pdpIdx - 1); if (e.key === "ArrowRight") goSlide(pdpIdx + 1); });
+document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("open")) return; if (e.key === "Escape") closePDP(); if (e.key === "ArrowLeft") goSlide(pdpIdx - 1); if (e.key === "ArrowRight") goSlide(pdpIdx + 1); });
+
+  // ── MOBILE PDP PAGE ─────────────────────────────────────────────────────
+  const mobilePDP      = document.getElementById("mobile-pdp");
+  const mpdpBack       = document.getElementById("mpdp-back");
+  const mpdpSlidesEl   = document.getElementById("mpdp-slides");
+  const mpdpDotsEl2    = document.getElementById("mpdp-dots");
+  const mpdpInfoEl     = document.getElementById("mpdp-info");
+  const mpdpCartBarBtn = document.getElementById("mpdp-menu-btn");
+  const mpdpDropdown  = document.getElementById("mpdp-dropdown");
+  let mpdpSlideIdx = 0;
+  let mpdpTouchX = 0;
+
+  function goMpdpSlide(i) {
+    const total = mpdpSlidesEl.children.length;
+    if (total <= 1) return;
+    mpdpSlideIdx = (i + total) % total;
+    mpdpSlidesEl.style.transform = `translateX(-${mpdpSlideIdx * 100}%)`;
+    mpdpDotsEl2.querySelectorAll(".pdp-dot").forEach((d, j) => d.classList.toggle("active", j === mpdpSlideIdx));
+  }
+
+  function openMobilePDP(slug) {
+    const p = PRODUCTS.find(x => x.slug === slug);
+    if (!p) return;
+    mpdpSlideIdx = 0;
+    pdpSelectedTalle = null;
+    pdpProducto = p;
+
+    const photos = p.fotos || [];
+
+    if (photos.length > 0) {
+      mpdpSlidesEl.innerHTML = photos.map(src => `<div class="mpdp-slide"><img src="${src}" alt="${p.name}" loading="lazy"></div>`).join("");
+    } else {
+      mpdpSlidesEl.innerHTML = `<div class="mpdp-slide" style="position:relative;height:100%">${buildPlaceholder(p)}</div>`;
+    }
+    mpdpSlidesEl.style.transform = "translateX(0)";
+
+    if (photos.length > 1) {
+      mpdpDotsEl2.innerHTML = photos.map((_, i) => `<div class="pdp-dot${i===0?" active":""}"></div>`).join("");
+      mpdpDotsEl2.style.display = "flex";
+    } else {
+      mpdpDotsEl2.innerHTML = "";
+      mpdpDotsEl2.style.display = "none";
+    }
+
+    // Title block (brand + name above the gallery)
+    document.getElementById("mpdp-title-block").innerHTML = `
+      <span class="spec-label">${p.brand}</span>
+      <h2 class="display text-ink mt-0.5" style="font-size:clamp(1.4rem,6vw,2rem);line-height:1.1">${p.name}</h2>
+    `;
+
+    const inCart = cart.some(c => c.slug === slug || c.slug.startsWith(slug + '__'));
+    mpdpInfoEl.innerHTML = `
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="badge ${statusClass(p.status)}" style="width:fit-content"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>
+        ${p.condition ? `<span class="badge-condition badge-condition--${p.condition}">${p.condition.toUpperCase()}</span>` : ""}
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
+        ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
+      </div>
+      ${p.status !== "encargo" && p.status !== "sin-stock" && p.talles && p.talles.length > 0 ? `
+      <div class="flex flex-col gap-2 border-t border-border pt-3">
+        <span class="spec-label">Seleccioná tu talle</span>
+        <div class="flex flex-wrap gap-2" id="pdp-talles">
+          ${p.talles.map(t => `<button class="talle-chip${t.disponible ? "" : " talle-chip-encargo"}" data-talle="${t.talle}" data-encargo="${!t.disponible}" onclick="selectTalle(this)">${t.talle}</button>`).join("")}
+        </div>
+        ${p.talles.some(t => !t.disponible) ? `<span class="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Talles marcados: disponible por encargo</span>` : ""}
+      </div>` : ""}
+      <ul class="flex flex-col gap-2 border-t border-border pt-3">
+        ${["Producto 100% original y verificado","Envíos a todo el país","Asesoramiento personalizado","Disponible por encargo en todos los talles"].map(t =>
+          `<li class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.1em]"><span style="color:var(--accent)">✓</span><span class="text-muted">${t}</span></li>`
+        ).join("")}
+      </ul>
+      <div class="border-t border-border pt-3 flex flex-col gap-3">
+        ${p.status === "encargo" || p.status === "sin-stock"
+          ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
+          : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
+        }
+        <button onclick="shareMpdp('${slug}','${p.name.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;padding:.6rem 1rem;width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          COMPARTIR PRODUCTO
+        </button>
+      </div>
+    `;
+
+    history.pushState({mpdpSlug: slug}, '', '#p/' + slug);
+    mpdpOpen = true;
+    mobilePDP.classList.add("open");
+    mobilePDP.scrollTop = 0;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+  }
+  window.openMobilePDP = openMobilePDP;
+
+  function closeMobilePDP(fromPopstate) {
+    if (!mpdpOpen) return;
+    mpdpOpen = false;
+    mobilePDP.classList.remove("open");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    if (!fromPopstate && location.hash.startsWith('#p/')) history.back();
+  }
+  window.closeMobilePDP = closeMobilePDP;
+
+  mpdpBack.addEventListener("click", () => { closeMpdpDropdown(); closeMobilePDP(false); });
+  function closeMpdpDropdown() {
+    mpdpDropdown.classList.remove("open");
+    mpdpCartBarBtn.classList.remove("menu-open");
+  }
+  mpdpCartBarBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    const isOpen = mpdpDropdown.classList.toggle("open");
+    mpdpCartBarBtn.classList.toggle("menu-open", isOpen);
+  });
+  document.addEventListener("click", e => {
+    if (mpdpDropdown.classList.contains("open") && !mpdpDropdown.contains(e.target) && e.target !== mpdpCartBarBtn) closeMpdpDropdown();
+  });
+
+  window.addEventListener("popstate", () => {
+    if (mpdpOpen && !location.hash.startsWith('#p/')) closeMobilePDP(true);
+  });
+
+  function shareMpdp(slug, name) {
+    const url = location.origin + location.pathname + '#p/' + slug;
+    if (navigator.share) {
+      navigator.share({ title: name + ' · Cop or Drop', url });
+    } else {
+      navigator.clipboard.writeText(url).then(() => alert('Link copiado al portapapeles'));
+    }
+  }
+  window.shareMpdp = shareMpdp;
+
+  // Deep link: open product on page load if URL has #p/slug
+  (function() {
+    const hash = location.hash;
+    if (hash.startsWith('#p/')) {
+      const slug = hash.slice(3);
+      if (PRODUCTS.find(p => p.slug === slug)) {
+        setTimeout(() => openPDP(slug), 100);
+      }
+    }
+  })();
+
+  // Swipe gallery
+  document.getElementById("mpdp-gallery").addEventListener("touchstart", e => {
+    mpdpTouchX = e.touches[0].clientX;
+  }, {passive: true});
+  document.getElementById("mpdp-gallery").addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - mpdpTouchX;
+    if (Math.abs(dx) > 40) dx < 0 ? goMpdpSlide(mpdpSlideIdx + 1) : goMpdpSlide(mpdpSlideIdx - 1);
+  }, {passive: true});
+  document.getElementById("mpdp-gallery").addEventListener("click", () => {
+    if (mpdpSlidesEl.children.length > 1) goMpdpSlide(mpdpSlideIdx + 1);
+  });
 
 </script>
 </body>
