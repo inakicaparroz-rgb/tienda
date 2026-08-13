@@ -1123,6 +1123,27 @@ const WA_NUMBER = "541134435571";
 
   let pdpProducto = null;
 
+  function buildTrustBlock() {
+    const badges = [
+      {icon:`<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>`, label:"Compra segura"},
+      {icon:`<rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>`, label:"Envío gratis"},
+      {icon:`<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>`, label:"100% original"},
+      {icon:`<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>`, label:"Atención directa"},
+    ];
+    const payments = ["Mercado Pago","Transferencia","Efectivo","Cripto"];
+    return `<div class="border-t border-border pt-3 flex flex-col gap-3">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${badges.map(b => `<div style="display:flex;align-items:center;gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);flex-shrink:0">${b.icon}</svg>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">${b.label}</span>
+        </div>`).join("")}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${payments.map(m => `<span style="border:1px solid var(--border);padding:3px 8px;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${m}</span>`).join("")}
+      </div>
+    </div>`;
+  }
+
   let _relIdx = {};
   function buildRelated(slug, brand, openFn) {
     const STOP = new Set(["de","la","el","en","con","por","tee","hoodie","short","crewneck","the","and","for","cargo","zip","polo","tank","pant","crew","sweat","sweater","jacket","coat"]);
@@ -1277,6 +1298,7 @@ const WA_NUMBER = "541134435571";
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
           : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
       }
+      ${buildTrustBlock()}
       ${buildRelated(slug, p.brand, 'openPDP')}
     `;
 
@@ -1618,6 +1640,7 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
           COMPARTIR PRODUCTO
         </button>
       </div>
+      ${buildTrustBlock()}
       ${buildRelated(slug, p.brand, 'openMobilePDP')}
     `;
 
