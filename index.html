@@ -1062,7 +1062,29 @@ const WA_NUMBER = "541134435571";
 
   let _relIdx = {};
   function buildRelated(slug, brand, openFn) {
-    const rel = PRODUCTS.filter(x => x.slug !== slug && x.brand === brand && x.status !== "sin-stock").slice(0, 6);
+    const STOP = new Set(["de","la","el","en","con","por","tee","hoodie","short","crewneck","the","and","for","cargo","zip","polo","tank","pant","crew","sweat","sweater","jacket","coat"]);
+    const p = PRODUCTS.find(x => x.slug === slug);
+    const pWords = p ? p.name.toLowerCase().split(/\W+/).filter(w => w.length > 2 && !STOP.has(w)) : [];
+    const scored = PRODUCTS
+      .filter(x => x.slug !== slug && x.status !== "sin-stock")
+      .map(x => {
+        let score = 0;
+        if (x.brand === brand) score += 10;
+        if (p && x.category === p.category) score += 5;
+        if (p && p.priceUSD > 0) {
+          const diff = Math.abs(x.priceUSD - p.priceUSD) / p.priceUSD;
+          if (diff <= 0.15) score += 3;
+          else if (diff <= 0.35) score += 1;
+        }
+        if (p && x.fit && x.fit === p.fit) score += 2;
+        const xWords = x.name.toLowerCase().split(/\W+/).filter(w => w.length > 2 && !STOP.has(w));
+        pWords.forEach(w => { if (xWords.includes(w)) score += 2; });
+        return { x, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(s => s.x);
+    const rel = scored;
     if (!rel.length) return "";
     const uid = "rel-" + slug.replace(/[^a-z0-9]/g,"");
     _relIdx[uid] = 0;
