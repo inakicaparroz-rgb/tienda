@@ -1060,6 +1060,44 @@ const WA_NUMBER = "541134435571";
 
   let pdpProducto = null;
 
+  let _relIdx = {};
+  function buildRelated(slug, brand, openFn) {
+    const rel = PRODUCTS.filter(x => x.slug !== slug && x.brand === brand && x.status !== "sin-stock").slice(0, 6);
+    if (!rel.length) return "";
+    const uid = "rel-" + slug.replace(/[^a-z0-9]/g,"");
+    _relIdx[uid] = 0;
+    const cards = rel.map(r => {
+      const cb = openFn === 'openMobilePDP'
+        ? `closeMobilePDP(false);setTimeout(()=>openMobilePDP('${r.slug}'),220)`
+        : `openPDP('${r.slug}')`;
+      return `<div onclick="${cb}" style="flex:0 0 90px;cursor:pointer">
+        <div style="width:90px;height:90px;border:1px solid var(--border);overflow:hidden;margin-bottom:6px">
+          <img src="${r.fotos[0]||''}" alt="${r.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">
+        </div>
+        <div style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;text-transform:uppercase;color:var(--ink);line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2">${r.name}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);margin-top:2px">USD ${r.priceUSD}</div>
+      </div>`;
+    }).join("");
+    const showArrows = rel.length > 3;
+    return `<div class="border-t border-border pt-3" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="spec-label">Te puede interesar</span>
+        ${showArrows ? `<div style="display:flex;gap:4px">
+          <button onclick="relScroll('${uid}',-1)" style="background:none;border:1px solid var(--border);color:var(--ink);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0">‹</button>
+          <button onclick="relScroll('${uid}',1)" style="background:none;border:1px solid var(--border);color:var(--ink);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0">›</button>
+        </div>` : ""}
+      </div>
+      <div id="${uid}" style="display:flex;gap:10px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:2px">
+        ${cards}
+      </div>
+    </div>`;
+  }
+  window.relScroll = function(uid, dir) {
+    const el = document.getElementById(uid);
+    if (!el) return;
+    el.scrollBy({ left: dir * 110, behavior: "smooth" });
+  };
+
   function openPDP(slug) {
     if (isMobile()) { openMobilePDP(slug); return; }
     const p = PRODUCTS.find(x => x.slug === slug);
@@ -1123,23 +1161,7 @@ const WA_NUMBER = "541134435571";
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
           : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
       }
-      ${(() => {
-        const rel = PRODUCTS.filter(x => x.slug !== slug && x.brand === p.brand && x.status !== "sin-stock").slice(0,3);
-        if (!rel.length) return "";
-        return `<div class="border-t border-border pt-3 flex flex-col gap-2">
-          <span class="spec-label">Te puede interesar</span>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            ${rel.map(r => `
-              <div onclick="openPDP('${r.slug}')" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 0;border-bottom:1px solid var(--border)">
-                <img src="${r.fotos[0]||''}" alt="${r.name}" style="width:44px;height:44px;object-fit:cover;border:1px solid var(--border);flex-shrink:0">
-                <div style="flex:1;min-width:0">
-                  <div style="font-family:'Archivo',sans-serif;font-size:11px;font-weight:500;text-transform:uppercase;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent)">USD ${r.priceUSD}</div>
-                </div>
-              </div>`).join("")}
-          </div>
-        </div>`;
-      })()}
+      ${buildRelated(slug, p.brand, 'openPDP')}
     `;
 
     pdpSelectedTalle = null;
@@ -1480,23 +1502,7 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
           COMPARTIR PRODUCTO
         </button>
       </div>
-      ${(() => {
-        const rel = PRODUCTS.filter(x => x.slug !== slug && x.brand === p.brand && x.status !== "sin-stock").slice(0,3);
-        if (!rel.length) return "";
-        return `<div class="border-t border-border pt-3 flex flex-col gap-2">
-          <span class="spec-label">Te puede interesar</span>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            ${rel.map(r => `
-              <div onclick="closeMobilePDP(false);setTimeout(()=>openMobilePDP('${r.slug}'),220)" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 0;border-bottom:1px solid var(--border)">
-                <img src="${r.fotos[0]||''}" alt="${r.name}" style="width:44px;height:44px;object-fit:cover;border:1px solid var(--border);flex-shrink:0">
-                <div style="flex:1;min-width:0">
-                  <div style="font-family:'Archivo',sans-serif;font-size:11px;font-weight:500;text-transform:uppercase;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent)">USD ${r.priceUSD}</div>
-                </div>
-              </div>`).join("")}
-          </div>
-        </div>`;
-      })()}
+      ${buildRelated(slug, p.brand, 'openMobilePDP')}
     `;
 
     history.pushState({mpdpSlug: slug}, '', '#p/' + slug);
