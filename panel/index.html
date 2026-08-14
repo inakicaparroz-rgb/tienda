@@ -86,7 +86,7 @@
           Vincular con la web
         </button>
         <button id="btn-sync-web" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
-          Sincronizar precios/categorías
+          Sincronizar precios/categorías/marcas
         </button>
       </div>
       <p id="stock-contador" class="text-muted font-mono text-xs mb-3"></p>
@@ -566,9 +566,9 @@
 <!-- Modal: sincronizar precios/categorías con la web (herramienta de un solo uso) -->
 <div id="modal-sync-web" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-lg bg-surface border border-border p-6 max-h-[90vh] overflow-y-auto">
-    <h3 class="font-bold mb-3">Sincronizar precios/categorías con la web</h3>
+    <h3 class="font-bold mb-3">Sincronizar precios/categorías/marcas con la web</h3>
     <p class="text-muted text-xs mb-4 leading-relaxed">
-      Para cada producto ya vinculado con la web: si el precio en USD difiere, se actualiza acá al precio de la web. Si la categoría está vacía, se completa con la categoría de la web. Lo que ya está cargado en el sistema no se toca.
+      Para cada producto ya vinculado con la web: si el precio en USD difiere, se actualiza acá al precio de la web. Si la categoría o la marca están vacías, se completan con las de la web. Lo que ya está cargado en el sistema no se toca.
     </p>
     <div id="sync-web-log" class="font-mono text-xs text-muted space-y-1 max-h-64 overflow-y-auto mb-4"></div>
     <div class="flex gap-2">
@@ -1617,13 +1617,14 @@ document.getElementById('sync-web-confirmar').addEventListener('click', async ()
   const vinculados = PRODUCTOS.filter(p => p.slug_web && porSlug[p.slug_web]);
 
   log.innerHTML = '';
-  let cambiosPrecio = 0, cambiosCategoria = 0;
+  let cambiosPrecio = 0, cambiosCategoria = 0, cambiosMarca = 0;
   for (const p of vinculados) {
     const web = porSlug[p.slug_web];
     const payload = {};
     const precioWeb = parseFloat(web.precioUSD) || 0;
     if (precioWeb && precioWeb !== Number(p.precio_venta_usd)) payload.precio_venta_usd = precioWeb;
     if ((!p.categoria || !p.categoria.trim()) && web.categoria) payload.categoria = web.categoria.trim();
+    if ((!p.marca || !p.marca.trim()) && web.marca) payload.marca = web.marca.trim();
     if (Object.keys(payload).length === 0) continue;
 
     const { error } = await supabase.from('productos').update(payload).eq('id', p.id);
@@ -1632,9 +1633,10 @@ document.getElementById('sync-web-confirmar').addEventListener('click', async ()
     const partes = [];
     if (payload.precio_venta_usd !== undefined) { partes.push(`precio USD ${p.precio_venta_usd} → ${payload.precio_venta_usd}`); cambiosPrecio++; }
     if (payload.categoria !== undefined) { partes.push(`categoría → ${payload.categoria}`); cambiosCategoria++; }
+    if (payload.marca !== undefined) { partes.push(`marca → ${payload.marca}`); cambiosMarca++; }
     log.innerHTML += `<p>${p.nombre}: ${partes.join(', ')}</p>`;
   }
-  log.innerHTML += `<p class="mt-3 font-bold text-white">Listo. ${cambiosPrecio} precios actualizados, ${cambiosCategoria} categorías completadas.</p>`;
+  log.innerHTML += `<p class="mt-3 font-bold text-white">Listo. ${cambiosPrecio} precios actualizados, ${cambiosCategoria} categorías completadas, ${cambiosMarca} marcas completadas.</p>`;
   await cargarProductos();
 });
 
