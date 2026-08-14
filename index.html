@@ -1236,6 +1236,32 @@ const WA_NUMBER = "541134435571";
           : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
       }
       ${buildRelated(slug, p.brand, 'openPDP')}
+      <div class="border-t border-border pt-4 mt-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 12px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="spec-label">/01 NAVEGACIÓN</span>
+          <a href="#top" onclick="closePDP()" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Inicio</a>
+          <a href="#catalogo" onclick="closePDP()" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Catálogo</a>
+          <a href="#manifesto" onclick="closePDP()" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Manifiesto</a>
+          <a href="#faq" onclick="closePDP()" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">FAQ</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="spec-label">/02 COMUNIDAD</span>
+          <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">WhatsApp directo</a>
+          <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Grupo WhatsApp</a>
+          <a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">@copordrop_ar</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="spec-label">/03 UBICACIÓN</span>
+          <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">CABA, Argentina</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.5">Enviamos GRATIS a toda la Argentina. 24-72 hs en AMBA, 2-7 días al interior.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="spec-label">/04 PAGOS</span>
+          <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">Efectivo · Transferencia</span>
+          <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">3 cuotas sin interés</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Coordiná por WhatsApp.</span>
+        </div>
+      </div>
     `;
 
     pdpSelectedTalle = null;
@@ -1577,6 +1603,32 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
         </button>
       </div>
       ${buildRelated(slug, p.brand, 'openMobilePDP')}
+      <div class="border-t border-border pt-4 mt-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 12px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="spec-label">/01 NAVEGACIÓN</span>
+          <a href="#top" onclick="closeMobilePDP(false)" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Inicio</a>
+          <a href="#catalogo" onclick="closeMobilePDP(false)" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Catálogo</a>
+          <a href="#manifesto" onclick="closeMobilePDP(false)" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Manifiesto</a>
+          <a href="#faq" onclick="closeMobilePDP(false)" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">FAQ</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="spec-label">/02 COMUNIDAD</span>
+          <a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">WhatsApp directo</a>
+          <a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Grupo WhatsApp</a>
+          <a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">@copordrop_ar</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="spec-label">/03 UBICACIÓN</span>
+          <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">CABA, Argentina</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.5">Enviamos GRATIS a toda la Argentina. 24-72 hs en AMBA, 2-7 días al interior.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="spec-label">/04 PAGOS</span>
+          <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">Efectivo · Transferencia</span>
+          <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">3 cuotas sin interés</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Coordiná por WhatsApp.</span>
+        </div>
+      </div>
     `;
 
     history.pushState({mpdpSlug: slug}, '', '#p/' + slug);
