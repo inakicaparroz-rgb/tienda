@@ -1235,7 +1235,6 @@ const WA_NUMBER = "541134435571";
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
           : `<button class="btn-add-cart${inCart?" in-cart":""}" id="pdp-cart-btn" onclick="pdpCartToggle('${slug}')" ${p.talles && p.talles.length > 0 && !inCart ? 'disabled style="opacity:.4;cursor:not-allowed"' : ""}>${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
       }
-      ${buildTrustBlock()}
       ${buildRelated(slug, p.brand, 'openPDP')}
     `;
 
@@ -1577,7 +1576,6 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
           COMPARTIR PRODUCTO
         </button>
       </div>
-      ${buildTrustBlock()}
       ${buildRelated(slug, p.brand, 'openMobilePDP')}
     `;
 
