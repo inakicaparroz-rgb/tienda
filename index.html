@@ -752,8 +752,17 @@
     return productos.map(p => {
       const filasStock = stockPorProducto[p.id] || [];
       const totalDisponible = filasStock.reduce((s, f) => s + Number(f.cantidad_disponible || 0), 0);
+      const _talleOrder = ["XXS","XS","S","M","L","XL","XXL","XXXL","3XL","4XL"];
+      const _sortTalle = (a, b) => {
+        const ai = _talleOrder.indexOf(a.talle.toUpperCase());
+        const bi = _talleOrder.indexOf(b.talle.toUpperCase());
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return parseFloat(a.talle) - parseFloat(b.talle);
+      };
       const talles = p.tiene_talles
-        ? filasStock.filter(f => f.talle).map(f => ({ talle: f.talle, disponible: Number(f.cantidad_disponible || 0) > 0 }))
+        ? filasStock.filter(f => f.talle).map(f => ({ talle: f.talle, disponible: Number(f.cantidad_disponible || 0) > 0 })).sort(_sortTalle)
         : [];
       const words = p.nombre ? p.nombre.split(" ") : ["", ""];
       return {
