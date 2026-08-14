@@ -1248,10 +1248,10 @@ const WA_NUMBER = "541134435571";
       <div class="border-t border-border pt-4 mt-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 12px">
         <div style="display:flex;flex-direction:column;gap:6px">
           <span class="spec-label">/01 NAVEGACIÓN</span>
-          <a href="#top" onclick="closePDP()" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Inicio</a>
-          <a href="#catalogo" onclick="closePDP()" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Catálogo</a>
-          <a href="#manifesto" onclick="closePDP()" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Manifiesto</a>
-          <a href="#faq" onclick="closePDP()" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">FAQ</a>
+          <a href="#" onclick="closePDP();setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),300);return false" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Inicio</a>
+          <a href="#" onclick="closePDP();setTimeout(()=>document.getElementById('catalogo')?.scrollIntoView({behavior:'smooth'}),300);return false" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Catálogo</a>
+          <a href="#" onclick="closePDP();setTimeout(()=>document.getElementById('manifesto')?.scrollIntoView({behavior:'smooth'}),300);return false" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Manifiesto</a>
+          <a href="#" onclick="closePDP();setTimeout(()=>document.getElementById('faq')?.scrollIntoView({behavior:'smooth'}),300);return false" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">FAQ</a>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <span class="spec-label">/02 COMUNIDAD</span>
@@ -1615,10 +1615,10 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
       <div class="border-t border-border pt-4 mt-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 12px">
         <div style="display:flex;flex-direction:column;gap:6px">
           <span class="spec-label">/01 NAVEGACIÓN</span>
-          <a href="#top" onclick="closeMobilePDP(false)" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Inicio</a>
-          <a href="#catalogo" onclick="closeMobilePDP(false)" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Catálogo</a>
-          <a href="#manifesto" onclick="closeMobilePDP(false)" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">Manifiesto</a>
-          <a href="#faq" onclick="closeMobilePDP(false)" style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink);text-decoration:none">FAQ</a>
+          <a href="#" onclick="closeMobilePDP(false);setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),300);return false" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Inicio</a>
+          <a href="#" onclick="closeMobilePDP(false);setTimeout(()=>document.getElementById('catalogo')?.scrollIntoView({behavior:'smooth'}),300);return false" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Catálogo</a>
+          <a href="#" onclick="closeMobilePDP(false);setTimeout(()=>document.getElementById('manifesto')?.scrollIntoView({behavior:'smooth'}),300);return false" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">Manifiesto</a>
+          <a href="#" onclick="closeMobilePDP(false);setTimeout(()=>document.getElementById('faq')?.scrollIntoView({behavior:'smooth'}),300);return false" style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink);text-decoration:none">FAQ</a>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <span class="spec-label">/02 COMUNIDAD</span>
