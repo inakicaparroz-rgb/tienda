@@ -1690,12 +1690,14 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
   // Deep link: open product on page load if URL has #p/slug
   (function() {
     const hash = location.hash;
-    if (hash.startsWith('#p/')) {
-      const slug = hash.slice(3);
-      if (PRODUCTS.find(p => p.slug === slug)) {
-        setTimeout(() => openPDP(slug), 100);
-      }
+    if (!hash.startsWith('#p/')) return;
+    const slug = hash.slice(3);
+    function tryOpen() {
+      const p = PRODUCTS.find(x => x.slug === slug);
+      if (p) { openPDP(slug); return; }
+      setTimeout(tryOpen, 200);
     }
+    setTimeout(tryOpen, 300);
   })();
 
   // Swipe gallery
