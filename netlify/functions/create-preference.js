@@ -82,13 +82,23 @@ exports.handler = async (event) => {
   // 1) Reservar cada unidad de forma atómica, con el precio real del sistema.
   const reservados = [];
   for (const item of items) {
-    const { data: producto } = await supabaseFetch(
+    const { ok: lookupOk, status: lookupStatus, data: producto } = await supabaseFetch(
       `/rest/v1/productos?id=eq.${item.producto_id}&select=id,nombre,nombre_web,precio_venta_usd`
     );
     const p = Array.isArray(producto) ? producto[0] : null;
     if (!p) {
       for (const r of reservados) await liberarUnidad(r.unidad.id);
-      return { statusCode: 409, body: JSON.stringify({ error: "producto_no_encontrado", producto_id: item.producto_id }) };
+      return {
+        statusCode: 409,
+        body: JSON.stringify({
+          error: "producto_no_encontrado",
+          producto_id: item.producto_id,
+          diag_lookup_ok: lookupOk,
+          diag_lookup_status: lookupStatus,
+          diag_lookup_body: producto,
+          diag_has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        }),
+      };
     }
 
     const unidad = await reservarUnidad(item.producto_id, item.talle || null);
