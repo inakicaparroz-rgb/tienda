@@ -955,6 +955,12 @@ const WA_NUMBER = "541134435571";
     .catch(err => console.error(err))
     .finally(() => {
       document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
+      const brandParam = new URLSearchParams(location.search).get("buscar");
+      if (brandParam) {
+        searchQuery = brandParam;
+        searchInput.value = brandParam;
+        document.getElementById("catalogo").scrollIntoView();
+      }
       render();
       initCart();
     });
