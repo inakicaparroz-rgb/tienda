@@ -1,0 +1,9 @@
+netlify/
+netlify.toml
+supabase/
+panel/
+.claude/
+CNAME
+wrangler.toml
+functions/
+*.toml
