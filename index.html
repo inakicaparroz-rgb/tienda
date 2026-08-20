@@ -1450,7 +1450,7 @@ const WA_NUMBER = "541134435571";
     const items = cart.map(p => ({ producto_id: p.id, talle: p.talle || null }));
     const successUrl = location.href + (location.href.includes("?") ? "&" : "?") + "order=success";
 
-    fetch("/.netlify/functions/create-preference", {
+    fetch("/functions/create-preference", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
