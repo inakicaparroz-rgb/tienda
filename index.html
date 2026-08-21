@@ -1472,7 +1472,7 @@ const WA_NUMBER = "541134435571";
       if (r.status === 409 && data.error === "sin_stock") {
         alert(`"${data.nombre}"${data.talle ? ` talle ${data.talle}` : ""} se acaba de agotar. Sacalo del carrito para poder pagar el resto.`);
       } else {
-        alert("Error al generar el link de pago.");
+        alert("Error al generar el link de pago.\n\nDetalle: " + JSON.stringify(data) + "\nStatus: " + r.status);
       }
       console.error(data);
     })
