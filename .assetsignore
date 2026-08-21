@@ -5,5 +5,4 @@ panel/
 .claude/
 CNAME
 wrangler.toml
-functions/
 *.toml
