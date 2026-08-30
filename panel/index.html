@@ -2172,6 +2172,36 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     ventaId = venta.id;
   }
 
+  // Pago mixto SIN cuenta corriente: el precio cargado en cada ítem (que suele
+  // quedar en el precio de lista, porque nadie lo edita a mano) se reemplaza
+  // por lo efectivamente cobrado — la suma de los dos campos de arriba — para
+  // que la planilla de ventas y los reportes reflejen el precio real y no el
+  // de lista. Repartido proporcionalmente si hay más de un ítem; si con
+  // cuenta corriente activa esto NO se toca, porque ahí el precio del ítem
+  // tiene que seguir siendo el total real de la venta (lo abonado es parcial).
+  if (pagoMixtoActivo && !cuentaCorrienteActiva && items.length > 0) {
+    const recibidoUsd = montoUsdMixto + (cotizacion ? montoArsMixto / cotizacion : 0);
+    const pesos = items.map(fila => {
+      const moneda = fila.querySelector('.v-item-moneda').value;
+      const precio = parseFloat(fila.querySelector('.v-item-precio').value) || 0;
+      return moneda === 'ARS' ? (cotizacion ? precio / cotizacion : 0) : precio;
+    });
+    const totalPesos = pesos.reduce((s, p) => s + p, 0);
+    let acumulado = 0;
+    items.forEach((fila, i) => {
+      let nuevoUsd;
+      if (i === items.length - 1) {
+        nuevoUsd = recibidoUsd - acumulado; // el último absorbe el redondeo
+      } else {
+        const peso = totalPesos > 0 ? pesos[i] / totalPesos : 1 / items.length;
+        nuevoUsd = peso * recibidoUsd;
+        acumulado += nuevoUsd;
+      }
+      fila.querySelector('.v-item-precio').value = Math.max(0, nuevoUsd).toFixed(2);
+      fila.querySelector('.v-item-moneda').value = 'USD';
+    });
+  }
+
   const itemsFinales = [];
 
   for (const fila of items) {
