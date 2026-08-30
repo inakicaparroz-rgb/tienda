@@ -481,6 +481,31 @@
     <div class="border border-border p-3 mt-4">
       <div class="flex items-center justify-between gap-3">
         <div>
+          <p class="font-mono text-xs uppercase">Pago en dos monedas</p>
+          <p class="text-muted text-xs mt-0.5">El cliente paga parte en USD y parte en ARS. A Caja pasa exactamente lo que se cargue en cada campo.</p>
+        </div>
+        <button type="button" id="v-pago-mixto-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+      <div id="v-pago-mixto-campos" class="hidden mt-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Recibido en USD</label>
+            <input id="v-pago-usd" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Recibido en ARS</label>
+            <input id="v-pago-ars" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2 text-sm" />
+          </div>
+        </div>
+        <p id="v-pago-mixto-preview" class="text-muted text-xs mt-2"></p>
+      </div>
+    </div>
+
+    <div class="border border-border p-3 mt-3">
+      <div class="flex items-center justify-between gap-3">
+        <div>
           <p class="font-mono text-xs uppercase">Cuenta corriente</p>
           <p class="text-muted text-xs mt-0.5">El cliente no paga el total ahora — la diferencia queda como deuda.</p>
         </div>
@@ -489,14 +514,17 @@
         </button>
       </div>
       <div id="v-cuenta-corriente-campos" class="hidden mt-3">
-        <label class="block text-muted font-mono text-xs uppercase mb-1">Abona hoy</label>
-        <div class="flex gap-2">
-          <input id="v-abona-hoy" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
-          <select id="v-abona-moneda" class="px-3 py-2 text-sm">
-            <option value="USD">USD</option>
-            <option value="ARS">ARS</option>
-          </select>
+        <div id="v-abona-single-wrap">
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Abona hoy</label>
+          <div class="flex gap-2">
+            <input id="v-abona-hoy" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+            <select id="v-abona-moneda" class="px-3 py-2 text-sm">
+              <option value="USD">USD</option>
+              <option value="ARS">ARS</option>
+            </select>
+          </div>
         </div>
+        <p id="v-abona-mixto-nota" class="hidden text-muted text-xs">Se usa lo cargado arriba en "Pago en dos monedas".</p>
         <p id="v-deuda-preview" class="text-muted text-xs mt-2"></p>
       </div>
     </div>
@@ -1874,20 +1902,48 @@ function totalUsdItemsModal() {
   }, 0);
 }
 
+// Monto recibido en USD "equivalente" — si hay pago mixto activo usa los dos
+// campos (USD + ARS/cotización), si no usa el campo único de siempre.
 function abonadoHoyEnUsd() {
+  const cotizacion = parseFloat(document.getElementById('v-cotizacion').value) || 0;
+  if (vPagoMixtoSwitch.dataset.on === 'true') {
+    const usd = parseFloat(document.getElementById('v-pago-usd').value) || 0;
+    const ars = parseFloat(document.getElementById('v-pago-ars').value) || 0;
+    return usd + (cotizacion ? ars / cotizacion : 0);
+  }
   const abonadoRaw = parseFloat(document.getElementById('v-abona-hoy').value) || 0;
   const abonadoMoneda = document.getElementById('v-abona-moneda').value;
   if (abonadoMoneda !== 'ARS') return abonadoRaw;
-  const cotizacion = parseFloat(document.getElementById('v-cotizacion').value) || 0;
   return cotizacion ? abonadoRaw / cotizacion : 0;
 }
 
 function actualizarPreviewDeuda() {
   const preview = document.getElementById('v-deuda-preview');
+  if (preview) {
+    const total = totalUsdItemsModal();
+    const deuda = Math.max(0, total - abonadoHoyEnUsd());
+    preview.textContent = `Total venta: USD ${total.toFixed(2)} — Deuda: USD ${deuda.toFixed(2)}`;
+  }
+  actualizarPreviewPagoMixto();
+}
+
+// Preview del bloque "Pago en dos monedas" — se muestra siempre que está
+// activo, sea o no cuenta corriente (para una venta pagada al contado
+// también sirve para ver que lo cargado cierra con el total).
+function actualizarPreviewPagoMixto() {
+  const preview = document.getElementById('v-pago-mixto-preview');
   if (!preview) return;
   const total = totalUsdItemsModal();
-  const deuda = Math.max(0, total - abonadoHoyEnUsd());
-  preview.textContent = `Total venta: USD ${total.toFixed(2)} — Deuda: USD ${deuda.toFixed(2)}`;
+  const recibido = abonadoHoyEnUsd();
+  const diferencia = total - recibido;
+  const cuentaCorrienteActiva = vCuentaCorrienteSwitch.dataset.on === 'true';
+  if (cuentaCorrienteActiva) {
+    preview.textContent = `Total venta: USD ${total.toFixed(2)} — Recibido: USD ${recibido.toFixed(2)} — Deuda: USD ${Math.max(0, diferencia).toFixed(2)}`;
+  } else if (Math.abs(diferencia) < 0.01) {
+    preview.textContent = `Total venta: USD ${total.toFixed(2)} — Recibido: USD ${recibido.toFixed(2)} ✓`;
+  } else {
+    preview.textContent = `Total venta: USD ${total.toFixed(2)} — Recibido: USD ${recibido.toFixed(2)} — Diferencia: USD ${diferencia.toFixed(2)}`;
+  }
 }
 
 document.getElementById('v-agregar-item').addEventListener('click', () => agregarItemVenta());
@@ -1896,17 +1952,35 @@ const modalVenta = document.getElementById('modal-venta');
 
 const vCuentaCorrienteSwitch = document.getElementById('v-cuenta-corriente-switch');
 const vCuentaCorrienteCampos = document.getElementById('v-cuenta-corriente-campos');
+const vAbonaSingleWrap = document.getElementById('v-abona-single-wrap');
+const vAbonaMixtoNota = document.getElementById('v-abona-mixto-nota');
+const vPagoMixtoSwitch = document.getElementById('v-pago-mixto-switch');
+const vPagoMixtoCampos = document.getElementById('v-pago-mixto-campos');
 
 function setCuentaCorriente(activa) {
   setSwitch(vCuentaCorrienteSwitch, activa);
   vCuentaCorrienteCampos.classList.toggle('hidden', !activa);
-  if (activa) actualizarPreviewDeuda();
+  actualizarPreviewDeuda();
+}
+
+function setPagoMixto(activa) {
+  setSwitch(vPagoMixtoSwitch, activa);
+  vPagoMixtoCampos.classList.toggle('hidden', !activa);
+  // Con pago mixto activo, el campo único "Abona hoy" de Cuenta corriente
+  // queda de más — se oculta y se avisa que se usa el de arriba.
+  vAbonaSingleWrap.classList.toggle('hidden', activa);
+  vAbonaMixtoNota.classList.toggle('hidden', !activa);
+  actualizarPreviewDeuda();
 }
 
 vCuentaCorrienteSwitch.addEventListener('click', () => setCuentaCorriente(vCuentaCorrienteSwitch.dataset.on !== 'true'));
 document.getElementById('v-abona-hoy').addEventListener('input', actualizarPreviewDeuda);
 document.getElementById('v-abona-moneda').addEventListener('change', actualizarPreviewDeuda);
 document.getElementById('v-cotizacion').addEventListener('input', actualizarPreviewDeuda);
+
+vPagoMixtoSwitch.addEventListener('click', () => setPagoMixto(vPagoMixtoSwitch.dataset.on !== 'true'));
+document.getElementById('v-pago-usd').addEventListener('input', actualizarPreviewDeuda);
+document.getElementById('v-pago-ars').addEventListener('input', actualizarPreviewDeuda);
 
 // Temporal, para cargar ventas atrasadas sin tocar el saldo de Caja (que ya
 // está correcto) — sacar cuando se termine de cargar el backlog.
@@ -1924,6 +1998,9 @@ async function abrirModalVenta(venta) {
   document.getElementById('v-fecha').value = venta?.fecha || new Date().toISOString().slice(0, 10);
   document.getElementById('v-abona-hoy').value = venta?.monto_abonado ?? '';
   document.getElementById('v-abona-moneda').value = venta?.abonado_moneda || 'USD';
+  document.getElementById('v-pago-usd').value = venta?.pago_mixto ? (venta?.monto_abonado ?? '') : '';
+  document.getElementById('v-pago-ars').value = venta?.pago_mixto ? (venta?.monto_abonado_ars ?? '') : '';
+  setPagoMixto(!!venta?.pago_mixto);
   setCuentaCorriente(!!venta?.cuenta_corriente);
   setSwitch(vNoCajaSwitch, false);
   modalVenta.classList.remove('hidden');
@@ -1973,6 +2050,25 @@ async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moned
   }
 }
 
+// Pago en dos monedas: a Caja pasa exactamente lo cargado en cada campo —
+// un ingreso en USD y otro en ARS (sin convertir), sea venta al contado o
+// cuenta corriente (ahí "montoUsd"/"montoArs" son lo abonado hoy, no el total).
+async function regenerarCajaDeVentaMixta(ventaId, motivo, montoUsd, montoArs, cotizacion) {
+  await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
+  if (montoUsd > 0) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'ingreso', motivo, categoria: 'venta', monto: montoUsd, moneda: 'USD', venta_id: ventaId,
+      cotizacion_usada: null,
+    });
+  }
+  if (montoArs > 0) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'ingreso', motivo, categoria: 'venta', monto: montoArs, moneda: 'ARS', venta_id: ventaId,
+      cotizacion_usada: cotizacion || null,
+    });
+  }
+}
+
 // Recrea (borra y, si corresponde, vuelve a insertar) la deuda que dejó esta
 // venta puntual. Con deudaUsd = 0 solo limpia una deuda vieja (ej. si se
 // desactivó cuenta corriente al editar la venta).
@@ -1996,7 +2092,8 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   if (items.length === 0) { alert('Agregá al menos una prenda con un código válido.'); return; }
 
   const cotizacion = parseFloat(document.getElementById('v-cotizacion').value) || 0;
-  const necesitaCotizacion = items.some(f => f.querySelector('.v-item-moneda').value === 'ARS');
+  const pagaArsMixto = vPagoMixtoSwitch.dataset.on === 'true' && (parseFloat(document.getElementById('v-pago-ars').value) || 0) > 0;
+  const necesitaCotizacion = pagaArsMixto || items.some(f => f.querySelector('.v-item-moneda').value === 'ARS');
   if (necesitaCotizacion && cotizacion <= 0) { alert('Falta la cotización del dólar para convertir los ítems en ARS.'); return; }
 
   const boton = document.getElementById('v-confirmar');
@@ -2024,22 +2121,39 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   }
 
   const cuentaCorrienteActiva = vCuentaCorrienteSwitch.dataset.on === 'true';
+  const pagoMixtoActivo = vPagoMixtoSwitch.dataset.on === 'true';
   const totalUsdVentaModal = totalUsdItemsModal();
-  const abonadoRaw = cuentaCorrienteActiva ? (parseFloat(document.getElementById('v-abona-hoy').value) || 0) : totalUsdVentaModal;
-  const abonadoMoneda = cuentaCorrienteActiva ? document.getElementById('v-abona-moneda').value : 'USD';
+
+  const montoUsdMixto = pagoMixtoActivo ? (parseFloat(document.getElementById('v-pago-usd').value) || 0) : null;
+  const montoArsMixto = pagoMixtoActivo ? (parseFloat(document.getElementById('v-pago-ars').value) || 0) : null;
+
+  // abonadoRaw/abonadoMoneda: lo que queda guardado para mostrar en el
+  // listado y reabrir esta venta para editar. Con pago mixto, la "moneda
+  // única" pasa a ser solo informativa (el detalle real está en los dos
+  // montos); sin pago mixto es exactamente el comportamiento de siempre.
+  const abonadoRaw = pagoMixtoActivo ? montoUsdMixto
+    : cuentaCorrienteActiva ? (parseFloat(document.getElementById('v-abona-hoy').value) || 0)
+    : totalUsdVentaModal;
+  const abonadoMoneda = pagoMixtoActivo ? 'USD'
+    : cuentaCorrienteActiva ? document.getElementById('v-abona-moneda').value
+    : 'USD';
   const deudaUsd = cuentaCorrienteActiva ? Math.max(0, totalUsdVentaModal - abonadoHoyEnUsd()) : 0;
   const ventaFecha = document.getElementById('v-fecha').value || new Date().toISOString().slice(0, 10);
+
+  const ventaPayload = {
+    cliente_id: cliente.id,
+    fecha: ventaFecha,
+    cuenta_corriente: cuentaCorrienteActiva,
+    monto_abonado: (pagoMixtoActivo || cuentaCorrienteActiva) ? abonadoRaw : null,
+    abonado_moneda: (pagoMixtoActivo || cuentaCorrienteActiva) ? abonadoMoneda : null,
+    pago_mixto: pagoMixtoActivo,
+    monto_abonado_ars: pagoMixtoActivo ? montoArsMixto : null,
+  };
 
   let ventaId;
   if (EDITANDO_VENTA) {
     ventaId = EDITANDO_VENTA.id;
-    await supabase.from('ventas').update({
-      cliente_id: cliente.id,
-      fecha: ventaFecha,
-      cuenta_corriente: cuentaCorrienteActiva,
-      monto_abonado: cuentaCorrienteActiva ? abonadoRaw : null,
-      abonado_moneda: cuentaCorrienteActiva ? abonadoMoneda : null,
-    }).eq('id', ventaId);
+    await supabase.from('ventas').update(ventaPayload).eq('id', ventaId);
 
     // Ítems que estaban antes y ya no están: se sacan y su unidad vuelve a disponible
     const idsActuales = new Set(items.filter(f => f._ventaItemId).map(f => f._ventaItemId));
@@ -2051,12 +2165,8 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     }
   } else {
     const { data: venta, error: errorVenta } = await supabase.from('ventas').insert({
-      cliente_id: cliente.id,
+      ...ventaPayload,
       canal: 'local',
-      fecha: ventaFecha,
-      cuenta_corriente: cuentaCorrienteActiva,
-      monto_abonado: cuentaCorrienteActiva ? abonadoRaw : null,
-      abonado_moneda: cuentaCorrienteActiva ? abonadoMoneda : null,
     }).select().single();
     if (errorVenta) { alert('Error al crear la venta.'); console.error(errorVenta); boton.disabled = false; return; }
     ventaId = venta.id;
@@ -2094,7 +2204,9 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   // Temporal: para cargar ventas atrasadas sin tocar Caja/Deudas (que ya
   // están correctas). Ver comentario en el switch "v-no-caja-switch".
   if (vNoCajaSwitch.dataset.on !== 'true') {
-    if (cuentaCorrienteActiva) {
+    if (pagoMixtoActivo) {
+      await regenerarCajaDeVentaMixta(ventaId, cliente.nombre, montoUsdMixto, montoArsMixto, cotizacion);
+    } else if (cuentaCorrienteActiva) {
       await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda, cotizacion);
     } else {
       await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales, cotizacion);
