@@ -2674,6 +2674,18 @@ const CATEGORIA_LABEL = {
   pago_deuda: 'Pago deuda',
 };
 
+const RETIRO_SOCIO_LABEL = { emi: 'Emi', ina: 'Iña', ambos: 'Emi y Iña' };
+
+// Para un retiro, la categoría sola ("Retiro") no dice de quién es — se le
+// suma el socio si está cargado (m.retiro_socio), tanto para mostrar en la
+// lista como para poder buscarlo por nombre.
+function categoriaTexto(m) {
+  if (m.categoria === 'retiro' && m.retiro_socio) {
+    return `Retiro — ${RETIRO_SOCIO_LABEL[m.retiro_socio] || m.retiro_socio}`;
+  }
+  return CATEGORIA_LABEL[m.categoria] || m.categoria;
+}
+
 async function cargarConfiguracion() {
   const { data, error } = await supabase.from('configuracion').select('*').single();
   if (error) { console.error(error); return; }
@@ -2735,10 +2747,14 @@ function renderCaja(lista) {
     tr.className = 'hover:bg-surface-elevated';
     const signo = m.tipo === 'ingreso' ? '+' : '-';
     const colorMonto = m.tipo === 'ingreso' ? 'text-accent' : 'text-red-400';
+    const socio = m.categoria === 'retiro' && m.retiro_socio ? RETIRO_SOCIO_LABEL[m.retiro_socio] || m.retiro_socio : null;
+    const categoriaHTML = socio
+      ? `Retiro <span class="text-white font-bold">— ${socio}</span>`
+      : (CATEGORIA_LABEL[m.categoria] || m.categoria);
     tr.innerHTML = `
       <td class="p-2 text-muted">${new Date(m.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
       <td class="p-2">${m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}</td>
-      <td class="p-2 text-muted">${CATEGORIA_LABEL[m.categoria] || m.categoria}</td>
+      <td class="p-2 text-muted">${categoriaHTML}</td>
       <td class="p-2">${m.motivo}</td>
       <td class="p-2 ${colorMonto}">${signo}${m.moneda} ${Number(m.monto).toFixed(2)}</td>
       <td class="p-2 text-right flex items-center justify-end gap-2">${
@@ -2763,7 +2779,7 @@ function filtrarCaja() {
   const q = document.getElementById('caja-search').value.trim().toLowerCase();
   let lista = CAJA;
   if (q) {
-    lista = lista.filter(m => [m.motivo, CATEGORIA_LABEL[m.categoria] || m.categoria, m.moneda].join(' ').toLowerCase().includes(q));
+    lista = lista.filter(m => [m.motivo, categoriaTexto(m), m.moneda].join(' ').toLowerCase().includes(q));
   }
   if (FILTRO_CAJA_TIPOS.size > 0) lista = lista.filter(m => FILTRO_CAJA_TIPOS.has(m.tipo));
   if (FILTRO_CAJA_MONEDAS.size > 0) lista = lista.filter(m => FILTRO_CAJA_MONEDAS.has(m.moneda));
