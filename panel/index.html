@@ -2671,7 +2671,7 @@ let INVERSORES = [];
 const CATEGORIA_LABEL = {
   venta: 'Venta', inversion: 'Inversión', retiro: 'Retiro',
   gasto_operativo: 'Gasto operativo', gasto_comercial: 'Gasto comercial', pago_inversor: 'Pago a inversor',
-  pago_deuda: 'Pago deuda',
+  pago_deuda: 'Pago deuda', cambio_moneda: 'Cambio de moneda',
 };
 
 const RETIRO_SOCIO_LABEL = { emi: 'Emi', ina: 'Iña', ambos: 'Emi y Iña' };
@@ -2874,8 +2874,8 @@ const mRetiroEmiSwitch = document.getElementById('m-retiro-emi-switch');
 const mRetiroInaSwitch = document.getElementById('m-retiro-ina-switch');
 
 const CATEGORIAS_POR_TIPO = {
-  ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda']],
-  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro']],
+  ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda'], ['cambio_moneda', 'Cambio de moneda']],
+  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda']],
 };
 
 function actualizarCamposMovimiento() {
