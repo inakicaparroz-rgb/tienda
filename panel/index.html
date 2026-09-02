@@ -255,10 +255,11 @@
         <button id="reportes-mes-siguiente" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-2">▶</button>
       </div>
 
-      <div class="border border-border p-5 mb-8 max-w-lg mx-auto">
+      <div class="border border-border p-5 mb-6 max-w-lg mx-auto">
         <h3 class="font-bold font-mono text-sm uppercase tracking-wide mb-4">Ganancia mensual</h3>
         <div class="space-y-2 text-sm font-mono">
           <div class="flex justify-between"><span class="text-muted">Ganancia bruta</span><span id="rep-ganancia-bruta">USD 0.00</span></div>
+          <div class="flex justify-between"><span class="text-muted">+ Ganancia encargos</span><span id="rep-ganancia-encargos" class="text-accent">USD 0.00</span></div>
           <div class="flex justify-between"><span class="text-muted">− Gastos operativos</span><span id="rep-gastos-operativos" class="text-red-400">USD 0.00</span></div>
           <div class="flex justify-between border-t border-border pt-2 font-bold"><span>= Ganancia operativa</span><span id="rep-ganancia-operativa">USD 0.00</span></div>
           <div class="flex justify-between"><span class="text-muted">− Retiro Emi</span><span id="rep-retiro-emi" class="text-red-400">USD 0.00</span></div>
@@ -270,6 +271,71 @@
           <div class="flex justify-between"><span>% Emi sobre ganancia operativa</span><span id="rep-pct-emi">0%</span></div>
           <div class="flex justify-between"><span>% Iña sobre ganancia operativa</span><span id="rep-pct-ina">0%</span></div>
           <div class="flex justify-between font-bold text-white"><span>% Total retiros sobre ganancia operativa</span><span id="rep-pct-total">0%</span></div>
+        </div>
+      </div>
+
+      <!-- Indicadores del mes -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="border border-border p-4">
+          <p class="text-muted font-mono text-xs uppercase mb-1">Facturación total</p>
+          <p id="rep-facturacion-total" class="text-lg font-bold font-mono">USD 0.00</p>
+        </div>
+        <div class="border border-border p-4">
+          <p class="text-muted font-mono text-xs uppercase mb-1">Rentabilidad</p>
+          <p id="rep-rentabilidad" class="text-lg font-bold font-mono text-accent">0%</p>
+          <p class="text-muted font-mono text-[10px] mt-1 leading-tight">ganancia operativa ÷ facturación</p>
+        </div>
+        <div class="border border-border p-4">
+          <p class="text-muted font-mono text-xs uppercase mb-1">Gastos op. s/ bruta</p>
+          <p id="rep-gastos-pct" class="text-lg font-bold font-mono text-red-400">0%</p>
+          <p class="text-muted font-mono text-[10px] mt-1 leading-tight">de cada USD 100 de ganancia bruta</p>
+        </div>
+        <div class="border border-border p-4">
+          <p class="text-muted font-mono text-xs uppercase mb-1">Facturación s/ stock</p>
+          <p id="rep-stock-pct" class="text-lg font-bold font-mono">0%</p>
+          <p id="rep-stock-detalle" class="text-muted font-mono text-[10px] mt-1 leading-tight">—</p>
+        </div>
+      </div>
+
+      <!-- Detalle facturación / gastos operativos -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="border border-border p-4">
+          <div class="flex items-baseline justify-between mb-3">
+            <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Facturación por concepto</h4>
+            <span id="rep-facturacion-cantidad" class="text-muted font-mono text-[10px]"></span>
+          </div>
+          <div id="rep-facturacion-detalle" class="text-sm font-mono space-y-1 max-h-80 overflow-y-auto"></div>
+        </div>
+        <div class="border border-border p-4">
+          <div class="flex items-baseline justify-between mb-3">
+            <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Gastos operativos por concepto</h4>
+            <span id="rep-gastos-cantidad" class="text-muted font-mono text-[10px]"></span>
+          </div>
+          <div id="rep-gastos-detalle" class="text-sm font-mono space-y-1 max-h-80 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <!-- Detalle de retiros por socio -->
+      <div class="mb-8">
+        <div class="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+          <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Retiros por motivo</h3>
+          <span class="text-muted font-mono text-[10px]">en ARS · los motivos con "/" se dividen 50/50 entre sus dos conceptos</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="border border-border p-4">
+            <div class="flex items-baseline justify-between mb-3">
+              <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Emi</h4>
+              <span id="rep-retiros-emi-total" class="font-mono text-xs">ARS 0.00</span>
+            </div>
+            <div id="rep-retiros-emi-detalle" class="text-sm font-mono space-y-1 max-h-80 overflow-y-auto"></div>
+          </div>
+          <div class="border border-border p-4">
+            <div class="flex items-baseline justify-between mb-3">
+              <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Iña</h4>
+              <span id="rep-retiros-ina-total" class="font-mono text-xs">ARS 0.00</span>
+            </div>
+            <div id="rep-retiros-ina-detalle" class="text-sm font-mono space-y-1 max-h-80 overflow-y-auto"></div>
+          </div>
         </div>
       </div>
 
@@ -3376,6 +3442,14 @@ function aUsd(monto, moneda, cotizacionUsada) {
   return cotizacion ? Number(monto) / cotizacion : 0;
 }
 
+// El inverso: para los detalles que se muestran en pesos (los retiros nuestros
+// son casi siempre en ARS, verlos convertidos a dólar no aporta nada).
+function aArs(monto, moneda, cotizacionUsada) {
+  if (moneda === 'ARS') return Number(monto);
+  const cotizacion = cotizacionUsada || COTIZACION_ACTUAL;
+  return Number(monto) * cotizacion;
+}
+
 function rangoMes(fecha) {
   const inicio = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
   const fin = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 1);
@@ -3415,7 +3489,21 @@ async function cargarGananciaMensual() {
     .gte('fecha', inicio).lt('fecha', fin);
   if (errorCaja) { console.error(errorCaja); return; }
 
-  renderGananciaMensual(ventasMes || [], cajaMes || []);
+  // Encargos del mes. La tabla se crea junto con el módulo de Encargos; si
+  // todavía no existe, la consulta falla y la línea simplemente queda en 0.
+  const { data: encargosMes } = await supabase
+    .from('encargos')
+    .select('precio_venta_usd, costo_usd')
+    .gte('fecha', inicio).lt('fecha', fin);
+
+  // Stock al cierre del mes: todo lo que ya había ingresado antes del corte y
+  // que en ese momento seguía sin venderse (aunque se haya vendido después).
+  const { data: unidadesStock } = await supabase
+    .from('unidades')
+    .select('estado, vendido_at, productos(nombre, precio_venta_usd)')
+    .lt('fecha_ingreso', fin);
+
+  renderGananciaMensual(ventasMes || [], cajaMes || [], encargosMes || [], unidadesStock || [], fin);
 }
 
 async function cargarRankings() {
@@ -3478,17 +3566,73 @@ document.getElementById('rep-rank-periodo-siguiente').addEventListener('click', 
   cargarRankings();
 });
 
-function renderGananciaMensual(ventasMes, cajaMes) {
+// Agrupa movimientos por motivo (sin distinguir mayúsculas ni espacios de
+// más), para que el mismo concepto escrito dos veces sume en una sola línea.
+function agruparPorMotivo(movimientos, convertir) {
+  const buckets = {};
+  movimientos.forEach(m => {
+    const nombre = (m.motivo || '(sin motivo)').trim();
+    const clave = normalizarTexto(nombre);
+    if (!buckets[clave]) buckets[clave] = { nombre, total: 0, cantidad: 0 };
+    buckets[clave].total += convertir(m);
+    buckets[clave].cantidad++;
+  });
+  return Object.values(buckets).sort((a, b) => b.total - a.total);
+}
+
+// Igual que la anterior, pero para retiros: un motivo con "/" (ej. "NAFTA/BARBER")
+// se reparte 50/50 entre sus dos conceptos, así cada gasto queda contado donde va.
+function agruparRetirosPorMotivo(entradas) {
+  const buckets = {};
+  const sumar = (texto, monto) => {
+    const nombre = (texto || '').trim();
+    if (!nombre) return;
+    const clave = normalizarTexto(nombre);
+    if (!buckets[clave]) buckets[clave] = { nombre, total: 0 };
+    buckets[clave].total += monto;
+  };
+  entradas.forEach(({ movimiento, proporcion }) => {
+    const ars = aArs(movimiento.monto, movimiento.moneda, movimiento.cotizacion_usada) * proporcion;
+    const motivo = (movimiento.motivo || '(sin motivo)').trim();
+    if (motivo.includes('/')) {
+      const partes = motivo.split('/').filter(p => p.trim());
+      partes.forEach(p => sumar(p, ars / partes.length));
+    } else {
+      sumar(motivo, ars);
+    }
+  });
+  return Object.values(buckets).sort((a, b) => b.total - a.total);
+}
+
+function renderListaDetalle(elId, items, formato, vacio) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (items.length === 0) { el.innerHTML = `<p class="text-muted text-xs">${vacio}</p>`; return; }
+  el.innerHTML = items.map(it => `
+    <div class="flex justify-between gap-3 border-b border-border pb-1">
+      <span class="truncate">${it.nombre}</span>
+      <span class="text-muted whitespace-nowrap">${formato(it.total)}</span>
+    </div>
+  `).join('');
+}
+
+function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, finMes) {
   const gananciaBruta = ventasMes.reduce((s, v) =>
     s + (v.venta_items || []).reduce((s2, i) => s2 + (Number(i.precio_venta_usd || 0) - Number(i.costo_usd_snapshot || 0)), 0), 0);
 
-  const gastosOperativos = cajaMes
-    .filter(m => m.categoria === 'gasto_operativo' && m.tipo === 'gasto')
+  const movsGastosOperativos = cajaMes.filter(m => m.categoria === 'gasto_operativo' && m.tipo === 'gasto');
+  const gastosOperativos = movsGastosOperativos
     .reduce((s, m) => s + aUsd(m.monto, m.moneda, m.cotizacion_usada), 0);
 
-  const gananciaOperativa = gananciaBruta - gastosOperativos;
+  // Ganancia de encargos: lo que se le cobra al cliente menos lo que nos costó,
+  // contado en el mes en que se cargó el encargo.
+  const gananciaEncargos = (encargosMes || []).reduce((s, e) =>
+    s + (Number(e.precio_venta_usd || 0) - Number(e.costo_usd || 0)), 0);
+
+  const gananciaOperativa = gananciaBruta + gananciaEncargos - gastosOperativos;
 
   let retiroEmi = 0, retiroIña = 0, retiroOtros = 0;
+  const entradasEmi = [], entradasIna = [];
   cajaMes
     .filter(m => m.categoria === 'retiro' && m.tipo === 'gasto')
     .forEach(m => {
@@ -3501,10 +3645,19 @@ function renderGananciaMensual(ventasMes, cajaMes) {
         else if (motivo.includes('emi')) socio = 'emi';
         else if (motivo.includes('ina')) socio = 'ina';
       }
-      if (socio === 'ambos') { retiroEmi += usd / 2; retiroIña += usd / 2; }
-      else if (socio === 'emi') retiroEmi += usd;
-      else if (socio === 'ina') retiroIña += usd;
-      else retiroOtros += usd;
+      if (socio === 'ambos') {
+        retiroEmi += usd / 2; retiroIña += usd / 2;
+        entradasEmi.push({ movimiento: m, proporcion: 0.5 });
+        entradasIna.push({ movimiento: m, proporcion: 0.5 });
+      } else if (socio === 'emi') {
+        retiroEmi += usd;
+        entradasEmi.push({ movimiento: m, proporcion: 1 });
+      } else if (socio === 'ina') {
+        retiroIña += usd;
+        entradasIna.push({ movimiento: m, proporcion: 1 });
+      } else {
+        retiroOtros += usd;
+      }
     });
   const totalRetiros = retiroEmi + retiroIña + retiroOtros;
   const gananciaReal = gananciaOperativa - totalRetiros;
@@ -3520,9 +3673,58 @@ function renderGananciaMensual(ventasMes, cajaMes) {
   document.getElementById('rep-retiro-otros-wrap').classList.toggle('hidden', retiroOtros <= 0.01);
   document.getElementById('rep-retiro-otros').textContent = `USD ${retiroOtros.toFixed(2)}`;
   document.getElementById('rep-ganancia-real').textContent = `USD ${gananciaReal.toFixed(2)}`;
+  document.getElementById('rep-ganancia-encargos').textContent = `USD ${gananciaEncargos.toFixed(2)}`;
   document.getElementById('rep-pct-emi').textContent = `${pct(retiroEmi).toFixed(1)}%`;
   document.getElementById('rep-pct-ina').textContent = `${pct(retiroIña).toFixed(1)}%`;
   document.getElementById('rep-pct-total').textContent = `${pct(totalRetiros).toFixed(1)}%`;
+
+  // ── Facturación del mes (ingresos de categoría Venta) ──
+  const movsFacturacion = cajaMes.filter(m => m.categoria === 'venta' && m.tipo === 'ingreso');
+  const facturacionTotal = movsFacturacion.reduce((s, m) => s + aUsd(m.monto, m.moneda, m.cotizacion_usada), 0);
+  const detalleFacturacion = agruparPorMotivo(movsFacturacion, m => aUsd(m.monto, m.moneda, m.cotizacion_usada));
+
+  // ── Stock al cierre del mes, valorizado a precio descarte (precio venta −20%) ──
+  const stockVigente = (unidadesStock || []).filter(u => {
+    if (u.estado === 'vendido') {
+      // Sin fecha de venta (unidades viejas importadas) no hay forma de saber
+      // cuándo salió: se asume vendida antes del corte y no se cuenta.
+      if (!u.vendido_at) return false;
+      if (String(u.vendido_at).slice(0, 10) < finMes) return false;
+    }
+    return normalizarTexto(u.productos?.nombre || '') !== 'item prueba';
+  });
+  const stockDescarte = stockVigente.reduce((s, u) => s + Number(u.productos?.precio_venta_usd || 0) * 0.8, 0);
+
+  const rentabilidad = facturacionTotal ? (gananciaOperativa / facturacionTotal * 100) : 0;
+  const gastosSobreBruta = gananciaBruta ? (gastosOperativos / gananciaBruta * 100) : 0;
+  const facturacionSobreStock = stockDescarte ? (facturacionTotal / stockDescarte * 100) : 0;
+
+  document.getElementById('rep-facturacion-total').textContent = `USD ${facturacionTotal.toFixed(2)}`;
+  document.getElementById('rep-rentabilidad').textContent = `${rentabilidad.toFixed(1)}%`;
+  document.getElementById('rep-gastos-pct').textContent = `${gastosSobreBruta.toFixed(1)}%`;
+  document.getElementById('rep-stock-pct').textContent = `${facturacionSobreStock.toFixed(1)}%`;
+  document.getElementById('rep-stock-detalle').textContent =
+    `${stockVigente.length} u. · USD ${stockDescarte.toFixed(2)} a precio descarte`;
+
+  document.getElementById('rep-facturacion-cantidad').textContent =
+    `${movsFacturacion.length} movimiento${movsFacturacion.length === 1 ? '' : 's'}`;
+  document.getElementById('rep-gastos-cantidad').textContent =
+    `${movsGastosOperativos.length} movimiento${movsGastosOperativos.length === 1 ? '' : 's'}`;
+
+  const fmtUsd = (n) => `USD ${n.toFixed(2)}`;
+  const fmtArs = (n) => `ARS ${n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  renderListaDetalle('rep-facturacion-detalle', detalleFacturacion, fmtUsd, 'Sin ventas registradas en este mes.');
+  renderListaDetalle('rep-gastos-detalle',
+    agruparPorMotivo(movsGastosOperativos, m => aUsd(m.monto, m.moneda, m.cotizacion_usada)),
+    fmtUsd, 'Sin gastos operativos en este mes.');
+
+  const detalleEmi = agruparRetirosPorMotivo(entradasEmi);
+  const detalleIna = agruparRetirosPorMotivo(entradasIna);
+  document.getElementById('rep-retiros-emi-total').textContent = fmtArs(detalleEmi.reduce((s, d) => s + d.total, 0));
+  document.getElementById('rep-retiros-ina-total').textContent = fmtArs(detalleIna.reduce((s, d) => s + d.total, 0));
+  renderListaDetalle('rep-retiros-emi-detalle', detalleEmi, fmtArs, 'Sin retiros de Emi en este mes.');
+  renderListaDetalle('rep-retiros-ina-detalle', detalleIna, fmtArs, 'Sin retiros de Iña en este mes.');
 }
 
 function renderRankingLista(elId, entradas, formatoValor) {

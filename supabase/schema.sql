@@ -633,3 +633,81 @@ begin
   where id = p_unidad_id and estado = 'reservado';
 end;
 $$;
+
+-- ═══ MÓDULO ENCARGOS ═══════════════════════════════════════════════════════
+-- Pedidos especiales: el cliente encarga algo que todavía no tenemos, deja una
+-- seña, y salda el resto antes de retirarlo. No se vinculan a una unidad de
+-- stock (justamente porque todavía no existe cuando se toma el pedido).
+--
+-- Cada monto se guarda en su moneda original + la cotización del día, igual
+-- que en ventas, y la columna *_usd deja el equivalente fijado para siempre.
+
+create table if not exists encargos (
+  id uuid primary key default gen_random_uuid(),
+  cliente_id uuid references clientes(id),
+  fecha date not null default current_date,
+  item text not null,
+  talle text,
+
+  -- Seña: lo que paga el cliente al encargar.
+  senia numeric(12,2) not null default 0,
+  senia_moneda text not null default 'USD' check (senia_moneda in ('USD', 'ARS')),
+  senia_cotizacion numeric(10,2),
+  senia_usd numeric(12,2) generated always as (
+    case when senia_moneda = 'USD' then senia
+         else round(senia / nullif(senia_cotizacion, 0), 2) end
+  ) stored,
+
+  -- Costo: lo que nos cuesta conseguirlo. Si se paga con tarjeta no impacta
+  -- Caja al instante — queda en el saldo Tarjeta hasta que se paga el resumen.
+  costo numeric(12,2) not null default 0,
+  costo_moneda text not null default 'USD' check (costo_moneda in ('USD', 'ARS')),
+  costo_cotizacion numeric(10,2),
+  costo_medio_pago text not null default 'cash' check (costo_medio_pago in ('cash', 'tarjeta')),
+  costo_usd numeric(12,2) generated always as (
+    case when costo_moneda = 'USD' then costo
+         else round(costo / nullif(costo_cotizacion, 0), 2) end
+  ) stored,
+
+  -- Precio de venta: lo que le cobramos al cliente.
+  precio_venta numeric(12,2) not null default 0,
+  precio_venta_moneda text not null default 'USD' check (precio_venta_moneda in ('USD', 'ARS')),
+  precio_venta_cotizacion numeric(10,2),
+  precio_venta_usd numeric(12,2) generated always as (
+    case when precio_venta_moneda = 'USD' then precio_venta
+         else round(precio_venta / nullif(precio_venta_cotizacion, 0), 2) end
+  ) stored,
+
+  created_at timestamptz not null default now()
+);
+
+-- Pagos posteriores a la seña: el cliente puede ir saldando de a poco hasta
+-- llegar a deber 0 (ahí el encargo pasa a "completado").
+create table if not exists encargo_pagos (
+  id uuid primary key default gen_random_uuid(),
+  encargo_id uuid not null references encargos(id) on delete cascade,
+  fecha date not null default current_date,
+  monto numeric(12,2) not null,
+  moneda text not null check (moneda in ('USD', 'ARS')),
+  cotizacion_usada numeric(10,2),
+  monto_usd numeric(12,2) generated always as (
+    case when moneda = 'USD' then monto
+         else round(monto / nullif(cotizacion_usada, 0), 2) end
+  ) stored,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_encargos_fecha on encargos(fecha);
+create index if not exists idx_encargo_pagos_encargo on encargo_pagos(encargo_id);
+
+alter table encargos enable row level security;
+drop policy if exists "encargos_authenticated_all" on encargos;
+create policy "encargos_authenticated_all" on encargos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on encargos to authenticated;
+
+alter table encargo_pagos enable row level security;
+drop policy if exists "encargo_pagos_authenticated_all" on encargo_pagos;
+create policy "encargo_pagos_authenticated_all" on encargo_pagos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on encargo_pagos to authenticated;
