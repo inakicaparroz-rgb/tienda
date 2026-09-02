@@ -271,10 +271,21 @@
     <!-- COMPRAS -->
     <section id="tab-compras" class="tab-section hidden">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Nueva compra</h3>
-        <button id="btn-ir-proximos-ingresos" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
-          Próximos ingresos <span id="cmp-pendientes-badge" class="text-accent"></span>
-        </button>
+        <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Compras</h3>
+        <div class="flex flex-wrap gap-2">
+          <button id="btn-ir-proximos-ingresos" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+            Próximos ingresos <span id="cmp-pendientes-badge" class="text-accent"></span>
+          </button>
+          <button id="btn-nueva-compra" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
+            + Nueva compra
+          </button>
+        </div>
+      </div>
+
+      <div id="cmp-formulario" class="hidden">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Nueva compra</h4>
+        <button id="btn-cerrar-compra" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
       </div>
 
       <!-- Cabecera de la compra -->
@@ -321,6 +332,7 @@
           <button id="cmp-simular" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Simular</button>
           <button id="cmp-completar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Completar</button>
         </div>
+      </div>
       </div>
 
       <!-- Listado de compras -->
@@ -1408,7 +1420,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
     if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
     if (btn.dataset.tab === 'encargos') { cargarClientes(); cargarConfiguracion(); cargarEncargos(); }
-    if (btn.dataset.tab === 'compras') { cargarConfiguracion(); cargarProductos(); cargarCompras(); inicializarCompra(); }
+    if (btn.dataset.tab === 'compras') { cargarConfiguracion(); cargarProductos(); cargarCompras(); }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
     if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); renderTarjetaEnDeudas(); }
     if (btn.dataset.tab === 'reportes') { cargarConfiguracion(); cargarReportes(); }
@@ -3774,7 +3786,6 @@ function renderItemsCompra() {
       </div>
 
       <div class="bg-surface-elevated border border-border p-3 mb-3">
-        <p class="text-muted font-mono text-[10px] uppercase tracking-wide mb-2">Calculado automáticamente</p>
         <div class="grid grid-cols-3 gap-3 text-sm font-mono">
           <div><span class="text-muted text-xs uppercase block">Costo total</span><span class="cmp-costo-total">USD ${costoTotal.toFixed(2)}</span></div>
           <div><span class="text-muted text-xs uppercase block">Ganancia</span><span class="cmp-ganancia ${ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${ganancia.toFixed(2)}</span></div>
@@ -3928,14 +3939,23 @@ document.getElementById('cmp-agregar-item').addEventListener('click', () => {
   renderItemsCompra();
 });
 
-// Deja el formulario listo la primera vez que se entra a la pestaña, sin pisar
-// una compra que se esté cargando si se vuelve a entrar.
-function inicializarCompra() {
+// El formulario arranca escondido: la pestaña muestra el listado de compras y
+// el formulario se abre con "+ Nueva compra". Cerrarlo no borra lo cargado, así
+// que si se cierra sin querer no se pierde la compra a medio armar.
+function abrirFormularioCompra() {
   const fecha = document.getElementById('cmp-fecha');
   if (!fecha.value) fecha.value = new Date().toISOString().slice(0, 10);
   if (COMPRA_ITEMS.length === 0) COMPRA_ITEMS.push(nuevoItemCompra());
   renderItemsCompra();
+  document.getElementById('cmp-formulario').classList.remove('hidden');
 }
+
+function cerrarFormularioCompra() {
+  document.getElementById('cmp-formulario').classList.add('hidden');
+}
+
+document.getElementById('btn-nueva-compra').addEventListener('click', abrirFormularioCompra);
+document.getElementById('btn-cerrar-compra').addEventListener('click', cerrarFormularioCompra);
 
 document.getElementById('cmp-costo-kg').addEventListener('change', renderItemsCompra);
 
@@ -4130,6 +4150,7 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
 
   COMPRA_ITEMS = [];
   renderItemsCompra();
+  cerrarFormularioCompra();
   document.getElementById('modal-completar-compra').classList.add('hidden');
   await cargarProductos();
   await cargarCompras();
