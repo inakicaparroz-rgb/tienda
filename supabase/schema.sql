@@ -711,3 +711,19 @@ drop policy if exists "encargo_pagos_authenticated_all" on encargo_pagos;
 create policy "encargo_pagos_authenticated_all" on encargo_pagos
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 grant select, insert, update, delete on encargo_pagos to authenticated;
+
+-- ─── Caja: categorías y vínculos que agrega el módulo de Encargos ─────────
+-- costo_encargo: lo que nos costó conseguir un encargo pagado en efectivo. Va
+--   aparte de gasto_operativo para no inflar ese indicador ni contar dos veces
+--   el costo (que ya se descuenta en la línea "Ganancia encargos" de Reportes).
+-- pago_tarjeta: el pago del resumen de la tarjeta. Descuenta del saldo Tarjeta
+--   que se muestra arriba de la pestaña Encargos.
+
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo', 'pago_tarjeta'));
+
+alter table caja_movimientos add column if not exists encargo_id uuid;
+alter table caja_movimientos add column if not exists encargo_pago_id uuid;
+create index if not exists idx_caja_encargo on caja_movimientos(encargo_id);

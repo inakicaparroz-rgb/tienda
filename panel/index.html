@@ -61,6 +61,7 @@
   <nav class="border-b border-border px-2 sm:px-6 flex gap-1 overflow-x-auto">
     <button data-tab="stock" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-accent text-white whitespace-nowrap">Stock</button>
     <button data-tab="ventas" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Ventas</button>
+    <button data-tab="encargos" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Encargos</button>
     <button data-tab="caja" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Flujo de caja</button>
     <button data-tab="reportes" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Reportes</button>
     <button data-tab="deudas" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Deudas y deudores</button>
@@ -187,6 +188,54 @@
           </tbody>
         </table>
         <p id="ventas-empty" class="p-6 text-center text-muted text-sm hidden">No hay ventas todavía.</p>
+      </div>
+    </section>
+
+    <!-- ENCARGOS -->
+    <section id="tab-encargos" class="tab-section hidden">
+      <div id="enc-saldos-tarjeta" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
+
+      <div class="flex flex-col sm:flex-row gap-3 mb-2">
+        <input id="encargos-search" type="text" placeholder="Buscar por cliente, ítem, talle…"
+          class="flex-1 px-3 py-2 text-sm" />
+        <button id="btn-filtrar-encargos" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Filtrar ▾
+        </button>
+        <button id="btn-nuevo-encargo" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
+          + Nuevo encargo
+        </button>
+      </div>
+      <p id="encargos-contador" class="text-muted font-mono text-xs mb-3"></p>
+
+      <div class="border border-border overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-muted font-mono text-xs uppercase">
+              <th class="p-2">Cliente</th>
+              <th class="p-2">Fecha</th>
+              <th class="p-2">Ítem</th>
+              <th class="p-2">Precio venta</th>
+              <th class="p-2">Debe</th>
+              <th class="p-2">Estado</th>
+              <th class="p-2"></th>
+            </tr>
+          </thead>
+          <tbody id="encargos-tbody"></tbody>
+          <tbody id="encargo-detalle-tbody">
+            <tr id="fila-detalle-encargo" class="hidden">
+              <td colspan="7" class="p-0">
+                <div class="border-t border-border bg-surface p-5">
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 id="encargo-detalle-titulo" class="font-bold"></h3>
+                    <button id="encargo-cerrar-detalle" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+                  </div>
+                  <div id="encargo-detalle-contenido"></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p id="encargos-empty" class="p-6 text-center text-muted text-sm hidden">No hay encargos todavía.</p>
       </div>
     </section>
 
@@ -614,6 +663,151 @@
   </div>
 </div>
 
+<!-- Modal: nuevo/editar encargo -->
+<div id="modal-encargo" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-2xl bg-surface border border-border p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+    <h3 id="modal-encargo-titulo" class="font-bold mb-4">Nuevo encargo</h3>
+
+    <div class="relative mb-3">
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Cliente</label>
+      <input id="e-cliente-nombre" placeholder="Nombre del cliente" class="w-full px-3 py-2 text-sm" autocomplete="off" />
+      <div id="e-cliente-sugerencias" class="hidden absolute z-10 w-full bg-surface border border-border max-h-40 overflow-y-auto text-sm"></div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <input id="e-cliente-telefono" placeholder="Teléfono (opcional)" class="w-full px-3 py-2 text-sm" />
+      <input id="e-cliente-email" placeholder="Mail (opcional)" class="w-full px-3 py-2 text-sm" />
+    </div>
+
+    <div class="flex items-end flex-wrap gap-3 mb-4">
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
+        <input id="e-fecha" type="date" class="w-40 px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Cotización USD hoy</label>
+        <input id="e-cotizacion" type="number" step="0.01" class="w-32 px-3 py-2 text-sm" />
+      </div>
+      <p class="text-muted text-xs leading-tight">Se usa para convertir lo que esté en ARS. Queda fijada en este encargo.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Ítem</label>
+        <input id="e-item" placeholder="Ej: Campera Corteiz negra" class="w-full px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Talle</label>
+        <input id="e-talle" placeholder="Ej: M" class="w-full px-3 py-2 text-sm" />
+      </div>
+    </div>
+
+    <div class="border border-border p-3 mb-3">
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Seña</label>
+      <p class="text-muted text-xs mb-2">Lo que paga el cliente al encargar. Entra a Flujo de caja como ingreso.</p>
+      <div class="flex gap-2">
+        <input id="e-senia" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+        <select id="e-senia-moneda" class="px-3 py-2 text-sm">
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="border border-border p-3 mb-3">
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Costo</label>
+      <p class="text-muted text-xs mb-2">Lo que nos cuesta conseguirlo. Con <strong>Cash</strong> sale de Caja ahora; con <strong>Tarjeta</strong> queda en el saldo Tarjeta hasta que se pague el resumen.</p>
+      <div class="flex gap-2 mb-3">
+        <input id="e-costo" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+        <select id="e-costo-moneda" class="px-3 py-2 text-sm">
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+        </select>
+      </div>
+      <div class="flex gap-6">
+        <div class="flex items-center gap-2">
+          <span class="text-sm">Cash</span>
+          <button type="button" id="e-costo-cash-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="true">
+            <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm">Tarjeta</span>
+          <button type="button" id="e-costo-tarjeta-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+            <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="border border-border p-3 mb-3">
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Precio de venta</label>
+      <p class="text-muted text-xs mb-2">Lo que le cobramos al cliente. Es el que se ve en el listado.</p>
+      <div class="flex gap-2">
+        <input id="e-precio-venta" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+        <select id="e-precio-venta-moneda" class="px-3 py-2 text-sm">
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+        </select>
+      </div>
+    </div>
+
+    <p id="e-resumen" class="text-muted text-xs mb-4"></p>
+
+    <div class="flex gap-2 mt-5">
+      <button id="e-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar encargo</button>
+      <button id="e-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: registrar pago de un encargo -->
+<div id="modal-encargo-pago" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-surface border border-border p-4 sm:p-6">
+    <h3 class="font-bold mb-1">Registrar pago</h3>
+    <p id="ep-contexto" class="text-muted text-xs mb-4"></p>
+    <div class="space-y-3 text-sm">
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Monto</label>
+        <div class="flex gap-2">
+          <input id="ep-monto" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+          <select id="ep-moneda" class="px-3 py-2 text-sm">
+            <option value="USD">USD</option>
+            <option value="ARS">ARS</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
+        <input id="ep-fecha" type="date" class="w-full px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Cotización USD</label>
+        <input id="ep-cotizacion" type="number" step="0.01" class="w-full px-3 py-2 text-sm" />
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="ep-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="ep-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Menú flotante: Filtrar (Encargos) -->
+<div id="filtro-encargos-menu" class="hidden fixed z-50 bg-surface border border-border text-xs font-mono uppercase w-52">
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated">
+    <span>En proceso</span>
+    <button type="button" id="filtro-encargos-proceso" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-elevated border-t border-border">
+    <span>Completado</span>
+    <button type="button" id="filtro-encargos-completado" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+      <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+    </button>
+  </div>
+</div>
+
 <!-- Modal: importar stock desde CSV -->
 <div id="modal-importar" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-lg bg-surface border border-border p-4 sm:p-6 max-h-[85vh] overflow-y-auto">
@@ -1029,6 +1223,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
     if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
+    if (btn.dataset.tab === 'encargos') { cargarClientes(); cargarConfiguracion(); cargarEncargos(); }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
     if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); }
     if (btn.dataset.tab === 'reportes') { cargarConfiguracion(); cargarReportes(); }
@@ -1145,8 +1340,9 @@ const filtroVentasMenu = document.getElementById('filtro-ventas-menu');
 const ordenVentasMenu = document.getElementById('orden-ventas-menu');
 const filtroCajaMenu = document.getElementById('filtro-caja-menu');
 const ordenCajaMenu = document.getElementById('orden-caja-menu');
-const TODOS_LOS_MENUS_FLOTANTES = [filtroStockMenu, ordenStockMenu, filtroVentasMenu, ordenVentasMenu, filtroCajaMenu, ordenCajaMenu];
-const BOTONES_DE_MENUS_FLOTANTES = ['btn-filtrar-stock', 'btn-ordenar-stock', 'btn-filtrar-ventas', 'btn-ordenar-ventas', 'btn-filtrar-caja', 'btn-ordenar-caja'];
+const filtroEncargosMenuRef = document.getElementById('filtro-encargos-menu');
+const TODOS_LOS_MENUS_FLOTANTES = [filtroStockMenu, ordenStockMenu, filtroVentasMenu, ordenVentasMenu, filtroCajaMenu, ordenCajaMenu, filtroEncargosMenuRef];
+const BOTONES_DE_MENUS_FLOTANTES = ['btn-filtrar-stock', 'btn-ordenar-stock', 'btn-filtrar-ventas', 'btn-ordenar-ventas', 'btn-filtrar-caja', 'btn-ordenar-caja', 'btn-filtrar-encargos'];
 
 function cerrarMenusFlotantes() {
   TODOS_LOS_MENUS_FLOTANTES.forEach(m => m.classList.add('hidden'));
@@ -1504,7 +1700,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
-const TABLA_POR_TIPO = { producto: 'productos', unidad: 'unidades', venta: 'ventas', movimiento: 'caja_movimientos' };
+const TABLA_POR_TIPO = { producto: 'productos', unidad: 'unidades', venta: 'ventas', movimiento: 'caja_movimientos', encargo: 'encargos' };
 
 document.getElementById('accion-editar').addEventListener('click', () => {
   if (!MENU_CONTEXTO) return;
@@ -1512,6 +1708,7 @@ document.getElementById('accion-editar').addEventListener('click', () => {
   if (MENU_CONTEXTO.tipo === 'producto') abrirModalProducto(MENU_CONTEXTO.obj);
   else if (MENU_CONTEXTO.tipo === 'unidad') abrirModalUnidad(MENU_CONTEXTO.obj);
   else if (MENU_CONTEXTO.tipo === 'venta') abrirModalVenta(MENU_CONTEXTO.obj);
+  else if (MENU_CONTEXTO.tipo === 'encargo') abrirModalEncargo(MENU_CONTEXTO.obj);
   else if (MENU_CONTEXTO.tipo === 'movimiento') abrirModalMovimiento(MENU_CONTEXTO.obj);
 });
 
@@ -1545,6 +1742,17 @@ document.getElementById('accion-eliminar').addEventListener('click', async () =>
     VENTA_ACTUAL = null;
     await cargarProductos();
     await cargarVentas();
+    return;
+  }
+
+  if (tipo === 'encargo') {
+    if (!confirm(`¿Eliminar el encargo de "${obj.clientes?.nombre}"? Se borran también sus pagos y los movimientos de caja que generó. Esta acción no se puede deshacer.`)) return;
+    await supabase.from('caja_movimientos').delete().eq('encargo_id', obj.id);
+    const { error } = await supabase.from('encargos').delete().eq('id', obj.id);
+    if (error) { alert('Error al eliminar el encargo.'); console.error(error); return; }
+    filaDetalleEncargo.classList.add('hidden');
+    ENCARGO_ACTUAL = null;
+    await cargarEncargos();
     return;
   }
 
@@ -2729,6 +2937,448 @@ document.getElementById('importar-ventas-confirmar').addEventListener('click', a
   await cargarVentas();
 });
 
+// ── ENCARGOS ──────────────────────────────────────────────────────────────
+// Un encargo es un pedido especial: el cliente pide algo que todavía no
+// tenemos, deja una seña y salda el resto antes de retirarlo. No se vincula a
+// una unidad de stock porque, justamente, todavía no existe.
+let ENCARGOS = [];
+let EDITANDO_ENCARGO = null;
+let ENCARGO_CLIENTE_SELECCIONADO = null;
+let ENCARGO_ACTUAL = null;
+let PAGO_ENCARGO_DESTINO = null;
+
+const modalEncargo = document.getElementById('modal-encargo');
+const filaDetalleEncargo = document.getElementById('fila-detalle-encargo');
+const eCostoCashSwitch = document.getElementById('e-costo-cash-switch');
+const eCostoTarjetaSwitch = document.getElementById('e-costo-tarjeta-switch');
+
+// Cash y Tarjeta son excluyentes: prender uno apaga el otro.
+function setMedioPagoEncargo(medio) {
+  setSwitch(eCostoCashSwitch, medio === 'cash');
+  setSwitch(eCostoTarjetaSwitch, medio === 'tarjeta');
+}
+eCostoCashSwitch.addEventListener('click', () => setMedioPagoEncargo('cash'));
+eCostoTarjetaSwitch.addEventListener('click', () => setMedioPagoEncargo('tarjeta'));
+
+function medioPagoEncargoSeleccionado() {
+  return eCostoTarjetaSwitch.dataset.on === 'true' ? 'tarjeta' : 'cash';
+}
+
+// Lo abonado y lo que falta salen siempre de los montos ya convertidos a USD,
+// para poder comparar seña en pesos contra precio de venta en dólares.
+function totalAbonadoEncargo(encargo) {
+  const pagos = (encargo.encargo_pagos || []).reduce((s, p) => s + Number(p.monto_usd || 0), 0);
+  return Number(encargo.senia_usd || 0) + pagos;
+}
+function debeEncargo(encargo) {
+  return Math.max(0, Number(encargo.precio_venta_usd || 0) - totalAbonadoEncargo(encargo));
+}
+function estadoEncargo(encargo) {
+  return debeEncargo(encargo) <= 0.009 ? 'completado' : 'en_proceso';
+}
+
+async function cargarEncargos() {
+  const { data, error } = await supabase
+    .from('encargos')
+    .select('*, clientes(nombre, telefono, email), encargo_pagos(id, fecha, monto, moneda, monto_usd)')
+    .order('fecha', { ascending: false });
+  if (error) {
+    console.error(error);
+    document.getElementById('encargos-empty').textContent =
+      'No se pudieron cargar los encargos. ¿Corriste el SQL que crea las tablas?';
+    document.getElementById('encargos-empty').classList.remove('hidden');
+    return;
+  }
+  ENCARGOS = data || [];
+  renderSaldosTarjeta();
+  filtrarEncargos();
+}
+
+// El saldo Tarjeta es lo que compramos con tarjeta y todavía no pagamos:
+// costos de encargos puestos en tarjeta, menos los pagos de resumen cargados
+// en Caja con la categoría "Pago tarjeta". Se lleva por moneda, sin convertir.
+async function renderSaldosTarjeta() {
+  const cont = document.getElementById('enc-saldos-tarjeta');
+  if (!cont) return;
+
+  const gastado = { USD: 0, ARS: 0 };
+  ENCARGOS.filter(e => e.costo_medio_pago === 'tarjeta').forEach(e => {
+    const moneda = e.costo_moneda === 'ARS' ? 'ARS' : 'USD';
+    gastado[moneda] += Number(e.costo || 0);
+  });
+
+  const { data: pagos } = await supabase
+    .from('caja_movimientos')
+    .select('monto, moneda')
+    .eq('categoria', 'pago_tarjeta');
+  (pagos || []).forEach(p => {
+    const moneda = p.moneda === 'ARS' ? 'ARS' : 'USD';
+    gastado[moneda] -= Number(p.monto || 0);
+  });
+
+  const tarjetas = [];
+  if (Math.abs(gastado.USD) > 0.009) tarjetas.push(['Tarjeta USD', `USD ${gastado.USD.toFixed(2)}`]);
+  if (Math.abs(gastado.ARS) > 0.009) tarjetas.push(['Tarjeta ARS', `ARS ${gastado.ARS.toFixed(2)}`]);
+
+  cont.innerHTML = tarjetas.map(([titulo, valor]) => `
+    <div class="border border-border p-4">
+      <p class="text-muted font-mono text-xs uppercase mb-1">${titulo}</p>
+      <p class="text-xl font-bold">${valor}</p>
+      <p class="text-muted font-mono text-[10px] mt-1">pendiente de pagar</p>
+    </div>
+  `).join('');
+}
+
+let FILTRO_ENCARGOS_ESTADOS = new Set();
+
+function filtrarEncargos() {
+  const q = document.getElementById('encargos-search').value.trim().toLowerCase();
+  let lista = ENCARGOS;
+  if (q) {
+    lista = lista.filter(e => [e.clientes?.nombre, e.item, e.talle].join(' ').toLowerCase().includes(q));
+  }
+  if (FILTRO_ENCARGOS_ESTADOS.size > 0) {
+    lista = lista.filter(e => FILTRO_ENCARGOS_ESTADOS.has(estadoEncargo(e)));
+  }
+  renderEncargos(lista);
+}
+
+function renderEncargos(lista) {
+  const tbody = document.getElementById('encargos-tbody');
+  const empty = document.getElementById('encargos-empty');
+  tbody.innerHTML = '';
+  empty.classList.toggle('hidden', lista.length > 0);
+  document.getElementById('encargos-contador').textContent = `Mostrando ${lista.length}/${ENCARGOS.length}`;
+
+  lista.forEach(e => {
+    const debe = debeEncargo(e);
+    const completado = estadoEncargo(e) === 'completado';
+    const tr = document.createElement('tr');
+    tr.className = 'cursor-pointer hover:bg-surface-elevated';
+    tr.dataset.id = e.id;
+    tr.innerHTML = `
+      <td class="p-2">${e.clientes?.nombre || 'Sin cliente'}</td>
+      <td class="p-2 text-muted">${new Date(e.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
+      <td class="p-2">${e.item || '-'}${e.talle ? ' <span class="text-muted">· ' + e.talle + '</span>' : ''}</td>
+      <td class="p-2">USD ${Number(e.precio_venta_usd || 0).toFixed(2)}</td>
+      <td class="p-2 ${debe > 0 ? 'text-red-400' : 'text-muted'}">USD ${debe.toFixed(2)}</td>
+      <td class="p-2">
+        <span class="font-mono text-[10px] uppercase px-2 py-1 border ${completado ? 'border-accent text-accent' : 'border-border text-muted'}">
+          ${completado ? 'Completado' : 'En proceso'}
+        </span>
+      </td>
+      <td class="p-2 text-right"><button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button></td>
+    `;
+    tr.addEventListener('click', () => {
+      const yaAbierto = ENCARGO_ACTUAL?.id === e.id && !filaDetalleEncargo.classList.contains('hidden');
+      if (yaAbierto) { filaDetalleEncargo.classList.add('hidden'); ENCARGO_ACTUAL = null; }
+      else abrirDetalleEncargo(e, tr);
+    });
+    tr.querySelector('.btn-acciones').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      abrirMenuAcciones(ev.currentTarget, 'encargo', e);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function abrirDetalleEncargo(encargo, filaClickeada) {
+  ENCARGO_ACTUAL = encargo;
+  const debe = debeEncargo(encargo);
+  document.getElementById('encargo-detalle-titulo').textContent =
+    `${encargo.clientes?.nombre || 'Cliente'} — ${encargo.item || 'Encargo'}`;
+  const fila = filaClickeada || document.querySelector(`#encargos-tbody tr[data-id="${encargo.id}"]`);
+  if (fila) fila.insertAdjacentElement('afterend', filaDetalleEncargo);
+  filaDetalleEncargo.classList.remove('hidden');
+
+  const pagos = (encargo.encargo_pagos || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+  const ganancia = Number(encargo.precio_venta_usd || 0) - Number(encargo.costo_usd || 0);
+
+  document.getElementById('encargo-detalle-contenido').innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm font-mono">
+      <div><p class="text-muted text-xs uppercase mb-1">Precio venta</p><p>USD ${Number(encargo.precio_venta_usd || 0).toFixed(2)}</p></div>
+      <div><p class="text-muted text-xs uppercase mb-1">Costo (${encargo.costo_medio_pago === 'tarjeta' ? 'tarjeta' : 'cash'})</p><p>USD ${Number(encargo.costo_usd || 0).toFixed(2)}</p></div>
+      <div><p class="text-muted text-xs uppercase mb-1">Ganancia</p><p class="${ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${ganancia.toFixed(2)}</p></div>
+      <div><p class="text-muted text-xs uppercase mb-1">Debe</p><p class="${debe > 0 ? 'text-red-400' : 'text-muted'}">USD ${debe.toFixed(2)}</p></div>
+    </div>
+    <p class="text-muted font-mono text-xs uppercase mb-2">Pagos</p>
+    <div class="text-sm font-mono space-y-1 mb-4">
+      <div class="flex justify-between gap-3 border-b border-border pb-1">
+        <span>Seña · ${new Date(encargo.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</span>
+        <span class="text-muted">${encargo.senia_moneda} ${Number(encargo.senia || 0).toFixed(2)}</span>
+      </div>
+      ${pagos.map(p => `
+        <div class="flex justify-between gap-3 border-b border-border pb-1">
+          <span>Pago · ${new Date(p.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</span>
+          <span class="text-muted">${p.moneda} ${Number(p.monto || 0).toFixed(2)}</span>
+        </div>
+      `).join('')}
+    </div>
+    ${debe > 0.009 ? `
+      <button id="encargo-agregar-pago" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
+        + Registrar pago
+      </button>` : '<p class="text-accent font-mono text-xs uppercase">Encargo saldado</p>'}
+  `;
+
+  const btnPago = document.getElementById('encargo-agregar-pago');
+  if (btnPago) btnPago.addEventListener('click', () => abrirModalPagoEncargo(encargo));
+}
+
+document.getElementById('encargo-cerrar-detalle').addEventListener('click', () => {
+  filaDetalleEncargo.classList.add('hidden');
+  ENCARGO_ACTUAL = null;
+});
+
+// ── Encargos: autocompletar cliente ──
+const eClienteNombre = document.getElementById('e-cliente-nombre');
+const eClienteSugerencias = document.getElementById('e-cliente-sugerencias');
+
+eClienteNombre.addEventListener('input', () => {
+  ENCARGO_CLIENTE_SELECCIONADO = null;
+  const q = eClienteNombre.value.trim().toLowerCase();
+  if (!q) { eClienteSugerencias.classList.add('hidden'); return; }
+  const coincidencias = CLIENTES.filter(c => c.nombre.toLowerCase().includes(q)).slice(0, 8);
+  if (coincidencias.length === 0) { eClienteSugerencias.classList.add('hidden'); return; }
+  eClienteSugerencias.innerHTML = coincidencias.map(c =>
+    `<div class="e-sugerencia px-3 py-2 hover:bg-surface-elevated cursor-pointer" data-id="${c.id}">${c.nombre}</div>`
+  ).join('');
+  eClienteSugerencias.classList.remove('hidden');
+  eClienteSugerencias.querySelectorAll('.e-sugerencia').forEach(el => {
+    el.addEventListener('click', () => {
+      const c = CLIENTES.find(x => x.id === el.dataset.id);
+      ENCARGO_CLIENTE_SELECCIONADO = c;
+      eClienteNombre.value = c.nombre;
+      document.getElementById('e-cliente-telefono').value = c.telefono || '';
+      document.getElementById('e-cliente-email').value = c.email || '';
+      eClienteSugerencias.classList.add('hidden');
+    });
+  });
+});
+
+document.addEventListener('click', (e) => {
+  if (!eClienteSugerencias.contains(e.target) && e.target !== eClienteNombre) {
+    eClienteSugerencias.classList.add('hidden');
+  }
+});
+
+function montoEncargoEnUsd(monto, moneda, cotizacion) {
+  const valor = Number(monto) || 0;
+  if (moneda !== 'ARS') return valor;
+  return cotizacion ? valor / cotizacion : 0;
+}
+
+function actualizarResumenEncargo() {
+  const cotizacion = parseFloat(document.getElementById('e-cotizacion').value) || 0;
+  const senia = montoEncargoEnUsd(document.getElementById('e-senia').value, document.getElementById('e-senia-moneda').value, cotizacion);
+  const precio = montoEncargoEnUsd(document.getElementById('e-precio-venta').value, document.getElementById('e-precio-venta-moneda').value, cotizacion);
+  const costo = montoEncargoEnUsd(document.getElementById('e-costo').value, document.getElementById('e-costo-moneda').value, cotizacion);
+  const debe = Math.max(0, precio - senia);
+  document.getElementById('e-resumen').textContent =
+    `Debe: USD ${debe.toFixed(2)} — Ganancia: USD ${(precio - costo).toFixed(2)}${debe <= 0.009 ? ' — queda completado' : ''}`;
+}
+
+['e-senia', 'e-precio-venta', 'e-costo', 'e-cotizacion'].forEach(id =>
+  document.getElementById(id).addEventListener('input', actualizarResumenEncargo));
+['e-senia-moneda', 'e-precio-venta-moneda', 'e-costo-moneda'].forEach(id =>
+  document.getElementById(id).addEventListener('change', actualizarResumenEncargo));
+
+async function abrirModalEncargo(encargo) {
+  EDITANDO_ENCARGO = encargo || null;
+  ENCARGO_CLIENTE_SELECCIONADO = null;
+  document.getElementById('modal-encargo-titulo').textContent = encargo ? 'Editar encargo' : 'Nuevo encargo';
+  eClienteNombre.value = encargo?.clientes?.nombre || '';
+  document.getElementById('e-cliente-telefono').value = encargo?.clientes?.telefono || '';
+  document.getElementById('e-cliente-email').value = encargo?.clientes?.email || '';
+  document.getElementById('e-fecha').value = encargo?.fecha || new Date().toISOString().slice(0, 10);
+  document.getElementById('e-item').value = encargo?.item || '';
+  document.getElementById('e-talle').value = encargo?.talle || '';
+  document.getElementById('e-senia').value = encargo?.senia ?? '';
+  document.getElementById('e-senia-moneda').value = encargo?.senia_moneda || 'USD';
+  document.getElementById('e-costo').value = encargo?.costo ?? '';
+  document.getElementById('e-costo-moneda').value = encargo?.costo_moneda || 'USD';
+  document.getElementById('e-precio-venta').value = encargo?.precio_venta ?? '';
+  document.getElementById('e-precio-venta-moneda').value = encargo?.precio_venta_moneda || 'USD';
+  setMedioPagoEncargo(encargo?.costo_medio_pago === 'tarjeta' ? 'tarjeta' : 'cash');
+  modalEncargo.classList.remove('hidden');
+
+  document.getElementById('e-cotizacion').value = encargo?.senia_cotizacion || encargo?.costo_cotizacion
+    || encargo?.precio_venta_cotizacion || await obtenerCotizacionSugerida();
+  actualizarResumenEncargo();
+}
+
+document.getElementById('btn-nuevo-encargo').addEventListener('click', () => abrirModalEncargo());
+document.getElementById('e-cancelar').addEventListener('click', () => modalEncargo.classList.add('hidden'));
+
+// Movimientos de caja que genera un encargo. Se borran y se vuelven a crear en
+// cada guardado, igual que en ventas, para que editar no deje residuos.
+async function regenerarCajaDeEncargo(encargoId, motivo, datos) {
+  // Solo los movimientos de la seña y el costo, que son los que dependen del
+  // formulario. Los de pagos posteriores llevan encargo_pago_id y quedan
+  // intactos: no los generó este formulario y borrarlos sería perder plata
+  // que sí entró.
+  await supabase.from('caja_movimientos').delete()
+    .eq('encargo_id', encargoId).is('encargo_pago_id', null);
+
+  if (Number(datos.senia) > 0) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'ingreso', categoria: 'venta', motivo, encargo_id: encargoId,
+      monto: Number(datos.senia), moneda: datos.senia_moneda, fecha: datos.fecha,
+      cotizacion_usada: datos.senia_moneda === 'ARS' ? (datos.cotizacion || null) : null,
+    });
+  }
+
+  // Con tarjeta el costo no sale de Caja todavía: queda en el saldo Tarjeta
+  // hasta que se pague el resumen (ahí se carga un "Pago tarjeta" a mano).
+  if (Number(datos.costo) > 0 && datos.costo_medio_pago === 'cash') {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'gasto', categoria: 'costo_encargo', motivo, encargo_id: encargoId,
+      monto: Number(datos.costo), moneda: datos.costo_moneda, fecha: datos.fecha,
+      cotizacion_usada: datos.costo_moneda === 'ARS' ? (datos.cotizacion || null) : null,
+    });
+  }
+}
+
+document.getElementById('e-confirmar').addEventListener('click', async () => {
+  const nombreCliente = eClienteNombre.value.trim();
+  if (!nombreCliente) { alert('El nombre del cliente es obligatorio.'); return; }
+  const item = document.getElementById('e-item').value.trim();
+  if (!item) { alert('Completá qué es lo que se encarga.'); return; }
+
+  const cotizacion = parseFloat(document.getElementById('e-cotizacion').value) || 0;
+  const monedas = [
+    document.getElementById('e-senia-moneda').value,
+    document.getElementById('e-costo-moneda').value,
+    document.getElementById('e-precio-venta-moneda').value,
+  ];
+  if (monedas.includes('ARS') && cotizacion <= 0) {
+    alert('Falta la cotización del dólar para convertir los montos en ARS.');
+    return;
+  }
+
+  const boton = document.getElementById('e-confirmar');
+  boton.disabled = true;
+
+  let cliente = ENCARGO_CLIENTE_SELECCIONADO || (EDITANDO_ENCARGO ? { id: EDITANDO_ENCARGO.cliente_id } : null);
+  if (!cliente) cliente = CLIENTES.find(c => c.nombre.toLowerCase() === nombreCliente.toLowerCase());
+  if (!cliente) {
+    const { data, error } = await supabase.from('clientes').insert({
+      nombre: nombreCliente,
+      telefono: document.getElementById('e-cliente-telefono').value.trim() || null,
+      email: document.getElementById('e-cliente-email').value.trim() || null,
+    }).select().single();
+    if (error) { alert('Error al crear el cliente.'); console.error(error); boton.disabled = false; return; }
+    cliente = data;
+  }
+
+  const fecha = document.getElementById('e-fecha').value || new Date().toISOString().slice(0, 10);
+  const seniaMoneda = document.getElementById('e-senia-moneda').value;
+  const costoMoneda = document.getElementById('e-costo-moneda').value;
+  const precioMoneda = document.getElementById('e-precio-venta-moneda').value;
+
+  const payload = {
+    cliente_id: cliente.id,
+    fecha,
+    item,
+    talle: document.getElementById('e-talle').value.trim() || null,
+    senia: parseFloat(document.getElementById('e-senia').value) || 0,
+    senia_moneda: seniaMoneda,
+    senia_cotizacion: seniaMoneda === 'ARS' ? cotizacion : null,
+    costo: parseFloat(document.getElementById('e-costo').value) || 0,
+    costo_moneda: costoMoneda,
+    costo_cotizacion: costoMoneda === 'ARS' ? cotizacion : null,
+    costo_medio_pago: medioPagoEncargoSeleccionado(),
+    precio_venta: parseFloat(document.getElementById('e-precio-venta').value) || 0,
+    precio_venta_moneda: precioMoneda,
+    precio_venta_cotizacion: precioMoneda === 'ARS' ? cotizacion : null,
+  };
+
+  let encargoId = EDITANDO_ENCARGO?.id;
+  if (EDITANDO_ENCARGO) {
+    const { error } = await supabase.from('encargos').update(payload).eq('id', encargoId);
+    if (error) { alert('Error al guardar el encargo.'); console.error(error); boton.disabled = false; return; }
+  } else {
+    const { data, error } = await supabase.from('encargos').insert(payload).select().single();
+    if (error) { alert('Error al crear el encargo.'); console.error(error); boton.disabled = false; return; }
+    encargoId = data.id;
+  }
+
+  await regenerarCajaDeEncargo(encargoId, `${cliente.nombre} — ${item}`, { ...payload, cotizacion });
+
+  boton.disabled = false;
+  modalEncargo.classList.add('hidden');
+  EDITANDO_ENCARGO = null;
+  await cargarClientes();
+  await cargarEncargos();
+});
+
+// ── Encargos: registrar un pago posterior a la seña ──
+function abrirModalPagoEncargo(encargo) {
+  PAGO_ENCARGO_DESTINO = encargo;
+  const debe = debeEncargo(encargo);
+  document.getElementById('ep-contexto').textContent =
+    `${encargo.clientes?.nombre || 'Cliente'} — debe USD ${debe.toFixed(2)}`;
+  document.getElementById('ep-monto').value = '';
+  document.getElementById('ep-moneda').value = 'USD';
+  document.getElementById('ep-fecha').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('ep-cotizacion').value = COTIZACION_ACTUAL || '';
+  document.getElementById('modal-encargo-pago').classList.remove('hidden');
+}
+
+document.getElementById('ep-cancelar').addEventListener('click', () =>
+  document.getElementById('modal-encargo-pago').classList.add('hidden'));
+
+document.getElementById('ep-guardar').addEventListener('click', async () => {
+  if (!PAGO_ENCARGO_DESTINO) return;
+  const monto = parseFloat(document.getElementById('ep-monto').value) || 0;
+  if (monto <= 0) { alert('Ingresá el monto del pago.'); return; }
+  const moneda = document.getElementById('ep-moneda').value;
+  const cotizacion = parseFloat(document.getElementById('ep-cotizacion').value) || 0;
+  if (moneda === 'ARS' && cotizacion <= 0) { alert('Falta la cotización para un pago en ARS.'); return; }
+  const fecha = document.getElementById('ep-fecha').value || new Date().toISOString().slice(0, 10);
+
+  const { data: pago, error } = await supabase.from('encargo_pagos').insert({
+    encargo_id: PAGO_ENCARGO_DESTINO.id,
+    fecha, monto, moneda,
+    cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
+  }).select().single();
+  if (error) { alert('Error al registrar el pago.'); console.error(error); return; }
+
+  // El pago entra a Caja como ingreso de venta, igual que la seña.
+  await supabase.from('caja_movimientos').insert({
+    tipo: 'ingreso', categoria: 'venta', fecha, monto, moneda,
+    motivo: `${PAGO_ENCARGO_DESTINO.clientes?.nombre || 'Cliente'} — ${PAGO_ENCARGO_DESTINO.item || 'Encargo'}`,
+    encargo_id: PAGO_ENCARGO_DESTINO.id,
+    cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
+    encargo_pago_id: pago.id,
+  });
+
+  document.getElementById('modal-encargo-pago').classList.add('hidden');
+  PAGO_ENCARGO_DESTINO = null;
+  await cargarEncargos();
+  const actualizado = ENCARGOS.find(e => e.id === ENCARGO_ACTUAL?.id);
+  if (actualizado) abrirDetalleEncargo(actualizado);
+});
+
+// ── Filtrar (Encargos) ──
+document.getElementById('encargos-search').addEventListener('input', filtrarEncargos);
+
+const filtroEncargosMenu = document.getElementById('filtro-encargos-menu');
+document.getElementById('btn-filtrar-encargos').addEventListener('click', (e) => {
+  e.stopPropagation();
+  abrirMenuFlotante(e.currentTarget, filtroEncargosMenu, 208);
+});
+
+[['filtro-encargos-proceso', 'en_proceso'], ['filtro-encargos-completado', 'completado']].forEach(([id, estado]) => {
+  document.getElementById(id).addEventListener('click', () => {
+    const btn = document.getElementById(id);
+    const activar = btn.dataset.on !== 'true';
+    setSwitch(btn, activar);
+    if (activar) FILTRO_ENCARGOS_ESTADOS.add(estado);
+    else FILTRO_ENCARGOS_ESTADOS.delete(estado);
+    filtrarEncargos();
+  });
+});
+
 // ── FLUJO DE CAJA ─────────────────────────────────────────────────────────
 let CAJA = [];
 let COTIZACION_ACTUAL = 0;
@@ -2738,6 +3388,7 @@ const CATEGORIA_LABEL = {
   venta: 'Venta', inversion: 'Inversión', retiro: 'Retiro',
   gasto_operativo: 'Gasto operativo', gasto_comercial: 'Gasto comercial', pago_inversor: 'Pago a inversor',
   pago_deuda: 'Pago deuda', cambio_moneda: 'Cambio de moneda',
+  costo_encargo: 'Costo encargo', pago_tarjeta: 'Pago tarjeta',
 };
 
 const RETIRO_SOCIO_LABEL = { emi: 'Emi', ina: 'Iña', ambos: 'Emi y Iña' };
@@ -2941,7 +3592,7 @@ const mRetiroInaSwitch = document.getElementById('m-retiro-ina-switch');
 
 const CATEGORIAS_POR_TIPO = {
   ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda'], ['cambio_moneda', 'Cambio de moneda']],
-  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda']],
+  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo']],
 };
 
 function actualizarCamposMovimiento() {
