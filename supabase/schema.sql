@@ -796,3 +796,23 @@ from productos
 where activo = true and alguna_vez_en_stock = true
   and pendiente_ingreso = false
   and nombre_web is not null and nombre_web <> '';
+
+-- ─── Encargos: peso (kg) y cuenta "Adriana kg" ─────────────────────────────
+-- Traer un encargo por peso se le paga a Adriana, no al proveedor. Es costo
+-- del encargo (baja la ganancia) pero es un pago aparte: no sale de Caja al
+-- guardarlo, se acumula en el saldo "Adriana kg" que se ve en Deudas y
+-- deudores, y baja cuando se carga un movimiento con categoría "Pago kg".
+alter table encargos add column if not exists peso_kg numeric(10,3) not null default 0;
+
+-- El costo por kilo se congela en el encargo: si mañana cambia la tarifa, el
+-- saldo acumulado no se mueve.
+alter table encargos add column if not exists costo_kg_usd numeric(12,2) not null default 0;
+
+alter table encargos add column if not exists costo_envio_usd numeric(12,2)
+  generated always as (round(peso_kg * costo_kg_usd, 2)) stored;
+
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock', 'pago_kg'));

@@ -551,6 +551,12 @@
       </div>
 
       <div class="mb-8">
+        <h3 class="font-bold font-mono text-sm uppercase tracking-wide mb-2">Adriana kg</h3>
+        <p class="text-muted text-xs mb-2">Lo que se acumula por el peso de los encargos. Baja cargando un movimiento de Caja con la categoría <strong>Pago kg</strong>.</p>
+        <div id="deudas-saldo-kg" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      </div>
+
+      <div class="mb-8">
         <div class="flex items-center justify-between mb-2">
           <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Clientes</h3>
           <button id="btn-nueva-deuda" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
@@ -858,6 +864,27 @@
             <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <div class="border border-border p-3 mb-3">
+      <div class="flex items-center justify-between gap-3 mb-1">
+        <label class="block text-muted font-mono text-xs uppercase">kg</label>
+        <button type="button" id="e-kg-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+      <p class="text-muted text-xs">Lo que cuesta traerlo por peso. Se suma al costo del encargo, pero es un pago aparte: se acumula en la cuenta <strong>Adriana kg</strong> y no sale de Caja hasta que cargues un movimiento <strong>Pago kg</strong>.</p>
+      <div id="e-kg-wrap" class="hidden flex flex-wrap items-end gap-2 mt-3">
+        <div>
+          <label class="block text-muted font-mono text-[10px] uppercase mb-1">Peso (kg)</label>
+          <input id="e-peso" type="number" step="0.01" placeholder="0.00" class="w-24 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-[10px] uppercase mb-1">Costo por kg (USD)</label>
+          <input id="e-costo-kg" type="number" step="0.01" value="35" class="w-28 px-3 py-2 text-sm" />
+        </div>
+        <p class="font-mono text-xs pb-2.5">= <span id="e-costo-envio">USD 0.00</span></p>
       </div>
     </div>
 
@@ -1422,7 +1449,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'encargos') { cargarClientes(); cargarConfiguracion(); cargarEncargos(); }
     if (btn.dataset.tab === 'compras') { cargarConfiguracion(); cargarProductos(); cargarCompras(); }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
-    if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); renderTarjetaEnDeudas(); }
+    if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); renderTarjetaEnDeudas(); renderAdrianaKgEnDeudas(); }
     if (btn.dataset.tab === 'reportes') { cargarConfiguracion(); cargarReportes(); }
   });
 });
@@ -3196,6 +3223,35 @@ function medioPagoEncargoSeleccionado() {
   return eCostoTarjetaSwitch.dataset.on === 'true' ? 'tarjeta' : 'cash';
 }
 
+// ── Encargos: peso (kg) ──
+// El costo por kilo se le paga a Adriana, no al proveedor del encargo: suma al
+// costo del encargo para la ganancia, pero no toca Caja al guardarlo. Queda
+// acumulado en el saldo "Adriana kg" hasta que se carga un movimiento Pago kg.
+const eKgSwitch = document.getElementById('e-kg-switch');
+
+function setKgEncargo(activo) {
+  setSwitch(eKgSwitch, activo);
+  document.getElementById('e-kg-wrap').classList.toggle('hidden', !activo);
+}
+eKgSwitch.addEventListener('click', () => {
+  setKgEncargo(eKgSwitch.dataset.on !== 'true');
+  actualizarResumenEncargo();
+});
+
+// Peso y costo por kilo tal como quedan en el formulario. Con el interruptor
+// apagado el encargo no lleva kg: se guardan en cero.
+function datosKgEncargo() {
+  if (eKgSwitch.dataset.on !== 'true') return { peso: 0, costoKg: 0, costoEnvio: 0 };
+  const peso = parseFloat(document.getElementById('e-peso').value) || 0;
+  const costoKg = parseFloat(document.getElementById('e-costo-kg').value) || 0;
+  return { peso, costoKg, costoEnvio: peso * costoKg };
+}
+
+// El costo total de un encargo ya guardado: lo que costó conseguirlo más el kg.
+function costoTotalEncargo(encargo) {
+  return Number(encargo.costo_usd || 0) + Number(encargo.costo_envio_usd || 0);
+}
+
 // Lo abonado y lo que falta salen siempre de los montos ya convertidos a USD,
 // para poder comparar seña en pesos contra precio de venta en dólares.
 function totalAbonadoEncargo(encargo) {
@@ -3223,6 +3279,7 @@ async function cargarEncargos() {
   }
   ENCARGOS = data || [];
   renderSaldosTarjeta();
+  renderAdrianaKgEnDeudas();
   filtrarEncargos();
 }
 
@@ -3297,6 +3354,33 @@ async function renderTarjetaEnDeudas() {
     tarjetaCardHTML('Tarjeta ARS', `ARS ${saldos.ARS.toFixed(2)}`);
 }
 
+// El saldo "Adriana kg" es todo el peso que cargamos en encargos —valorizado al
+// costo por kilo con el que se guardó cada uno— menos lo que ya le pagamos,
+// que son los movimientos de Caja con categoría "Pago kg". Se lleva en USD
+// porque el costo por kilo se define en USD; los pagos en pesos se convierten
+// con la cotización del propio movimiento.
+async function calcularSaldoAdrianaKg() {
+  let saldo = 0;
+
+  const { data: encargos } = await supabase.from('encargos').select('costo_envio_usd');
+  (encargos || []).forEach(e => { saldo += Number(e.costo_envio_usd || 0); });
+
+  const { data: pagos } = await supabase
+    .from('caja_movimientos')
+    .select('monto, moneda, cotizacion_usada')
+    .eq('categoria', 'pago_kg');
+  (pagos || []).forEach(p => { saldo -= aUsd(p.monto, p.moneda, p.cotizacion_usada); });
+
+  return saldo;
+}
+
+async function renderAdrianaKgEnDeudas() {
+  const cont = document.getElementById('deudas-saldo-kg');
+  if (!cont) return;
+  const saldo = await calcularSaldoAdrianaKg();
+  cont.innerHTML = tarjetaCardHTML('Adriana kg', `USD ${saldo.toFixed(2)}`);
+}
+
 let FILTRO_ENCARGOS_ESTADOS = new Set();
 
 function filtrarEncargos() {
@@ -3360,12 +3444,19 @@ function abrirDetalleEncargo(encargo, filaClickeada) {
   filaDetalleEncargo.classList.remove('hidden');
 
   const pagos = (encargo.encargo_pagos || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
-  const ganancia = Number(encargo.precio_venta_usd || 0) - Number(encargo.costo_usd || 0);
+  const costoEnvio = Number(encargo.costo_envio_usd || 0);
+  const ganancia = Number(encargo.precio_venta_usd || 0) - costoTotalEncargo(encargo);
 
   document.getElementById('encargo-detalle-contenido').innerHTML = `
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm font-mono">
       <div><p class="text-muted text-xs uppercase mb-1">Precio venta</p><p>USD ${Number(encargo.precio_venta_usd || 0).toFixed(2)}</p></div>
       <div><p class="text-muted text-xs uppercase mb-1">Costo (${encargo.costo_medio_pago === 'tarjeta' ? 'tarjeta' : 'cash'})</p><p>USD ${Number(encargo.costo_usd || 0).toFixed(2)}</p></div>
+      ${costoEnvio > 0.009 ? `
+        <div>
+          <p class="text-muted text-xs uppercase mb-1">kg (Adriana)</p>
+          <p>USD ${costoEnvio.toFixed(2)}</p>
+          <p class="text-muted text-[10px]">${Number(encargo.peso_kg || 0)} kg × USD ${Number(encargo.costo_kg_usd || 0).toFixed(2)}</p>
+        </div>` : ''}
       <div><p class="text-muted text-xs uppercase mb-1">Ganancia</p><p class="${ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${ganancia.toFixed(2)}</p></div>
       <div><p class="text-muted text-xs uppercase mb-1">Debe</p><p class="${debe > 0 ? 'text-red-400' : 'text-muted'}">USD ${debe.toFixed(2)}</p></div>
     </div>
@@ -3440,12 +3531,16 @@ function actualizarResumenEncargo() {
   const senia = montoEncargoEnUsd(document.getElementById('e-senia').value, document.getElementById('e-senia-moneda').value, cotizacion);
   const precio = montoEncargoEnUsd(document.getElementById('e-precio-venta').value, document.getElementById('e-precio-venta-moneda').value, cotizacion);
   const costo = montoEncargoEnUsd(document.getElementById('e-costo').value, document.getElementById('e-costo-moneda').value, cotizacion);
+  const kg = datosKgEncargo();
   const debe = Math.max(0, precio - senia);
+  document.getElementById('e-costo-envio').textContent = `USD ${kg.costoEnvio.toFixed(2)}`;
+  const ganancia = precio - costo - kg.costoEnvio;
+  const detalleKg = kg.costoEnvio > 0 ? ` (incluye USD ${kg.costoEnvio.toFixed(2)} de kg)` : '';
   document.getElementById('e-resumen').textContent =
-    `Debe: USD ${debe.toFixed(2)} — Ganancia: USD ${(precio - costo).toFixed(2)}${debe <= 0.009 ? ' — queda completado' : ''}`;
+    `Debe: USD ${debe.toFixed(2)} — Ganancia: USD ${ganancia.toFixed(2)}${detalleKg}${debe <= 0.009 ? ' — queda completado' : ''}`;
 }
 
-['e-senia', 'e-precio-venta', 'e-costo', 'e-cotizacion'].forEach(id =>
+['e-senia', 'e-precio-venta', 'e-costo', 'e-cotizacion', 'e-peso', 'e-costo-kg'].forEach(id =>
   document.getElementById(id).addEventListener('input', actualizarResumenEncargo));
 ['e-senia-moneda', 'e-precio-venta-moneda', 'e-costo-moneda'].forEach(id =>
   document.getElementById(id).addEventListener('change', actualizarResumenEncargo));
@@ -3467,6 +3562,10 @@ async function abrirModalEncargo(encargo) {
   document.getElementById('e-precio-venta').value = encargo?.precio_venta ?? '';
   document.getElementById('e-precio-venta-moneda').value = encargo?.precio_venta_moneda || 'USD';
   setMedioPagoEncargo(encargo?.costo_medio_pago === 'tarjeta' ? 'tarjeta' : 'cash');
+  const conKg = Number(encargo?.peso_kg || 0) > 0;
+  setKgEncargo(conKg);
+  document.getElementById('e-peso').value = conKg ? encargo.peso_kg : '';
+  document.getElementById('e-costo-kg').value = Number(encargo?.costo_kg_usd) || 35;
   modalEncargo.classList.remove('hidden');
 
   document.getElementById('e-cotizacion').value = encargo?.senia_cotizacion || encargo?.costo_cotizacion
@@ -3555,6 +3654,11 @@ document.getElementById('e-confirmar').addEventListener('click', async () => {
     costo_moneda: costoMoneda,
     costo_cotizacion: costoMoneda === 'ARS' ? cotizacion : null,
     costo_medio_pago: medioPagoEncargoSeleccionado(),
+    // El kg no genera movimiento de Caja: queda en el saldo Adriana kg. Se
+    // guarda también el costo por kilo usado para que el saldo no se mueva si
+    // mañana cambia la tarifa.
+    peso_kg: datosKgEncargo().peso,
+    costo_kg_usd: datosKgEncargo().costoKg,
     precio_venta: parseFloat(document.getElementById('e-precio-venta').value) || 0,
     precio_venta_moneda: precioMoneda,
     precio_venta_cotizacion: precioMoneda === 'ARS' ? cotizacion : null,
@@ -4256,6 +4360,7 @@ const CATEGORIA_LABEL = {
   gasto_operativo: 'Gasto operativo', gasto_comercial: 'Gasto comercial', pago_inversor: 'Pago a inversor',
   pago_deuda: 'Pago deuda', cambio_moneda: 'Cambio de moneda',
   costo_encargo: 'Costo encargo', pago_tarjeta: 'Pago tarjeta', compra_stock: 'Compra de stock',
+  pago_kg: 'Pago kg',
 };
 
 const RETIRO_SOCIO_LABEL = { emi: 'Emi', ina: 'Iña', ambos: 'Emi y Iña' };
@@ -4464,7 +4569,7 @@ const mRetiroInaSwitch = document.getElementById('m-retiro-ina-switch');
 
 const CATEGORIAS_POR_TIPO = {
   ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda'], ['cambio_moneda', 'Cambio de moneda']],
-  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock']],
+  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock'], ['pago_kg', 'Pago kg']],
 };
 
 function actualizarCamposMovimiento() {
@@ -5016,7 +5121,7 @@ async function cargarGananciaMensual() {
   // todavía no existe, la consulta falla y la línea simplemente queda en 0.
   const { data: encargosMes } = await supabase
     .from('encargos')
-    .select('precio_venta_usd, costo_usd')
+    .select('precio_venta_usd, costo_usd, costo_envio_usd')
     .gte('fecha', inicio).lt('fecha', fin);
 
   // Stock al cierre del mes: todo lo que ya había ingresado antes del corte y
@@ -5150,9 +5255,10 @@ function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, f
     .reduce((s, m) => s + aUsd(m.monto, m.moneda, m.cotizacion_usada), 0);
 
   // Ganancia de encargos: lo que se le cobra al cliente menos lo que nos costó,
-  // contado en el mes en que se cargó el encargo.
+  // contado en el mes en que se cargó el encargo. El costo incluye el kg, que
+  // se le paga a Adriana aparte pero es costo del encargo igual.
   const gananciaEncargos = (encargosMes || []).reduce((s, e) =>
-    s + (Number(e.precio_venta_usd || 0) - Number(e.costo_usd || 0)), 0);
+    s + (Number(e.precio_venta_usd || 0) - Number(e.costo_usd || 0) - Number(e.costo_envio_usd || 0)), 0);
 
   // La ganancia bruta es todo lo que dejó el negocio antes de gastos: lo de
   // las ventas de stock más lo de los encargos.
