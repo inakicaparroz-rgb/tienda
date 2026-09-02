@@ -411,8 +411,9 @@
       <div class="border border-border p-5 mb-6 max-w-lg mx-auto">
         <h3 class="font-bold font-mono text-sm uppercase tracking-wide mb-4">Ganancia mensual</h3>
         <div class="space-y-2 text-sm font-mono">
-          <div class="flex justify-between"><span class="text-muted">Ganancia bruta</span><span id="rep-ganancia-bruta">USD 0.00</span></div>
-          <div class="flex justify-between"><span class="text-muted">+ Ganancia encargos</span><span id="rep-ganancia-encargos" class="text-accent">USD 0.00</span></div>
+          <div class="flex justify-between"><span class="text-muted">Ganancia ventas</span><span id="rep-ganancia-ventas">USD 0.00</span></div>
+          <div class="flex justify-between"><span class="text-muted">Ganancia encargos</span><span id="rep-ganancia-encargos">USD 0.00</span></div>
+          <div class="flex justify-between border-t border-border pt-2 font-bold"><span>= Ganancia bruta</span><span id="rep-ganancia-bruta">USD 0.00</span></div>
           <div class="flex justify-between"><span class="text-muted">− Gastos operativos</span><span id="rep-gastos-operativos" class="text-red-400">USD 0.00</span></div>
           <div class="flex justify-between border-t border-border pt-2 font-bold"><span>= Ganancia operativa</span><span id="rep-ganancia-operativa">USD 0.00</span></div>
           <div class="flex justify-between"><span class="text-muted">− Retiro Emi</span><span id="rep-retiro-emi" class="text-red-400">USD 0.00</span></div>
@@ -3772,10 +3773,13 @@ function renderItemsCompra() {
         </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-3 mb-3 text-sm font-mono">
-        <div><span class="text-muted text-xs uppercase block">Costo total</span><span class="cmp-costo-total">USD ${costoTotal.toFixed(2)}</span></div>
-        <div><span class="text-muted text-xs uppercase block">Ganancia</span><span class="cmp-ganancia ${ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${ganancia.toFixed(2)}</span></div>
-        <div><span class="text-muted text-xs uppercase block">Rentabilidad</span><span class="cmp-rentabilidad">${rentabilidad.toFixed(1)}%</span></div>
+      <div class="bg-surface-elevated border border-border p-3 mb-3">
+        <p class="text-muted font-mono text-[10px] uppercase tracking-wide mb-2">Calculado automáticamente</p>
+        <div class="grid grid-cols-3 gap-3 text-sm font-mono">
+          <div><span class="text-muted text-xs uppercase block">Costo total</span><span class="cmp-costo-total">USD ${costoTotal.toFixed(2)}</span></div>
+          <div><span class="text-muted text-xs uppercase block">Ganancia</span><span class="cmp-ganancia ${ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${ganancia.toFixed(2)}</span></div>
+          <div><span class="text-muted text-xs uppercase block">Rentabilidad</span><span class="cmp-rentabilidad">${rentabilidad.toFixed(1)}%</span></div>
+        </div>
       </div>
 
       <div class="flex items-center justify-between gap-3 border-t border-border pt-3">
@@ -5115,7 +5119,9 @@ function renderListaDetalle(elId, items, formato, vacio) {
 }
 
 function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, finMes) {
-  const gananciaBruta = ventasMes.reduce((s, v) =>
+  // Lo que dejaron las ventas de stock: precio de venta menos el costo que
+  // tenía esa prenda puntual, congelado al momento de venderla.
+  const gananciaVentas = ventasMes.reduce((s, v) =>
     s + (v.venta_items || []).reduce((s2, i) => s2 + (Number(i.precio_venta_usd || 0) - Number(i.costo_usd_snapshot || 0)), 0), 0);
 
   const movsGastosOperativos = cajaMes.filter(m => m.categoria === 'gasto_operativo' && m.tipo === 'gasto');
@@ -5127,7 +5133,10 @@ function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, f
   const gananciaEncargos = (encargosMes || []).reduce((s, e) =>
     s + (Number(e.precio_venta_usd || 0) - Number(e.costo_usd || 0)), 0);
 
-  const gananciaOperativa = gananciaBruta + gananciaEncargos - gastosOperativos;
+  // La ganancia bruta es todo lo que dejó el negocio antes de gastos: lo de
+  // las ventas de stock más lo de los encargos.
+  const gananciaBruta = gananciaVentas + gananciaEncargos;
+  const gananciaOperativa = gananciaBruta - gastosOperativos;
 
   let retiroEmi = 0, retiroIña = 0, retiroOtros = 0;
   const entradasEmi = [], entradasIna = [];
@@ -5162,6 +5171,7 @@ function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, f
 
   const pct = (parte) => gananciaOperativa ? (parte / gananciaOperativa * 100) : 0;
 
+  document.getElementById('rep-ganancia-ventas').textContent = `USD ${gananciaVentas.toFixed(2)}`;
   document.getElementById('rep-ganancia-bruta').textContent = `USD ${gananciaBruta.toFixed(2)}`;
   document.getElementById('rep-gastos-operativos').textContent = `USD ${gastosOperativos.toFixed(2)}`;
   document.getElementById('rep-ganancia-operativa').textContent = `USD ${gananciaOperativa.toFixed(2)}`;
