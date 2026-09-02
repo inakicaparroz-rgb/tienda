@@ -383,6 +383,9 @@
       <div class="flex flex-col sm:flex-row gap-3 mb-2">
         <input id="caja-search" type="text" placeholder="Buscar por motivo, categoría…"
           class="flex-1 px-3 py-2 text-sm" />
+        <button id="btn-caja-ultimo-mes" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Último mes
+        </button>
         <button id="btn-filtrar-caja" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
           Filtrar ▾
         </button>
@@ -995,7 +998,8 @@
     <h3 class="font-bold mb-1">Completar compra</h3>
     <p id="cc-resumen" class="text-muted text-xs mb-4"></p>
     <label class="block text-muted font-mono text-xs uppercase mb-1">¿Cómo se pagó?</label>
-    <p class="text-muted text-xs mb-3">Con <strong>Cash</strong> sale de Caja ahora; con <strong>Tarjeta</strong> queda en el saldo Tarjeta hasta que se pague el resumen.</p>
+    <p class="text-muted text-xs mb-1">Con <strong>Cash</strong> sale de Caja ahora; con <strong>Tarjeta</strong> queda en el saldo Tarjeta hasta que se pague el resumen.</p>
+    <p class="text-muted text-xs mb-3">El <strong>kg</strong> va aparte en los dos casos: no toca Caja ni Tarjeta, se acumula en la cuenta <strong>Adriana kg</strong> y sale con un movimiento <strong>Pago kg</strong>.</p>
     <div class="flex gap-6 mb-4">
       <div class="flex items-center gap-2">
         <span class="text-sm">Cash</span>
@@ -3301,13 +3305,15 @@ async function calcularSaldosTarjeta() {
 
   // Las compras pagadas con tarjeta también quedan pendientes de pago. El
   // costo se recompone desde las unidades, que es donde vive el número real.
+  // Solo el costo de compra: el kg no se paga con la tarjeta, va al saldo
+  // Adriana kg.
   const { data: comprasTarjeta } = await supabase
     .from('compras')
-    .select('moneda, cotizacion_usada, productos(unidades(costo_usd))')
+    .select('moneda, cotizacion_usada, productos(unidades(costo_compra_usd))')
     .eq('medio_pago', 'tarjeta');
   (comprasTarjeta || []).forEach(c => {
     const costoUsd = (c.productos || []).reduce((s, p) =>
-      s + (p.unidades || []).reduce((s2, u) => s2 + Number(u.costo_usd || 0), 0), 0);
+      s + (p.unidades || []).reduce((s2, u) => s2 + Number(u.costo_compra_usd || 0), 0), 0);
     if (c.moneda === 'ARS') saldos.ARS += costoUsd * (Number(c.cotizacion_usada) || 0);
     else saldos.USD += costoUsd;
   });
@@ -3364,6 +3370,19 @@ async function calcularSaldoAdrianaKg() {
 
   const { data: encargos } = await supabase.from('encargos').select('costo_envio_usd');
   (encargos || []).forEach(e => { saldo += Number(e.costo_envio_usd || 0); });
+
+  // El kg de las compras entra igual que el de los encargos, sin importar si la
+  // compra se pagó cash o con tarjeta: el peso siempre se le paga a Adriana.
+  // Se cuentan solo las unidades que vinieron de una compra — las cargadas a
+  // mano en Stock son anteriores a este circuito y ya están saldadas.
+  const { data: compras } = await supabase
+    .from('compras')
+    .select('productos(unidades(costo_envio_usd))');
+  (compras || []).forEach(c => {
+    (c.productos || []).forEach(p => {
+      (p.unidades || []).forEach(u => { saldo += Number(u.costo_envio_usd || 0); });
+    });
+  });
 
   const { data: pagos } = await supabase
     .from('caja_movimientos')
@@ -4161,7 +4180,8 @@ document.getElementById('cmp-completar').addEventListener('click', () => {
 
   const t = totalesCompra();
   document.getElementById('cc-resumen').textContent =
-    `${t.items} ítems · ${t.unidades} unidades · costo total USD ${t.costoTotal.toFixed(2)}`;
+    `${t.items} ítems · ${t.unidades} unidades · a pagar acá USD ${t.costoCompra.toFixed(2)}`
+    + (t.costoEnvio > 0.009 ? ` · kg a Adriana USD ${t.costoEnvio.toFixed(2)}` : '');
   document.getElementById('cc-log').innerHTML = '';
   setMedioPagoCompra('cash');
   document.getElementById('cc-moneda').value = 'USD';
@@ -4238,8 +4258,11 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
 
   // Con tarjeta la compra no sale de Caja: queda en el saldo Tarjeta hasta que
   // se pague el resumen, igual que el costo de un encargo.
-  if (medioPago === 'cash' && totales.costoTotal > 0) {
-    const montoEnMoneda = moneda === 'ARS' ? totales.costoTotal * cotizacion : totales.costoTotal;
+  // El kg queda afuera en los dos casos: no se descuenta de Caja si es cash ni
+  // se suma a Tarjeta si es tarjeta. Se le paga a Adriana aparte, así que va
+  // entero al saldo "Adriana kg" y de ahí sale con un movimiento "Pago kg".
+  if (medioPago === 'cash' && totales.costoCompra > 0) {
+    const montoEnMoneda = moneda === 'ARS' ? totales.costoCompra * cotizacion : totales.costoCompra;
     await supabase.from('caja_movimientos').insert({
       tipo: 'gasto', categoria: 'compra_stock', fecha,
       motivo: reseller ? (document.getElementById('cmp-reseller').value.trim() || 'Reseller') : document.getElementById('cmp-marca').value.trim(),
@@ -4276,6 +4299,8 @@ async function cargarCompras() {
   }
   COMPRAS = data || [];
   renderCompras();
+  renderSaldosTarjeta();
+  renderAdrianaKgEnDeudas();
 }
 
 function renderCompras() {
@@ -4429,7 +4454,11 @@ function renderCaja(lista) {
   const empty = document.getElementById('caja-empty');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', lista.length > 0);
-  document.getElementById('caja-contador').textContent = `Mostrando ${lista.length}/${CAJA.length}`;
+  const desdeTexto = CAJA_ULTIMO_MES
+    ? ` · desde el ${new Date(fechaHaceUnMes() + 'T00:00:00').toLocaleDateString('es-AR')}`
+    : '';
+  document.getElementById('caja-contador').textContent =
+    `Mostrando ${lista.length}/${CAJA.length}${desdeTexto}`;
 
   lista.forEach(m => {
     const tr = document.createElement('tr');
@@ -4468,10 +4497,29 @@ let FILTRO_CAJA_MONEDAS = new Set();
 let FILTRO_CAJA_CATEGORIAS = new Set();
 let ORDEN_CAJA_FECHA = null; // null | 'asc' | 'desc'
 let ORDEN_CAJA_ALFA = false; // combinable, desempate por motivo
+let CAJA_ULTIMO_MES = false; // recorta la lista al último mes, sin tocar el saldo
+
+// Fecha de hace un mes, en formato YYYY-MM-DD y en hora local (las fechas de
+// los movimientos son fechas sueltas, sin zona: compararlas contra un UTC
+// corrido puede dejar afuera el movimiento de hoy).
+function fechaHaceUnMes() {
+  const hoy = new Date();
+  const dia = hoy.getDate();
+  const d = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  d.setMonth(d.getMonth() - 1);
+  const ultimoDiaDelMes = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(dia, ultimoDiaDelMes));
+  const dosDigitos = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`;
+}
 
 function filtrarCaja() {
   const q = document.getElementById('caja-search').value.trim().toLowerCase();
   let lista = CAJA;
+  if (CAJA_ULTIMO_MES) {
+    const desde = fechaHaceUnMes();
+    lista = lista.filter(m => m.fecha >= desde);
+  }
   if (q) {
     lista = lista.filter(m => [m.motivo, categoriaTexto(m), m.moneda].join(' ').toLowerCase().includes(q));
   }
@@ -4492,6 +4540,18 @@ function filtrarCaja() {
 }
 
 document.getElementById('caja-search').addEventListener('input', filtrarCaja);
+
+// Solo recorta lo que se lista: los saldos de arriba siguen siendo los de toda
+// la caja, que es la plata que hay de verdad.
+const btnCajaUltimoMes = document.getElementById('btn-caja-ultimo-mes');
+btnCajaUltimoMes.addEventListener('click', () => {
+  CAJA_ULTIMO_MES = !CAJA_ULTIMO_MES;
+  btnCajaUltimoMes.classList.toggle('bg-accent', CAJA_ULTIMO_MES);
+  btnCajaUltimoMes.classList.toggle('text-black', CAJA_ULTIMO_MES);
+  btnCajaUltimoMes.classList.toggle('font-bold', CAJA_ULTIMO_MES);
+  btnCajaUltimoMes.classList.toggle('bg-surface-elevated', !CAJA_ULTIMO_MES);
+  filtrarCaja();
+});
 
 // ── Filtrar (Caja) ──
 document.getElementById('btn-filtrar-caja').addEventListener('click', (e) => {
