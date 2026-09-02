@@ -429,6 +429,11 @@
     <!-- DEUDAS Y DEUDORES -->
     <section id="tab-deudas" class="tab-section hidden">
       <div class="mb-8">
+        <h3 class="font-bold font-mono text-sm uppercase tracking-wide mb-2">Tarjeta</h3>
+        <div id="deudas-saldos-tarjeta" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      </div>
+
+      <div class="mb-8">
         <div class="flex items-center justify-between mb-2">
           <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Clientes</h3>
           <button id="btn-nueva-deuda" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
@@ -1225,7 +1230,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
     if (btn.dataset.tab === 'encargos') { cargarClientes(); cargarConfiguracion(); cargarEncargos(); }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
-    if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); }
+    if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); renderTarjetaEnDeudas(); }
     if (btn.dataset.tab === 'reportes') { cargarConfiguracion(); cargarReportes(); }
   });
 });
@@ -2997,14 +3002,17 @@ async function cargarEncargos() {
 // El saldo Tarjeta es lo que compramos con tarjeta y todavía no pagamos:
 // costos de encargos puestos en tarjeta, menos los pagos de resumen cargados
 // en Caja con la categoría "Pago tarjeta". Se lleva por moneda, sin convertir.
-async function renderSaldosTarjeta() {
-  const cont = document.getElementById('enc-saldos-tarjeta');
-  if (!cont) return;
+// Consulta la base directo para poder mostrarse también en Deudas, donde la
+// lista de encargos no está necesariamente cargada.
+async function calcularSaldosTarjeta() {
+  const saldos = { USD: 0, ARS: 0 };
 
-  const gastado = { USD: 0, ARS: 0 };
-  ENCARGOS.filter(e => e.costo_medio_pago === 'tarjeta').forEach(e => {
-    const moneda = e.costo_moneda === 'ARS' ? 'ARS' : 'USD';
-    gastado[moneda] += Number(e.costo || 0);
+  const { data: enTarjeta } = await supabase
+    .from('encargos')
+    .select('costo, costo_moneda')
+    .eq('costo_medio_pago', 'tarjeta');
+  (enTarjeta || []).forEach(e => {
+    saldos[e.costo_moneda === 'ARS' ? 'ARS' : 'USD'] += Number(e.costo || 0);
   });
 
   const { data: pagos } = await supabase
@@ -3012,21 +3020,41 @@ async function renderSaldosTarjeta() {
     .select('monto, moneda')
     .eq('categoria', 'pago_tarjeta');
   (pagos || []).forEach(p => {
-    const moneda = p.moneda === 'ARS' ? 'ARS' : 'USD';
-    gastado[moneda] -= Number(p.monto || 0);
+    saldos[p.moneda === 'ARS' ? 'ARS' : 'USD'] -= Number(p.monto || 0);
   });
 
-  const tarjetas = [];
-  if (Math.abs(gastado.USD) > 0.009) tarjetas.push(['Tarjeta USD', `USD ${gastado.USD.toFixed(2)}`]);
-  if (Math.abs(gastado.ARS) > 0.009) tarjetas.push(['Tarjeta ARS', `ARS ${gastado.ARS.toFixed(2)}`]);
+  return saldos;
+}
 
-  cont.innerHTML = tarjetas.map(([titulo, valor]) => `
+function tarjetaCardHTML(titulo, valor) {
+  return `
     <div class="border border-border p-4">
       <p class="text-muted font-mono text-xs uppercase mb-1">${titulo}</p>
       <p class="text-xl font-bold">${valor}</p>
       <p class="text-muted font-mono text-[10px] mt-1">pendiente de pagar</p>
     </div>
-  `).join('');
+  `;
+}
+
+// En Encargos las tarjetas aparecen y desaparecen según haya saldo.
+async function renderSaldosTarjeta() {
+  const cont = document.getElementById('enc-saldos-tarjeta');
+  if (!cont) return;
+  const saldos = await calcularSaldosTarjeta();
+  let html = '';
+  if (Math.abs(saldos.USD) > 0.009) html += tarjetaCardHTML('Tarjeta USD', `USD ${saldos.USD.toFixed(2)}`);
+  if (Math.abs(saldos.ARS) > 0.009) html += tarjetaCardHTML('Tarjeta ARS', `ARS ${saldos.ARS.toFixed(2)}`);
+  cont.innerHTML = html;
+}
+
+// En Deudas queda fijo: es una deuda más, y verla en cero también informa.
+async function renderTarjetaEnDeudas() {
+  const cont = document.getElementById('deudas-saldos-tarjeta');
+  if (!cont) return;
+  const saldos = await calcularSaldosTarjeta();
+  cont.innerHTML =
+    tarjetaCardHTML('Tarjeta USD', `USD ${saldos.USD.toFixed(2)}`) +
+    tarjetaCardHTML('Tarjeta ARS', `ARS ${saldos.ARS.toFixed(2)}`);
 }
 
 let FILTRO_ENCARGOS_ESTADOS = new Set();
@@ -3302,7 +3330,7 @@ document.getElementById('e-confirmar').addEventListener('click', async () => {
     encargoId = data.id;
   }
 
-  await regenerarCajaDeEncargo(encargoId, `${cliente.nombre} — ${item}`, { ...payload, cotizacion });
+  await regenerarCajaDeEncargo(encargoId, cliente.nombre, { ...payload, cotizacion });
 
   boton.disabled = false;
   modalEncargo.classList.add('hidden');
@@ -3346,7 +3374,7 @@ document.getElementById('ep-guardar').addEventListener('click', async () => {
   // El pago entra a Caja como ingreso de venta, igual que la seña.
   await supabase.from('caja_movimientos').insert({
     tipo: 'ingreso', categoria: 'venta', fecha, monto, moneda,
-    motivo: `${PAGO_ENCARGO_DESTINO.clientes?.nombre || 'Cliente'} — ${PAGO_ENCARGO_DESTINO.item || 'Encargo'}`,
+    motivo: PAGO_ENCARGO_DESTINO.clientes?.nombre || 'Cliente',
     encargo_id: PAGO_ENCARGO_DESTINO.id,
     cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
     encargo_pago_id: pago.id,
@@ -3472,7 +3500,12 @@ function renderCaja(lista) {
       <td class="p-2 text-muted">${new Date(m.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
       <td class="p-2">${m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}</td>
       <td class="p-2 text-muted">${categoriaHTML}</td>
-      <td class="p-2">${m.motivo}</td>
+      <td class="p-2">
+        <span class="inline-flex items-center gap-2">
+          <span>${m.motivo}</span>
+          ${m.encargo_id ? '<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-accent text-accent whitespace-nowrap">Encargo</span>' : ''}
+        </span>
+      </td>
       <td class="p-2 ${colorMonto}">${signo}${m.moneda} ${Number(m.monto).toFixed(2)}</td>
       <td class="p-2 text-right flex items-center justify-end gap-2">${
         m.venta_id ? '<span class="text-muted text-xs font-mono uppercase">🔗 Venta</span>' : ''
