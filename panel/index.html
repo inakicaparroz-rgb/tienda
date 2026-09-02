@@ -383,9 +383,7 @@
       <div class="flex flex-col sm:flex-row gap-3 mb-2">
         <input id="caja-search" type="text" placeholder="Buscar por motivo, categoría…"
           class="flex-1 px-3 py-2 text-sm" />
-        <button id="btn-caja-ultimo-mes" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
-          Último mes
-        </button>
+        <button id="btn-caja-mes-actual" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap"></button>
         <button id="btn-filtrar-caja" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
           Filtrar ▾
         </button>
@@ -4454,11 +4452,9 @@ function renderCaja(lista) {
   const empty = document.getElementById('caja-empty');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', lista.length > 0);
-  const desdeTexto = CAJA_ULTIMO_MES
-    ? ` · desde el ${new Date(fechaHaceUnMes() + 'T00:00:00').toLocaleDateString('es-AR')}`
-    : '';
+  const mesTexto = CAJA_MES_ACTUAL ? ` · solo ${rangoMesActual().etiqueta}` : ' · historial completo';
   document.getElementById('caja-contador').textContent =
-    `Mostrando ${lista.length}/${CAJA.length}${desdeTexto}`;
+    `Mostrando ${lista.length}/${CAJA.length}${mesTexto}`;
 
   lista.forEach(m => {
     const tr = document.createElement('tr');
@@ -4497,28 +4493,33 @@ let FILTRO_CAJA_MONEDAS = new Set();
 let FILTRO_CAJA_CATEGORIAS = new Set();
 let ORDEN_CAJA_FECHA = null; // null | 'asc' | 'desc'
 let ORDEN_CAJA_ALFA = false; // combinable, desempate por motivo
-let CAJA_ULTIMO_MES = false; // recorta la lista al último mes, sin tocar el saldo
+// Arranca encendido: la caja se mira por el mes en curso. Apagarlo es lo que
+// destapa los movimientos viejos. Nunca toca los saldos de arriba.
+let CAJA_MES_ACTUAL = true;
 
-// Fecha de hace un mes, en formato YYYY-MM-DD y en hora local (las fechas de
+// Rango del mes en curso, en formato YYYY-MM-DD y en hora local (las fechas de
 // los movimientos son fechas sueltas, sin zona: compararlas contra un UTC
 // corrido puede dejar afuera el movimiento de hoy).
-function fechaHaceUnMes() {
-  const hoy = new Date();
-  const dia = hoy.getDate();
-  const d = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-  d.setMonth(d.getMonth() - 1);
-  const ultimoDiaDelMes = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  d.setDate(Math.min(dia, ultimoDiaDelMes));
+function rangoMesActual() {
   const dosDigitos = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`;
+  const iso = d => `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`;
+  const hoy = new Date();
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const finExclusivo = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
+  return { desde: iso(inicio), hasta: iso(finExclusivo), etiqueta: nombreMes(inicio) };
+}
+
+function nombreMes(fecha) {
+  const nombre = fecha.toLocaleDateString('es-AR', { month: 'long' });
+  return nombre.charAt(0).toUpperCase() + nombre.slice(1);
 }
 
 function filtrarCaja() {
   const q = document.getElementById('caja-search').value.trim().toLowerCase();
   let lista = CAJA;
-  if (CAJA_ULTIMO_MES) {
-    const desde = fechaHaceUnMes();
-    lista = lista.filter(m => m.fecha >= desde);
+  if (CAJA_MES_ACTUAL) {
+    const { desde, hasta } = rangoMesActual();
+    lista = lista.filter(m => m.fecha >= desde && m.fecha < hasta);
   }
   if (q) {
     lista = lista.filter(m => [m.motivo, categoriaTexto(m), m.moneda].join(' ').toLowerCase().includes(q));
@@ -4543,13 +4544,20 @@ document.getElementById('caja-search').addEventListener('input', filtrarCaja);
 
 // Solo recorta lo que se lista: los saldos de arriba siguen siendo los de toda
 // la caja, que es la plata que hay de verdad.
-const btnCajaUltimoMes = document.getElementById('btn-caja-ultimo-mes');
-btnCajaUltimoMes.addEventListener('click', () => {
-  CAJA_ULTIMO_MES = !CAJA_ULTIMO_MES;
-  btnCajaUltimoMes.classList.toggle('bg-accent', CAJA_ULTIMO_MES);
-  btnCajaUltimoMes.classList.toggle('text-black', CAJA_ULTIMO_MES);
-  btnCajaUltimoMes.classList.toggle('font-bold', CAJA_ULTIMO_MES);
-  btnCajaUltimoMes.classList.toggle('bg-surface-elevated', !CAJA_ULTIMO_MES);
+const btnCajaMesActual = document.getElementById('btn-caja-mes-actual');
+btnCajaMesActual.textContent = rangoMesActual().etiqueta;
+
+function pintarBotonMesActual() {
+  btnCajaMesActual.classList.toggle('bg-accent', CAJA_MES_ACTUAL);
+  btnCajaMesActual.classList.toggle('text-black', CAJA_MES_ACTUAL);
+  btnCajaMesActual.classList.toggle('font-bold', CAJA_MES_ACTUAL);
+  btnCajaMesActual.classList.toggle('bg-surface-elevated', !CAJA_MES_ACTUAL);
+}
+pintarBotonMesActual();
+
+btnCajaMesActual.addEventListener('click', () => {
+  CAJA_MES_ACTUAL = !CAJA_MES_ACTUAL;
+  pintarBotonMesActual();
   filtrarCaja();
 });
 
