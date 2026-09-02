@@ -727,3 +727,72 @@ alter table caja_movimientos add constraint caja_movimientos_categoria_check
 alter table caja_movimientos add column if not exists encargo_id uuid;
 alter table caja_movimientos add column if not exists encargo_pago_id uuid;
 create index if not exists idx_caja_encargo on caja_movimientos(encargo_id);
+
+-- ═══ MÓDULO COMPRAS ════════════════════════════════════════════════════════
+-- Una compra es una tanda de prendas que se compra junta: normalmente todas de
+-- la misma marca, o a un reseller (ahí cada prenda lleva su propia marca).
+-- Al completarla, cada ítem entra como producto + unidades, pero marcado como
+-- pendiente de ingreso: no se ve en la web hasta que se le carga la foto.
+
+create table if not exists compras (
+  id uuid primary key default gen_random_uuid(),
+  fecha date not null default current_date,
+  marca text,                    -- marca común (compra normal)
+  es_reseller boolean not null default false,
+  reseller_nombre text,          -- nombre del reseller (compra a reseller)
+  medio_pago text not null default 'cash' check (medio_pago in ('cash', 'tarjeta')),
+  moneda text not null default 'USD' check (moneda in ('USD', 'ARS')),
+  cotizacion_usada numeric(10,2),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_compras_fecha on compras(fecha);
+
+alter table compras enable row level security;
+drop policy if exists "compras_authenticated_all" on compras;
+create policy "compras_authenticated_all" on compras
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on compras to authenticated;
+
+-- De qué compra vino cada producto, y si todavía está esperando la foto para
+-- poder publicarse. Mientras pendiente_ingreso sea true no aparece ni en el
+-- listado normal de Stock ni en la web.
+alter table productos add column if not exists compra_id uuid;
+alter table productos add column if not exists pendiente_ingreso boolean not null default false;
+
+-- La FK no es solo integridad: sin ella PostgREST no puede traer los productos
+-- anidados dentro de una compra (compras -> productos -> unidades).
+alter table productos drop constraint if exists productos_compra_id_fkey;
+alter table productos add constraint productos_compra_id_fkey
+  foreign key (compra_id) references compras(id) on delete set null;
+create index if not exists idx_productos_compra on productos(compra_id);
+create index if not exists idx_productos_pendiente on productos(pendiente_ingreso);
+
+-- El peso es lo que define el costo de envío (USD 35 por kg); se guarda para
+-- poder rehacer la cuenta después.
+alter table unidades add column if not exists peso_kg numeric(10,3);
+
+-- Compra pagada en efectivo: sale de Caja al instante. Como es costo de
+-- mercadería, va en su propia categoría para no mezclarse con los gastos
+-- operativos ni contarse dos veces contra la ganancia.
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock'));
+
+alter table caja_movimientos add column if not exists compra_id uuid;
+create index if not exists idx_caja_compra on caja_movimientos(compra_id);
+
+-- La web solo muestra productos ya ingresados del todo.
+create or replace view productos_publicos as
+select
+  id, slug,
+  coalesce(nullif(nombre_web, ''), nombre) as nombre,
+  marca, categoria, imagen_url,
+  precio_venta_usd, precio_promocional_usd,
+  tiene_talles, fit, estado
+from productos
+where activo = true and alguna_vez_en_stock = true
+  and pendiente_ingreso = false
+  and nombre_web is not null and nombre_web <> '';

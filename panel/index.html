@@ -62,6 +62,7 @@
     <button data-tab="stock" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-accent text-white whitespace-nowrap">Stock</button>
     <button data-tab="ventas" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Ventas</button>
     <button data-tab="encargos" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Encargos</button>
+    <button data-tab="compras" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Compras</button>
     <button data-tab="caja" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Flujo de caja</button>
     <button data-tab="reportes" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Reportes</button>
     <button data-tab="deudas" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Deudas y deudores</button>
@@ -83,8 +84,36 @@
         <button id="btn-nuevo-producto" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
           + Nuevo producto
         </button>
+        <button id="btn-proximos-ingresos" class="hidden bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Próximos ingresos <span id="stock-pendientes-badge" class="text-accent"></span>
+        </button>
       </div>
       <p id="stock-contador" class="text-muted font-mono text-xs mb-3"></p>
+
+      <!-- Próximos ingresos: prendas de una compra esperando la foto -->
+      <div id="stock-pendientes-panel" class="hidden mb-6">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Próximos ingresos</h3>
+          <button id="btn-cerrar-pendientes" class="text-muted text-xs font-mono uppercase hover:text-white">Volver al stock</button>
+        </div>
+        <p class="text-muted text-xs mb-3">Prendas ya compradas que todavía no se publican. Cargales la foto y los datos que faltan para que pasen al stock normal y a la web.</p>
+        <div class="border border-border overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-muted font-mono text-xs uppercase">
+                <th class="p-2">Producto</th>
+                <th class="p-2">Marca</th>
+                <th class="p-2">Talles</th>
+                <th class="p-2">Costo</th>
+                <th class="p-2">Precio venta</th>
+                <th class="p-2"></th>
+              </tr>
+            </thead>
+            <tbody id="pendientes-tbody"></tbody>
+          </table>
+          <p id="pendientes-empty" class="p-6 text-center text-muted text-sm hidden">No hay prendas esperando ingreso.</p>
+        </div>
+      </div>
 
       <div class="border border-border overflow-x-auto">
         <table class="w-full text-sm">
@@ -236,6 +265,81 @@
           </tbody>
         </table>
         <p id="encargos-empty" class="p-6 text-center text-muted text-sm hidden">No hay encargos todavía.</p>
+      </div>
+    </section>
+
+    <!-- COMPRAS -->
+    <section id="tab-compras" class="tab-section hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Nueva compra</h3>
+        <button id="btn-ir-proximos-ingresos" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Próximos ingresos <span id="cmp-pendientes-badge" class="text-accent"></span>
+        </button>
+      </div>
+
+      <!-- Cabecera de la compra -->
+      <div class="border border-border p-4 mb-4">
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <p class="font-mono text-xs uppercase">Compra a reseller</p>
+            <p class="text-muted text-xs mt-0.5">Si está activo, cada prenda lleva su propia marca. Si no, todas comparten la marca de la compra.</p>
+          </div>
+          <button type="button" id="cmp-reseller-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+            <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+          </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div id="cmp-marca-wrap">
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Marca</label>
+            <input id="cmp-marca" placeholder="Ej: Corteiz" class="w-full px-3 py-2 text-sm" />
+          </div>
+          <div id="cmp-reseller-wrap" class="hidden">
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Reseller</label>
+            <input id="cmp-reseller" placeholder="Nombre del reseller" class="w-full px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
+            <input id="cmp-fecha" type="date" class="w-full px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Costo por kg (USD)</label>
+            <input id="cmp-costo-kg" type="number" step="0.01" value="35" class="w-full px-3 py-2 text-sm" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Ítems -->
+      <div id="cmp-items" class="space-y-3 mb-3"></div>
+      <button id="cmp-agregar-item" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 mb-4">
+        + Agregar prenda
+      </button>
+
+      <!-- Totales + acciones -->
+      <div class="border border-border p-4 mb-8">
+        <div id="cmp-totales" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4"></div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button id="cmp-simular" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Simular</button>
+          <button id="cmp-completar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Completar</button>
+        </div>
+      </div>
+
+      <!-- Listado de compras -->
+      <h3 class="font-bold font-mono text-sm uppercase tracking-wide mb-3">Compras cargadas</h3>
+      <div class="border border-border overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-muted font-mono text-xs uppercase">
+              <th class="p-2">Fecha</th>
+              <th class="p-2">Marca / Reseller</th>
+              <th class="p-2">Ítems</th>
+              <th class="p-2">Costo total</th>
+              <th class="p-2">Venta proyectada</th>
+              <th class="p-2">Pago</th>
+            </tr>
+          </thead>
+          <tbody id="compras-tbody"></tbody>
+        </table>
+        <p id="compras-empty" class="p-6 text-center text-muted text-sm hidden">Todavía no cargaste ninguna compra.</p>
       </div>
     </section>
 
@@ -813,6 +917,80 @@
   </div>
 </div>
 
+<!-- Modal: simulación de compra -->
+<div id="modal-simulacion" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-3xl bg-surface border border-border p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold">Simulación de compra</h3>
+      <button id="sim-cerrar" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+    </div>
+    <div id="sim-totales" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5"></div>
+    <div class="border border-border overflow-x-auto mb-4">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-muted font-mono text-xs uppercase">
+            <th class="p-2">Ítem</th>
+            <th class="p-2">Talle</th>
+            <th class="p-2">Costo</th>
+            <th class="p-2">Peso</th>
+            <th class="p-2">Costo total</th>
+            <th class="p-2">Precio venta</th>
+            <th class="p-2">Ganancia</th>
+            <th class="p-2">Rent.</th>
+          </tr>
+        </thead>
+        <tbody id="sim-items"></tbody>
+      </table>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-2">
+      <button id="sim-exportar" class="flex-1 bg-surface-elevated border border-border font-mono uppercase text-xs tracking-wide py-2.5">Exportar</button>
+      <button id="sim-cerrar-2" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar compra (medio de pago) -->
+<div id="modal-completar-compra" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-surface border border-border p-4 sm:p-6">
+    <h3 class="font-bold mb-1">Completar compra</h3>
+    <p id="cc-resumen" class="text-muted text-xs mb-4"></p>
+    <label class="block text-muted font-mono text-xs uppercase mb-1">¿Cómo se pagó?</label>
+    <p class="text-muted text-xs mb-3">Con <strong>Cash</strong> sale de Caja ahora; con <strong>Tarjeta</strong> queda en el saldo Tarjeta hasta que se pague el resumen.</p>
+    <div class="flex gap-6 mb-4">
+      <div class="flex items-center gap-2">
+        <span class="text-sm">Cash</span>
+        <button type="button" id="cc-cash-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="true">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-sm">Tarjeta</span>
+        <button type="button" id="cc-tarjeta-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Moneda</label>
+        <select id="cc-moneda" class="w-full px-3 py-2 text-sm">
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Cotización</label>
+        <input id="cc-cotizacion" type="number" step="0.01" class="w-full px-3 py-2 text-sm" />
+      </div>
+    </div>
+    <div id="cc-log" class="font-mono text-xs text-muted space-y-1 max-h-40 overflow-y-auto mb-4"></div>
+    <div class="flex gap-2">
+      <button id="cc-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Confirmar</button>
+      <button id="cc-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: importar stock desde CSV -->
 <div id="modal-importar" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-lg bg-surface border border-border p-4 sm:p-6 max-h-[85vh] overflow-y-auto">
@@ -1229,6 +1407,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
     if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
     if (btn.dataset.tab === 'encargos') { cargarClientes(); cargarConfiguracion(); cargarEncargos(); }
+    if (btn.dataset.tab === 'compras') { cargarConfiguracion(); cargarProductos(); cargarCompras(); inicializarCompra(); }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
     if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); renderTarjetaEnDeudas(); }
     if (btn.dataset.tab === 'reportes') { cargarConfiguracion(); cargarReportes(); }
@@ -1238,14 +1417,32 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // ── STOCK: listado + búsqueda ──────────────────────────────────────────
 let PRODUCTOS = [];
 
+let PRODUCTOS_PENDIENTES = [];
+
 async function cargarProductos() {
   const { data, error } = await supabase
     .from('productos')
-    .select('*, unidades(id, estado)')
+    .select('*, unidades(id, estado, talle, costo_usd)')
     .order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
-  PRODUCTOS = data || [];
+  const todos = data || [];
+  // Las prendas de una compra que todavía no tienen foto viven aparte, en
+  // "Próximos ingresos": no ensucian el listado de stock ni salen en la web.
+  PRODUCTOS = todos.filter(p => !p.pendiente_ingreso);
+  PRODUCTOS_PENDIENTES = todos.filter(p => p.pendiente_ingreso);
+  renderBotonPendientes();
   filtrar();
+}
+
+function renderBotonPendientes() {
+  const cantidad = PRODUCTOS_PENDIENTES.length;
+  const btn = document.getElementById('btn-proximos-ingresos');
+  if (btn) {
+    btn.classList.toggle('hidden', cantidad === 0);
+    document.getElementById('stock-pendientes-badge').textContent = cantidad ? `(${cantidad})` : '';
+  }
+  const badgeCompras = document.getElementById('cmp-pendientes-badge');
+  if (badgeCompras) badgeCompras.textContent = cantidad ? `(${cantidad})` : '';
 }
 
 function renderProductos(lista) {
@@ -1532,6 +1729,9 @@ document.getElementById('btn-agregar-unidad').addEventListener('click', async ()
 // ── STOCK: nuevo producto / editar producto ─────────────────────────────
 const modalProducto = document.getElementById('modal-producto');
 let EDITANDO_PRODUCTO = null; // null = alta nueva; objeto = edición
+// true cuando se abre desde "Próximos ingresos": ahí la foto y el nombre web
+// son obligatorios, porque justamente es lo que falta para poder publicarlo.
+let INGRESANDO_PENDIENTE = false;
 
 // Fotos adicionales del producto (carrusel web): las que ya estaban guardadas
 // (se borran al toque si se saca la ×) y las nuevas elegidas en este modal
@@ -1583,7 +1783,8 @@ document.getElementById('p-fotos-file').addEventListener('change', (e) => {
 
 async function abrirModalProducto(producto) {
   EDITANDO_PRODUCTO = producto || null;
-  document.getElementById('modal-producto-titulo').textContent = producto ? 'Editar producto' : 'Nuevo producto';
+  document.getElementById('modal-producto-titulo').textContent =
+    INGRESANDO_PENDIENTE ? 'Ingresar a stock' : (producto ? 'Editar producto' : 'Nuevo producto');
   document.getElementById('p-nombre').value = producto?.nombre || '';
   document.getElementById('p-nombre-web').value = producto?.nombre_web || '';
   document.getElementById('p-marca').value = producto?.marca || '';
@@ -1613,6 +1814,7 @@ async function abrirModalProducto(producto) {
 document.getElementById('btn-nuevo-producto').addEventListener('click', () => abrirModalProducto(null));
 document.getElementById('p-cancelar').addEventListener('click', () => {
   modalProducto.classList.add('hidden');
+  INGRESANDO_PENDIENTE = false;
 });
 
 function slugify(texto) {
@@ -1637,6 +1839,13 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
 
   let imagenUrl = EDITANDO_PRODUCTO?.imagen_url || null;
   const file = document.getElementById('p-imagen-file').files[0];
+
+  // Ingresar una prenda de una compra: sin foto ni nombre web no se puede
+  // publicar, así que se piden acá antes de sacarla de "Próximos ingresos".
+  if (INGRESANDO_PENDIENTE) {
+    if (!nombreWeb) { alert('Para ingresar la prenda necesitás completar el nombre web.'); return; }
+    if (!file && !imagenUrl) { alert('Para ingresar la prenda necesitás cargar la foto principal.'); return; }
+  }
   if (file) {
     const ruta = `${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage.from('productos').upload(ruta, file);
@@ -1656,6 +1865,9 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
     estado: document.getElementById('p-estado').value || null,
     tiene_talles: document.getElementById('p-tiene-talles').checked,
   };
+  // Con la foto y el nombre web cargados, la prenda deja de estar pendiente y
+  // pasa al stock normal (y a la web, si corresponde).
+  if (INGRESANDO_PENDIENTE) producto.pendiente_ingreso = false;
 
   let error, productoId = EDITANDO_PRODUCTO?.id;
   if (EDITANDO_PRODUCTO) {
@@ -1683,7 +1895,9 @@ document.getElementById('p-guardar').addEventListener('click', async () => {
 
   modalProducto.classList.add('hidden');
   EDITANDO_PRODUCTO = null;
+  INGRESANDO_PENDIENTE = false;
   await cargarProductos();
+  if (!document.getElementById('stock-pendientes-panel').classList.contains('hidden')) renderPendientes();
 });
 
 // ── STOCK: menú de acciones (⋮) — editar / historial / eliminar ─────────
@@ -3015,6 +3229,19 @@ async function calcularSaldosTarjeta() {
     saldos[e.costo_moneda === 'ARS' ? 'ARS' : 'USD'] += Number(e.costo || 0);
   });
 
+  // Las compras pagadas con tarjeta también quedan pendientes de pago. El
+  // costo se recompone desde las unidades, que es donde vive el número real.
+  const { data: comprasTarjeta } = await supabase
+    .from('compras')
+    .select('moneda, cotizacion_usada, productos(unidades(costo_usd))')
+    .eq('medio_pago', 'tarjeta');
+  (comprasTarjeta || []).forEach(c => {
+    const costoUsd = (c.productos || []).reduce((s, p) =>
+      s + (p.unidades || []).reduce((s2, u) => s2 + Number(u.costo_usd || 0), 0), 0);
+    if (c.moneda === 'ARS') saldos.ARS += costoUsd * (Number(c.cotizacion_usada) || 0);
+    else saldos.USD += costoUsd;
+  });
+
   const { data: pagos } = await supabase
     .from('caja_movimientos')
     .select('monto, moneda')
@@ -3407,6 +3634,593 @@ document.getElementById('btn-filtrar-encargos').addEventListener('click', (e) =>
   });
 });
 
+// ── COMPRAS ───────────────────────────────────────────────────────────────
+// Simulador y carga de compras. Cada prenda tiene un costo y un peso; el envío
+// se cobra por kilo, así que el costo real de una prenda es costo + peso × kg.
+// Al completar, cada ítem entra como producto + unidades marcadas como
+// pendientes de ingreso (sin foto todavía, invisibles en la web).
+let COMPRA_ITEMS = [];
+let COMPRAS = [];
+let COMPRA_ITEM_SEQ = 0;
+
+const cmpResellerSwitch = document.getElementById('cmp-reseller-switch');
+const ccCashSwitch = document.getElementById('cc-cash-switch');
+const ccTarjetaSwitch = document.getElementById('cc-tarjeta-switch');
+
+function esCompraReseller() { return cmpResellerSwitch.dataset.on === 'true'; }
+function costoPorKg() { return parseFloat(document.getElementById('cmp-costo-kg').value) || 0; }
+
+cmpResellerSwitch.addEventListener('click', () => {
+  const activo = !esCompraReseller();
+  setSwitch(cmpResellerSwitch, activo);
+  document.getElementById('cmp-reseller-wrap').classList.toggle('hidden', !activo);
+  document.getElementById('cmp-marca-wrap').classList.toggle('hidden', activo);
+  renderItemsCompra();
+});
+
+function nuevoItemCompra() {
+  return {
+    id: ++COMPRA_ITEM_SEQ,
+    nombre: '', marca: '', talle: '',
+    costo: 0, peso: 0, precioVenta: 0,
+    variosTalles: false,
+    talles: [], // { talle, costo, peso, abierto }
+  };
+}
+
+// Los números de una prenda: el costo total suma el envío por peso, y la
+// rentabilidad se mide sobre el precio de venta.
+function calcularItem(costo, peso, precioVenta) {
+  const costoTotal = Number(costo || 0) + Number(peso || 0) * costoPorKg();
+  const ganancia = Number(precioVenta || 0) - costoTotal;
+  const rentabilidad = Number(precioVenta || 0) ? (ganancia / Number(precioVenta) * 100) : 0;
+  return { costoTotal, ganancia, rentabilidad };
+}
+
+// Cada unidad que va a generar el ítem: si tiene varios talles, uno por talle
+// (cada uno puede tener su propio costo y peso); si no, una sola.
+function unidadesDeItem(item) {
+  if (item.variosTalles && item.talles.length > 0) {
+    return item.talles.map(t => ({
+      talle: t.talle,
+      costo: t.costo !== '' && t.costo != null ? Number(t.costo) : Number(item.costo || 0),
+      peso: t.peso !== '' && t.peso != null ? Number(t.peso) : Number(item.peso || 0),
+    }));
+  }
+  return [{ talle: item.talle || null, costo: Number(item.costo || 0), peso: Number(item.peso || 0) }];
+}
+
+function totalesCompra() {
+  let costoCompra = 0, peso = 0, venta = 0, unidades = 0;
+  COMPRA_ITEMS.forEach(item => {
+    unidadesDeItem(item).forEach(u => {
+      costoCompra += u.costo;
+      peso += u.peso;
+      venta += Number(item.precioVenta || 0);
+      unidades++;
+    });
+  });
+  const costoEnvio = peso * costoPorKg();
+  const costoTotal = costoCompra + costoEnvio;
+  const ganancia = venta - costoTotal;
+  return {
+    costoCompra, peso, costoEnvio, costoTotal, venta, ganancia, unidades,
+    items: COMPRA_ITEMS.length,
+    rentabilidad: venta ? (ganancia / venta * 100) : 0,
+  };
+}
+
+function tarjetaTotalHTML(titulo, valor, clase = '') {
+  return `
+    <div class="border border-border p-3">
+      <p class="text-muted font-mono text-[10px] uppercase mb-1">${titulo}</p>
+      <p class="font-mono text-sm font-bold ${clase}">${valor}</p>
+    </div>`;
+}
+
+function renderTotalesCompra(elId, t) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML =
+    tarjetaTotalHTML('Costo compra', `USD ${t.costoCompra.toFixed(2)}`) +
+    tarjetaTotalHTML('Peso', `${t.peso.toFixed(2)} kg`) +
+    tarjetaTotalHTML('Costo envío', `USD ${t.costoEnvio.toFixed(2)}`) +
+    tarjetaTotalHTML('Ganancia', `USD ${t.ganancia.toFixed(2)}`, t.ganancia >= 0 ? 'text-accent' : 'text-red-400') +
+    tarjetaTotalHTML('Rentabilidad', `${t.rentabilidad.toFixed(1)}%`, 'text-accent') +
+    tarjetaTotalHTML('Ítems', `${t.items} · ${t.unidades} u.`) +
+    tarjetaTotalHTML('Costo total', `USD ${t.costoTotal.toFixed(2)}`) +
+    tarjetaTotalHTML('Venta proyectada', `USD ${t.venta.toFixed(2)}`);
+}
+
+function renderItemsCompra() {
+  const cont = document.getElementById('cmp-items');
+  const reseller = esCompraReseller();
+
+  cont.innerHTML = COMPRA_ITEMS.map((item, i) => {
+    const { costoTotal, ganancia, rentabilidad } = calcularItem(item.costo, item.peso, item.precioVenta);
+    return `
+    <div class="border border-border p-3" data-item="${item.id}">
+      <div class="flex items-center justify-between mb-3">
+        <span class="font-mono text-xs uppercase text-muted">Prenda ${i + 1}</span>
+        <button type="button" class="cmp-quitar text-muted hover:text-red-400 text-xs font-mono uppercase">Quitar ✕</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Ítem</label>
+          <input class="cmp-nombre w-full px-3 py-2 text-sm" placeholder="Ej: Hoodie Alcatraz" value="${item.nombre}" />
+        </div>
+        ${reseller ? `
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Marca</label>
+          <input class="cmp-item-marca w-full px-3 py-2 text-sm" placeholder="Marca" value="${item.marca}" />
+        </div>` : ''}
+        <div class="${item.variosTalles ? 'hidden' : ''}">
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Talle</label>
+          <input class="cmp-talle w-full px-3 py-2 text-sm" placeholder="Ej: M" value="${item.talle}" />
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Costo USD</label>
+          <input class="cmp-costo w-full px-3 py-2 text-sm" type="number" step="0.01" value="${item.costo || ''}" />
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Peso kg</label>
+          <input class="cmp-peso w-full px-3 py-2 text-sm" type="number" step="0.001" value="${item.peso || ''}" />
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Precio venta USD</label>
+          <input class="cmp-precio w-full px-3 py-2 text-sm" type="number" step="0.01" value="${item.precioVenta || ''}" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-3 text-sm font-mono">
+        <div><span class="text-muted text-xs uppercase block">Costo total</span><span class="cmp-costo-total">USD ${costoTotal.toFixed(2)}</span></div>
+        <div><span class="text-muted text-xs uppercase block">Ganancia</span><span class="cmp-ganancia ${ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${ganancia.toFixed(2)}</span></div>
+        <div><span class="text-muted text-xs uppercase block">Rentabilidad</span><span class="cmp-rentabilidad">${rentabilidad.toFixed(1)}%</span></div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 border-t border-border pt-3">
+        <span class="font-mono text-xs uppercase">Varios talles</span>
+        <button type="button" class="cmp-varios-switch switch-toggle h-5 w-9 rounded-full ${item.variosTalles ? 'bg-accent' : 'bg-border'} relative flex-shrink-0 transition-colors" data-on="${item.variosTalles}">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform ${item.variosTalles ? 'translate-x-4' : ''}"></span>
+        </button>
+      </div>
+
+      ${item.variosTalles ? `
+      <div class="mt-3">
+        <div class="flex gap-2 mb-2">
+          <input class="cmp-nuevo-talle w-32 px-3 py-2 text-sm" placeholder="Talle" />
+          <button type="button" class="cmp-crear-talle bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">Crear</button>
+        </div>
+        <div class="space-y-2">
+          ${item.talles.map((t, ti) => {
+            const c = t.costo !== '' && t.costo != null ? Number(t.costo) : Number(item.costo || 0);
+            const p = t.peso !== '' && t.peso != null ? Number(t.peso) : Number(item.peso || 0);
+            const calc = calcularItem(c, p, item.precioVenta);
+            return `
+            <div class="border border-border" data-talle-idx="${ti}">
+              <button type="button" class="cmp-talle-toggle w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-surface-elevated">
+                <span class="font-mono">${t.talle}</span>
+                <span class="text-muted font-mono text-xs">USD ${calc.costoTotal.toFixed(2)} · ${p} kg ${t.abierto ? '▾' : '▸'}</span>
+              </button>
+              ${t.abierto ? `
+              <div class="grid grid-cols-2 gap-3 p-3 border-t border-border">
+                <div>
+                  <label class="block text-muted font-mono text-xs uppercase mb-1">Costo USD</label>
+                  <input class="cmp-talle-costo w-full px-3 py-2 text-sm" type="number" step="0.01" placeholder="${item.costo || 0}" value="${t.costo ?? ''}" />
+                </div>
+                <div>
+                  <label class="block text-muted font-mono text-xs uppercase mb-1">Peso kg</label>
+                  <input class="cmp-talle-peso w-full px-3 py-2 text-sm" type="number" step="0.001" placeholder="${item.peso || 0}" value="${t.peso ?? ''}" />
+                </div>
+                <button type="button" class="cmp-quitar-talle col-span-2 text-muted hover:text-red-400 text-xs font-mono uppercase text-left">Quitar talle ✕</button>
+              </div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        ${item.talles.length === 0 ? '<p class="text-muted text-xs">Todavía no agregaste talles. Escribí uno y tocá Crear.</p>' : ''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  if (COMPRA_ITEMS.length === 0) {
+    cont.innerHTML = '<p class="text-muted text-sm">Agregá la primera prenda de la compra.</p>';
+  }
+
+  cablearItemsCompra();
+  renderTotalesCompra('cmp-totales', totalesCompra());
+}
+
+// Los ítems se re-renderizan enteros en cada cambio, así que los listeners se
+// vuelven a enganchar acá. Los campos de texto usan "change" (al salir) para
+// no perder el foco mientras se escribe.
+function cablearItemsCompra() {
+  const cont = document.getElementById('cmp-items');
+  cont.querySelectorAll('[data-item]').forEach(div => {
+    const item = COMPRA_ITEMS.find(i => i.id === Number(div.dataset.item));
+    if (!item) return;
+
+    // Actualiza solo los números derivados de esta prenda y los totales, sin
+    // volver a dibujar todo: si se re-renderiza en cada tecla, el campo al que
+    // acabás de saltar se destruye y perdés el foco.
+    const refrescarDerivados = () => {
+      const calc = calcularItem(item.costo, item.peso, item.precioVenta);
+      div.querySelector('.cmp-costo-total').textContent = `USD ${calc.costoTotal.toFixed(2)}`;
+      const gan = div.querySelector('.cmp-ganancia');
+      gan.textContent = `USD ${calc.ganancia.toFixed(2)}`;
+      gan.classList.toggle('text-accent', calc.ganancia >= 0);
+      gan.classList.toggle('text-red-400', calc.ganancia < 0);
+      div.querySelector('.cmp-rentabilidad').textContent = `${calc.rentabilidad.toFixed(1)}%`;
+      renderTotalesCompra('cmp-totales', totalesCompra());
+    };
+
+    const bind = (sel, campo, numerico) => {
+      const el = div.querySelector(sel);
+      if (!el) return;
+      el.addEventListener('change', () => {
+        item[campo] = numerico ? (parseFloat(el.value) || 0) : el.value;
+        // Con varios talles hay costos por talle que dependen de estos
+        // valores, así que ahí sí conviene redibujar la prenda entera.
+        if (item.variosTalles) renderItemsCompra();
+        else refrescarDerivados();
+      });
+    };
+    bind('.cmp-nombre', 'nombre', false);
+    bind('.cmp-item-marca', 'marca', false);
+    bind('.cmp-talle', 'talle', false);
+    bind('.cmp-costo', 'costo', true);
+    bind('.cmp-peso', 'peso', true);
+    bind('.cmp-precio', 'precioVenta', true);
+
+    div.querySelector('.cmp-quitar').addEventListener('click', () => {
+      COMPRA_ITEMS = COMPRA_ITEMS.filter(i => i.id !== item.id);
+      renderItemsCompra();
+    });
+
+    div.querySelector('.cmp-varios-switch').addEventListener('click', () => {
+      item.variosTalles = !item.variosTalles;
+      renderItemsCompra();
+    });
+
+    const crear = div.querySelector('.cmp-crear-talle');
+    if (crear) {
+      const input = div.querySelector('.cmp-nuevo-talle');
+      const agregar = () => {
+        const talle = input.value.trim();
+        if (!talle) return;
+        item.talles.push({ talle, costo: '', peso: '', abierto: false });
+        renderItemsCompra();
+      };
+      crear.addEventListener('click', agregar);
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); agregar(); } });
+    }
+
+    div.querySelectorAll('[data-talle-idx]').forEach(tdiv => {
+      const ti = Number(tdiv.dataset.talleIdx);
+      tdiv.querySelector('.cmp-talle-toggle').addEventListener('click', () => {
+        item.talles[ti].abierto = !item.talles[ti].abierto;
+        renderItemsCompra();
+      });
+      const costoEl = tdiv.querySelector('.cmp-talle-costo');
+      if (costoEl) costoEl.addEventListener('change', () => {
+        item.talles[ti].costo = costoEl.value === '' ? '' : (parseFloat(costoEl.value) || 0);
+        renderItemsCompra();
+      });
+      const pesoEl = tdiv.querySelector('.cmp-talle-peso');
+      if (pesoEl) pesoEl.addEventListener('change', () => {
+        item.talles[ti].peso = pesoEl.value === '' ? '' : (parseFloat(pesoEl.value) || 0);
+        renderItemsCompra();
+      });
+      const quitar = tdiv.querySelector('.cmp-quitar-talle');
+      if (quitar) quitar.addEventListener('click', () => {
+        item.talles.splice(ti, 1);
+        renderItemsCompra();
+      });
+    });
+  });
+}
+
+document.getElementById('cmp-agregar-item').addEventListener('click', () => {
+  COMPRA_ITEMS.push(nuevoItemCompra());
+  renderItemsCompra();
+});
+
+// Deja el formulario listo la primera vez que se entra a la pestaña, sin pisar
+// una compra que se esté cargando si se vuelve a entrar.
+function inicializarCompra() {
+  const fecha = document.getElementById('cmp-fecha');
+  if (!fecha.value) fecha.value = new Date().toISOString().slice(0, 10);
+  if (COMPRA_ITEMS.length === 0) COMPRA_ITEMS.push(nuevoItemCompra());
+  renderItemsCompra();
+}
+
+document.getElementById('cmp-costo-kg').addEventListener('change', renderItemsCompra);
+
+// ── Simular ──
+document.getElementById('cmp-simular').addEventListener('click', () => {
+  if (COMPRA_ITEMS.length === 0) { alert('Agregá al menos una prenda para simular.'); return; }
+  const t = totalesCompra();
+  renderTotalesCompra('sim-totales', t);
+
+  const filas = [];
+  COMPRA_ITEMS.forEach(item => {
+    unidadesDeItem(item).forEach(u => {
+      const calc = calcularItem(u.costo, u.peso, item.precioVenta);
+      filas.push({
+        nombre: item.nombre || '(sin nombre)',
+        talle: u.talle || '-',
+        costo: u.costo, peso: u.peso,
+        costoTotal: calc.costoTotal,
+        precioVenta: Number(item.precioVenta || 0),
+        ganancia: calc.ganancia, rentabilidad: calc.rentabilidad,
+      });
+    });
+  });
+
+  document.getElementById('sim-items').innerHTML = filas.map(f => `
+    <tr>
+      <td class="p-2">${f.nombre}</td>
+      <td class="p-2 text-muted">${f.talle}</td>
+      <td class="p-2">USD ${f.costo.toFixed(2)}</td>
+      <td class="p-2 text-muted">${f.peso} kg</td>
+      <td class="p-2">USD ${f.costoTotal.toFixed(2)}</td>
+      <td class="p-2">USD ${f.precioVenta.toFixed(2)}</td>
+      <td class="p-2 ${f.ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${f.ganancia.toFixed(2)}</td>
+      <td class="p-2 text-muted">${f.rentabilidad.toFixed(1)}%</td>
+    </tr>
+  `).join('');
+
+  SIMULACION_TEXTO = [
+    `SIMULACIÓN DE COMPRA — ${esCompraReseller() ? (document.getElementById('cmp-reseller').value || 'Reseller') : (document.getElementById('cmp-marca').value || 'Sin marca')}`,
+    `Fecha: ${document.getElementById('cmp-fecha').value || new Date().toISOString().slice(0, 10)}`,
+    '',
+    `Costo compra:      USD ${t.costoCompra.toFixed(2)}`,
+    `Peso:              ${t.peso.toFixed(2)} kg`,
+    `Costo envío:       USD ${t.costoEnvio.toFixed(2)}`,
+    `Costo total:       USD ${t.costoTotal.toFixed(2)}`,
+    `Venta proyectada:  USD ${t.venta.toFixed(2)}`,
+    `Ganancia:          USD ${t.ganancia.toFixed(2)}`,
+    `Rentabilidad:      ${t.rentabilidad.toFixed(1)}%`,
+    `Ítems:             ${t.items} (${t.unidades} unidades)`,
+    '',
+    'DETALLE',
+    ...filas.map(f => `· ${f.nombre}${f.talle !== '-' ? ' [' + f.talle + ']' : ''} — costo total USD ${f.costoTotal.toFixed(2)} · venta USD ${f.precioVenta.toFixed(2)} · ganancia USD ${f.ganancia.toFixed(2)} (${f.rentabilidad.toFixed(1)}%)`),
+  ].join('\n');
+
+  document.getElementById('modal-simulacion').classList.remove('hidden');
+});
+
+let SIMULACION_TEXTO = '';
+
+document.getElementById('sim-cerrar').addEventListener('click', () => document.getElementById('modal-simulacion').classList.add('hidden'));
+document.getElementById('sim-cerrar-2').addEventListener('click', () => document.getElementById('modal-simulacion').classList.add('hidden'));
+
+// Exportar: en el celu abre el menú de compartir (mail, WhatsApp, lo que sea);
+// si el navegador no lo soporta, queda copiado en el portapapeles.
+document.getElementById('sim-exportar').addEventListener('click', async () => {
+  const titulo = 'Simulación de compra — Cop or Drop';
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: titulo, text: SIMULACION_TEXTO });
+      return;
+    }
+    await navigator.clipboard.writeText(SIMULACION_TEXTO);
+    alert('Simulación copiada al portapapeles. Pegala donde quieras enviarla.');
+  } catch (e) {
+    if (e?.name === 'AbortError') return; // el usuario canceló el compartir
+    console.error(e);
+    alert('No se pudo compartir automáticamente. Copiá el detalle de la pantalla.');
+  }
+});
+
+// ── Completar ──
+function setMedioPagoCompra(medio) {
+  setSwitch(ccCashSwitch, medio === 'cash');
+  setSwitch(ccTarjetaSwitch, medio === 'tarjeta');
+}
+ccCashSwitch.addEventListener('click', () => setMedioPagoCompra('cash'));
+ccTarjetaSwitch.addEventListener('click', () => setMedioPagoCompra('tarjeta'));
+
+document.getElementById('cmp-completar').addEventListener('click', () => {
+  if (COMPRA_ITEMS.length === 0) { alert('Agregá al menos una prenda.'); return; }
+  const sinNombre = COMPRA_ITEMS.some(i => !i.nombre.trim());
+  if (sinNombre) { alert('Todas las prendas necesitan un nombre.'); return; }
+  if (esCompraReseller() && COMPRA_ITEMS.some(i => !i.marca.trim())) {
+    alert('En una compra a reseller, cada prenda necesita su marca.'); return;
+  }
+  if (!esCompraReseller() && !document.getElementById('cmp-marca').value.trim()) {
+    alert('Completá la marca de la compra.'); return;
+  }
+
+  const t = totalesCompra();
+  document.getElementById('cc-resumen').textContent =
+    `${t.items} ítems · ${t.unidades} unidades · costo total USD ${t.costoTotal.toFixed(2)}`;
+  document.getElementById('cc-log').innerHTML = '';
+  setMedioPagoCompra('cash');
+  document.getElementById('cc-moneda').value = 'USD';
+  document.getElementById('cc-cotizacion').value = COTIZACION_ACTUAL || '';
+  document.getElementById('modal-completar-compra').classList.remove('hidden');
+});
+
+document.getElementById('cc-cancelar').addEventListener('click', () =>
+  document.getElementById('modal-completar-compra').classList.add('hidden'));
+
+document.getElementById('cc-confirmar').addEventListener('click', async () => {
+  const boton = document.getElementById('cc-confirmar');
+  const log = document.getElementById('cc-log');
+  const moneda = document.getElementById('cc-moneda').value;
+  const cotizacion = parseFloat(document.getElementById('cc-cotizacion').value) || 0;
+  if (moneda === 'ARS' && cotizacion <= 0) { alert('Falta la cotización para una compra en ARS.'); return; }
+
+  boton.disabled = true;
+  log.innerHTML = '<p>Guardando compra…</p>';
+
+  const reseller = esCompraReseller();
+  const fecha = document.getElementById('cmp-fecha').value || new Date().toISOString().slice(0, 10);
+  const medioPago = ccTarjetaSwitch.dataset.on === 'true' ? 'tarjeta' : 'cash';
+  const totales = totalesCompra();
+
+  const { data: compra, error: errorCompra } = await supabase.from('compras').insert({
+    fecha,
+    marca: reseller ? null : document.getElementById('cmp-marca').value.trim(),
+    es_reseller: reseller,
+    reseller_nombre: reseller ? document.getElementById('cmp-reseller').value.trim() : null,
+    medio_pago: medioPago,
+    moneda,
+    cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
+  }).select().single();
+  if (errorCompra) {
+    log.innerHTML = `<p class="text-red-400">Error al crear la compra: ${errorCompra.message}</p>`;
+    boton.disabled = false; return;
+  }
+
+  let creados = 0, errores = 0;
+  for (const item of COMPRA_ITEMS) {
+    const marca = reseller ? item.marca.trim() : document.getElementById('cmp-marca').value.trim();
+    const unidades = unidadesDeItem(item);
+
+    const { data: producto, error: errorProducto } = await supabase.from('productos').insert({
+      nombre: item.nombre.trim(),
+      marca: marca || null,
+      precio_venta_usd: Number(item.precioVenta || 0),
+      tiene_talles: unidades.some(u => u.talle),
+      compra_id: compra.id,
+      pendiente_ingreso: true,
+      slug: slugify(item.nombre.trim()) + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
+    }).select().single();
+    if (errorProducto) {
+      log.innerHTML += `<p class="text-red-400">Error en "${item.nombre}": ${errorProducto.message}</p>`;
+      errores++; continue;
+    }
+
+    for (const u of unidades) {
+      const { data: codigo } = await supabase.rpc('generar_codigo_barra');
+      const { error: errorUnidad } = await supabase.from('unidades').insert({
+        producto_id: producto.id,
+        talle: u.talle || null,
+        codigo_barra: codigo,
+        costo_compra_usd: u.costo,
+        costo_envio_usd: u.peso * costoPorKg(),
+        peso_kg: u.peso,
+        fecha_ingreso: fecha,
+      });
+      if (errorUnidad) { log.innerHTML += `<p class="text-red-400">Error en unidad de "${item.nombre}": ${errorUnidad.message}</p>`; errores++; }
+      else creados++;
+    }
+  }
+
+  // Con tarjeta la compra no sale de Caja: queda en el saldo Tarjeta hasta que
+  // se pague el resumen, igual que el costo de un encargo.
+  if (medioPago === 'cash' && totales.costoTotal > 0) {
+    const montoEnMoneda = moneda === 'ARS' ? totales.costoTotal * cotizacion : totales.costoTotal;
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'gasto', categoria: 'compra_stock', fecha,
+      motivo: reseller ? (document.getElementById('cmp-reseller').value.trim() || 'Reseller') : document.getElementById('cmp-marca').value.trim(),
+      monto: montoEnMoneda, moneda,
+      cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
+      compra_id: compra.id,
+    });
+  }
+
+  log.innerHTML += `<p class="mt-2 font-bold text-white">Listo: ${creados} unidades cargadas${errores ? `, ${errores} con error` : ''}.</p>`;
+  boton.disabled = false;
+
+  COMPRA_ITEMS = [];
+  renderItemsCompra();
+  document.getElementById('modal-completar-compra').classList.add('hidden');
+  await cargarProductos();
+  await cargarCompras();
+  alert(`Compra cargada. ${creados} unidades quedaron en "Próximos ingresos" esperando la foto.`);
+});
+
+// ── Listado de compras ──
+async function cargarCompras() {
+  const { data, error } = await supabase
+    .from('compras')
+    .select('*, productos(id, nombre, precio_venta_usd, unidades(costo_usd))')
+    .order('fecha', { ascending: false });
+  if (error) {
+    console.error(error);
+    document.getElementById('compras-empty').textContent =
+      'No se pudieron cargar las compras. ¿Corriste el SQL que crea las tablas?';
+    document.getElementById('compras-empty').classList.remove('hidden');
+    return;
+  }
+  COMPRAS = data || [];
+  renderCompras();
+}
+
+function renderCompras() {
+  const tbody = document.getElementById('compras-tbody');
+  const empty = document.getElementById('compras-empty');
+  tbody.innerHTML = '';
+  empty.classList.toggle('hidden', COMPRAS.length > 0);
+
+  COMPRAS.forEach(c => {
+    const productos = c.productos || [];
+    let costo = 0, venta = 0, unidades = 0;
+    productos.forEach(p => {
+      (p.unidades || []).forEach(u => { costo += Number(u.costo_usd || 0); unidades++; venta += Number(p.precio_venta_usd || 0); });
+    });
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-surface-elevated';
+    tr.innerHTML = `
+      <td class="p-2 text-muted">${new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
+      <td class="p-2">${c.es_reseller ? `${c.reseller_nombre || 'Reseller'} <span class="font-mono text-[10px] uppercase px-1.5 py-0.5 border border-border text-muted">Reseller</span>` : (c.marca || '-')}</td>
+      <td class="p-2 text-muted">${productos.length} · ${unidades} u.</td>
+      <td class="p-2">USD ${costo.toFixed(2)}</td>
+      <td class="p-2 text-accent">USD ${venta.toFixed(2)}</td>
+      <td class="p-2 text-muted">${c.medio_pago === 'tarjeta' ? 'Tarjeta' : 'Cash'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Próximos ingresos ──
+function abrirPendientes() {
+  document.getElementById('stock-pendientes-panel').classList.remove('hidden');
+  renderPendientes();
+  document.getElementById('stock-pendientes-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('btn-proximos-ingresos').addEventListener('click', abrirPendientes);
+document.getElementById('btn-cerrar-pendientes').addEventListener('click', () =>
+  document.getElementById('stock-pendientes-panel').classList.add('hidden'));
+
+document.getElementById('btn-ir-proximos-ingresos').addEventListener('click', () => {
+  document.querySelector('.tab-btn[data-tab="stock"]').click();
+  setTimeout(abrirPendientes, 50);
+});
+
+function renderPendientes() {
+  const tbody = document.getElementById('pendientes-tbody');
+  const empty = document.getElementById('pendientes-empty');
+  tbody.innerHTML = '';
+  empty.classList.toggle('hidden', PRODUCTOS_PENDIENTES.length > 0);
+
+  PRODUCTOS_PENDIENTES.forEach(p => {
+    const unidades = p.unidades || [];
+    const talles = unidades.map(u => u.talle).filter(Boolean);
+    const costo = unidades.reduce((s, u) => s + Number(u.costo_usd || 0), 0);
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-surface-elevated';
+    tr.innerHTML = `
+      <td class="p-2">${p.nombre}</td>
+      <td class="p-2 text-muted">${p.marca || '-'}</td>
+      <td class="p-2 text-muted">${talles.length ? talles.join(' · ') : `${unidades.length} u.`}</td>
+      <td class="p-2">USD ${costo.toFixed(2)}</td>
+      <td class="p-2">USD ${Number(p.precio_venta_usd || 0).toFixed(2)}</td>
+      <td class="p-2 text-right">
+        <button class="btn-ingresar bg-accent text-black font-mono uppercase text-xs tracking-wide px-3 py-1.5 font-bold">Ingresar</button>
+      </td>
+    `;
+    tr.querySelector('.btn-ingresar').addEventListener('click', () => {
+      INGRESANDO_PENDIENTE = true;
+      abrirModalProducto(p);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
 // ── FLUJO DE CAJA ─────────────────────────────────────────────────────────
 let CAJA = [];
 let COTIZACION_ACTUAL = 0;
@@ -3416,7 +4230,7 @@ const CATEGORIA_LABEL = {
   venta: 'Venta', inversion: 'Inversión', retiro: 'Retiro',
   gasto_operativo: 'Gasto operativo', gasto_comercial: 'Gasto comercial', pago_inversor: 'Pago a inversor',
   pago_deuda: 'Pago deuda', cambio_moneda: 'Cambio de moneda',
-  costo_encargo: 'Costo encargo', pago_tarjeta: 'Pago tarjeta',
+  costo_encargo: 'Costo encargo', pago_tarjeta: 'Pago tarjeta', compra_stock: 'Compra de stock',
 };
 
 const RETIRO_SOCIO_LABEL = { emi: 'Emi', ina: 'Iña', ambos: 'Emi y Iña' };
@@ -3625,7 +4439,7 @@ const mRetiroInaSwitch = document.getElementById('m-retiro-ina-switch');
 
 const CATEGORIAS_POR_TIPO = {
   ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda'], ['cambio_moneda', 'Cambio de moneda']],
-  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo']],
+  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock']],
 };
 
 function actualizarCamposMovimiento() {
