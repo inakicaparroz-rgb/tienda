@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Cop or Drop — Sistema interno</title>
 <meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -20,14 +23,187 @@
   };
 </script>
 <style>
-  body { background: #000; color: #fff; }
-  ::placeholder { color: #7A7A7A; }
-  input, select { background: #141416; border: 1px solid #242424; color: #fff; }
-  table { border-collapse: collapse; }
-  th, td { border-bottom: 1px solid #242424; }
+  :root {
+    color-scheme: dark;
+    --bg: #000000;
+    --surface: #0E0E0E;
+    --surface-2: #141416;
+    --border: #242424;
+    --border-strong: #303032;
+    --muted: #7A7A7A;
+    --accent: #57BEA1;
+    --ring: rgba(87, 190, 161, 0.28);
+    --sidebar-w: 15rem;
+  }
+
+  body {
+    background: var(--bg);
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::placeholder { color: var(--muted); }
+  ::selection { background: rgba(87, 190, 161, 0.28); }
+  * { -webkit-tap-highlight-color: transparent; }
+
+  /* Barras de scroll finas, para que no corten el negro */
+  * { scrollbar-width: thin; scrollbar-color: #2A2A2C transparent; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #26262A; border: 3px solid transparent; background-clip: content-box; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3A3A3E; background-clip: content-box; }
+
+  /* ── Campos ── */
+  input, select, textarea {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: #fff;
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+  input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled) {
+    border-color: var(--border-strong);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--ring);
+    background: #17171B;
+  }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
+  input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
+
+  /* ── Botones ── */
+  button { cursor: pointer; transition: background-color .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.bg-surface-elevated:hover:not(:disabled) { border-color: var(--border-strong); background: #1B1B1F; }
+  button.bg-accent:hover:not(:disabled) { filter: brightness(1.08); }
+
+  /* ── Tablas ── */
+  table { border-collapse: collapse; }
+  th, td { border-bottom: 1px solid var(--border); }
+  thead th {
+    background: var(--surface);
+    font-weight: 600;
+    letter-spacing: .07em;
+    white-space: nowrap;
+  }
+  tbody tr { transition: background-color .12s ease; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ── Tarjetas ── */
+  .card {
+    background: var(--surface);
+    transition: border-color .15s ease;
+  }
+  .card:hover { border-color: var(--border-strong); }
+
+  /* ── Menú lateral ── */
+  .sidebar {
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    width: var(--sidebar-w);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform .22s cubic-bezier(.4, 0, .2, 1);
+  }
+  .sidebar.abierto { transform: none; }
+
+  .sidebar-brand {
+    display: flex; align-items: center; gap: .625rem;
+    padding: 1.125rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand-mark {
+    display: grid; place-items: center;
+    width: 2rem; height: 2rem;
+    flex-shrink: 0;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+  .brand-name { font-size: .875rem; font-weight: 700; line-height: 1.2; }
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .5625rem; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--muted); margin-top: .125rem;
+  }
+
+  .sidebar-nav { flex: 1; overflow-y: auto; padding: .625rem .5rem; }
+  .sidebar-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .5625rem; text-transform: uppercase; letter-spacing: .14em;
+    color: #4E4E4E;
+    padding: .5rem .75rem .375rem;
+  }
+
+  .tab-btn {
+    display: flex; align-items: center; gap: .625rem;
+    width: 100%;
+    padding: .5rem .75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .6875rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    text-align: left;
+    color: var(--muted);
+    border-left: 2px solid transparent;
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+  }
+  .tab-btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+  .tab-btn:hover { color: #fff; background: rgba(255, 255, 255, .035); }
+  .tab-btn.activo {
+    color: #fff;
+    background: rgba(87, 190, 161, .09);
+    border-left-color: var(--accent);
+  }
+  .tab-btn.activo svg { color: var(--accent); }
+
+  .sidebar-foot { padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .sidebar-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, .65);
+    backdrop-filter: blur(2px);
+    z-index: 35;
+  }
+
+  /* ── Barra superior ── */
+  .shell { min-height: 100vh; }
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; gap: .875rem;
+    padding: .875rem 1rem;
+    background: rgba(0, 0, 0, .82);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-menu {
+    display: grid; place-items: center;
+    width: 2.25rem; height: 2.25rem;
+    margin-left: -.375rem;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .topbar-menu:hover { color: #fff; border-color: var(--border-strong); }
+  .topbar-title { font-size: 1rem; font-weight: 700; letter-spacing: -.01em; }
+
+  @media (min-width: 1024px) {
+    .sidebar { transform: none; }
+    .shell { margin-left: var(--sidebar-w); }
+    .topbar { padding: 1.125rem 1.75rem; }
+    .topbar-menu { display: none; }
+    .sidebar-backdrop { display: none !important; }
+    .topbar-title { font-size: 1.125rem; }
+  }
 </style>
 </head>
 <body class="font-sans min-h-screen">
@@ -35,8 +211,13 @@
 <!-- ─── LOGIN ─────────────────────────────────────────────────────────── -->
 <div id="login-screen" class="min-h-screen flex items-center justify-center px-4">
   <div class="w-full max-w-sm border border-border bg-surface p-6 sm:p-8">
-    <h1 class="text-xl font-bold mb-1">Cop or Drop</h1>
-    <p class="text-muted text-sm mb-6 font-mono uppercase tracking-wide">Sistema interno</p>
+    <div class="flex items-center gap-3 mb-7">
+      <div class="brand-mark">CD</div>
+      <div>
+        <h1 class="brand-name">Cop or Drop</h1>
+        <p class="brand-sub">Sistema interno</p>
+      </div>
+    </div>
     <div class="space-y-3">
       <input id="login-email" type="email" placeholder="Email" class="w-full px-3 py-2 text-sm" />
       <div class="relative">
@@ -52,23 +233,70 @@
 </div>
 
 <!-- ─── APP ───────────────────────────────────────────────────────────── -->
-<div id="app-screen" class="hidden min-h-screen">
-  <header class="border-b border-border px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
-    <h1 class="font-bold text-sm sm:text-base">Cop or Drop <span class="text-muted font-normal">/ sistema interno</span></h1>
-    <button id="logout-btn" class="text-muted text-xs font-mono uppercase hover:text-white whitespace-nowrap">Salir</button>
-  </header>
+<div id="app-screen" class="hidden">
 
-  <nav class="border-b border-border px-2 sm:px-6 flex gap-1 overflow-x-auto">
-    <button data-tab="stock" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-accent text-white whitespace-nowrap">Stock</button>
-    <button data-tab="ventas" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Ventas</button>
-    <button data-tab="caja" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Flujo de caja</button>
-    <button data-tab="encargos" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Encargos</button>
-    <button data-tab="compras" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Compras</button>
-    <button data-tab="deudas" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Deudas y deudores</button>
-    <button data-tab="reportes" class="tab-btn px-3 sm:px-4 py-3 text-xs font-mono uppercase tracking-wide border-b-2 border-transparent text-muted whitespace-nowrap">Reportes</button>
-  </nav>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">CD</div>
+      <div>
+        <p class="brand-name">Cop or Drop</p>
+        <p class="brand-sub">Sistema interno</p>
+      </div>
+    </div>
 
-  <main class="p-4 sm:p-6">
+    <nav class="sidebar-nav">
+      <p class="sidebar-label">Operación</p>
+      <button data-tab="stock" class="tab-btn activo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>
+        <span>Stock</span>
+      </button>
+      <button data-tab="ventas" class="tab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V4a1 1 0 0 1 1-1h8a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>
+        <span>Ventas</span>
+      </button>
+      <button data-tab="caja" class="tab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5h18v10a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-10Z"/><path d="M3 8.5 6 4h12l3 4.5M16 14h2"/></svg>
+        <span>Flujo de caja</span>
+      </button>
+      <button data-tab="encargos" class="tab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        <span>Encargos</span>
+      </button>
+      <button data-tab="compras" class="tab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14l-1.2 12.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 7Z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>
+        <span>Compras</span>
+      </button>
+
+      <p class="sidebar-label" style="margin-top:.5rem">Control</p>
+      <button data-tab="deudas" class="tab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M18 20a6 6 0 0 0-2.5-4.9"/></svg>
+        <span>Deudas y deudores</span>
+      </button>
+      <button data-tab="reportes" class="tab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7.5" y="12" width="3" height="5"/><rect x="13" y="8" width="3" height="9"/><rect x="18" y="5" width="2.5" height="12"/></svg>
+        <span>Reportes</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button id="logout-btn" class="flex items-center gap-2 text-muted text-xs font-mono uppercase hover:text-white whitespace-nowrap">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/></svg>
+        <span>Salir</span>
+      </button>
+    </div>
+  </aside>
+
+  <div id="sidebar-backdrop" class="sidebar-backdrop hidden"></div>
+
+  <div class="shell">
+    <header class="topbar">
+      <button id="btn-menu" class="topbar-menu" aria-label="Abrir menú">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <h1 id="topbar-title" class="topbar-title">Stock</h1>
+    </header>
+
+  <main class="p-4 sm:p-6 lg:px-7 lg:py-7">
 
     <!-- STOCK -->
     <section id="tab-stock" class="tab-section">
@@ -358,15 +586,15 @@
     <!-- FLUJO DE CAJA -->
     <section id="tab-caja" class="tab-section hidden">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Saldo USD</p>
           <p id="caja-saldo-usd" class="text-xl font-bold">USD 0.00</p>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Saldo ARS</p>
           <p id="caja-saldo-ars" class="text-xl font-bold">ARS 0.00</p>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Saldo total (USD)</p>
           <p id="caja-saldo-total" class="text-xl font-bold">USD 0.00</p>
         </div>
@@ -415,13 +643,14 @@
     </section>
     <!-- REPORTES -->
     <section id="tab-reportes" class="tab-section hidden">
-      <div class="flex items-center justify-center gap-2 sm:gap-4 mb-6">
+      <div class="flex items-center justify-center lg:justify-start gap-2 sm:gap-3 mb-4">
         <button id="reportes-mes-anterior" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-2">◀</button>
         <h3 id="reportes-mes-label" class="font-bold font-mono text-sm uppercase tracking-wide w-40 sm:w-56 text-center"></h3>
         <button id="reportes-mes-siguiente" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-2">▶</button>
       </div>
 
-      <div class="border border-border p-5 mb-6 max-w-lg mx-auto">
+      <div class="grid lg:grid-cols-[minmax(0,27rem)_1fr] gap-3 mb-6 items-start">
+      <div class="card border border-border p-5">
         <h3 class="font-bold font-mono text-sm uppercase tracking-wide mb-4">Ganancia mensual</h3>
         <div class="space-y-2 text-sm font-mono">
           <div class="flex justify-between"><span class="text-muted">Ganancia ventas</span><span id="rep-ganancia-ventas">USD 0.00</span></div>
@@ -442,38 +671,39 @@
       </div>
 
       <!-- Indicadores del mes -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div class="border border-border p-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="card border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Facturación total</p>
           <p id="rep-facturacion-total" class="text-lg font-bold font-mono">USD 0.00</p>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Rentabilidad</p>
           <p id="rep-rentabilidad" class="text-lg font-bold font-mono text-accent">0%</p>
           <p class="text-muted font-mono text-[10px] mt-1 leading-tight">ganancia operativa ÷ facturación</p>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Gastos op. s/ bruta</p>
           <p id="rep-gastos-pct" class="text-lg font-bold font-mono text-red-400">0%</p>
           <p class="text-muted font-mono text-[10px] mt-1 leading-tight">de cada USD 100 de ganancia bruta</p>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Facturación s/ stock</p>
           <p id="rep-stock-pct" class="text-lg font-bold font-mono">0%</p>
           <p id="rep-stock-detalle" class="text-muted font-mono text-[10px] mt-1 leading-tight">—</p>
         </div>
       </div>
+      </div>
 
       <!-- Detalle facturación / gastos operativos -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <div class="flex items-baseline justify-between mb-3">
             <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Facturación por concepto</h4>
             <span id="rep-facturacion-cantidad" class="text-muted font-mono text-[10px]"></span>
           </div>
           <div id="rep-facturacion-detalle" class="text-sm font-mono space-y-1 max-h-80 overflow-y-auto"></div>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <div class="flex items-baseline justify-between mb-3">
             <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Gastos operativos por concepto</h4>
             <span id="rep-gastos-cantidad" class="text-muted font-mono text-[10px]"></span>
@@ -489,14 +719,14 @@
           <span class="text-muted font-mono text-[10px]">en ARS · los motivos con "/" se dividen 50/50 entre sus dos conceptos</span>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="border border-border p-4">
+          <div class="card border border-border p-4">
             <div class="flex items-baseline justify-between mb-3">
               <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Emi</h4>
               <span id="rep-retiros-emi-total" class="font-mono text-xs">ARS 0.00</span>
             </div>
             <div id="rep-retiros-emi-detalle" class="text-sm font-mono space-y-1 max-h-80 overflow-y-auto"></div>
           </div>
-          <div class="border border-border p-4">
+          <div class="card border border-border p-4">
             <div class="flex items-baseline justify-between mb-3">
               <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Iña</h4>
               <span id="rep-retiros-ina-total" class="font-mono text-xs">ARS 0.00</span>
@@ -522,23 +752,23 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Clientes con más gastado</h4>
           <ol id="rep-ranking-clientes" class="text-sm space-y-1"></ol>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Marca más vendida</h4>
           <ol id="rep-ranking-marca-vendida" class="text-sm space-y-1"></ol>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Categoría más vendida</h4>
           <ol id="rep-ranking-categoria-vendida" class="text-sm space-y-1"></ol>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Marca más comprada (stock ingresado)</h4>
           <ol id="rep-ranking-marca-comprada" class="text-sm space-y-1"></ol>
         </div>
-        <div class="border border-border p-4">
+        <div class="card border border-border p-4">
           <h4 class="font-bold font-mono text-xs uppercase tracking-wide mb-3">Categoría más comprada (stock ingresado)</h4>
           <ol id="rep-ranking-categoria-comprada" class="text-sm space-y-1"></ol>
         </div>
@@ -628,7 +858,8 @@
       </div>
     </section>
 
-  </main>
+    </main>
+  </div>
 </div>
 
 <!-- Modal: nuevo producto -->
@@ -1437,14 +1668,34 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 checkSession();
 
 // ── TABS ───────────────────────────────────────────────────────────────
+// Las pestañas viven en el menú lateral. En pantallas chicas ese menú es un
+// cajón que se abre desde la barra de arriba y se cierra solo al elegir.
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+
+function abrirSidebar() {
+  sidebar.classList.add('abierto');
+  sidebarBackdrop.classList.remove('hidden');
+}
+function cerrarSidebar() {
+  sidebar.classList.remove('abierto');
+  sidebarBackdrop.classList.add('hidden');
+}
+
+document.getElementById('btn-menu').addEventListener('click', () => {
+  if (sidebar.classList.contains('abierto')) cerrarSidebar(); else abrirSidebar();
+});
+sidebarBackdrop.addEventListener('click', cerrarSidebar);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarSidebar(); });
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => {
-      b.classList.remove('border-accent', 'text-white');
-      b.classList.add('border-transparent', 'text-muted');
-    });
-    btn.classList.add('border-accent', 'text-white');
-    btn.classList.remove('border-transparent', 'text-muted');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    document.getElementById('topbar-title').textContent =
+      btn.querySelector('span')?.textContent || '';
+    cerrarSidebar();
+    window.scrollTo({ top: 0 });
     document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
     if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
@@ -2074,7 +2325,7 @@ document.getElementById('accion-historial').addEventListener('click', async () =
         ? campos.map(k => `<div><span class="text-muted">${k}:</span> ${antes[k] ?? '—'} → <span class="text-accent">${despues[k] ?? '—'}</span></div>`).join('')
         : '<div class="text-muted">Sin cambios de datos.</div>';
       return `
-        <div class="border border-border p-3">
+        <div class="card border border-border p-3">
           <div class="text-muted font-mono text-xs uppercase mb-2">${new Date(h.modificado_at).toLocaleString('es-AR')}</div>
           ${cambios}
         </div>
@@ -3329,7 +3580,7 @@ async function calcularSaldosTarjeta() {
 
 function tarjetaCardHTML(titulo, valor) {
   return `
-    <div class="border border-border p-4">
+    <div class="card border border-border p-4">
       <p class="text-muted font-mono text-xs uppercase mb-1">${titulo}</p>
       <p class="text-xl font-bold">${valor}</p>
       <p class="text-muted font-mono text-[10px] mt-1">pendiente de pagar</p>
@@ -3846,7 +4097,7 @@ function totalesCompra() {
 
 function tarjetaTotalHTML(titulo, valor, clase = '') {
   return `
-    <div class="border border-border p-3">
+    <div class="card border border-border p-3">
       <p class="text-muted font-mono text-[10px] uppercase mb-1">${titulo}</p>
       <p class="font-mono text-sm font-bold ${clase}">${valor}</p>
     </div>`;
@@ -3873,7 +4124,7 @@ function renderItemsCompra() {
   cont.innerHTML = COMPRA_ITEMS.map((item, i) => {
     const { costoTotal, ganancia, rentabilidad } = calcularItem(item.costo, item.peso, item.precioVenta);
     return `
-    <div class="border border-border p-3" data-item="${item.id}">
+    <div class="card border border-border p-3" data-item="${item.id}">
       <div class="flex items-center justify-between mb-3">
         <span class="font-mono text-xs uppercase text-muted">Prenda ${i + 1}</span>
         <button type="button" class="cmp-quitar text-muted hover:text-red-400 text-xs font-mono uppercase">Quitar ✕</button>
