@@ -279,6 +279,13 @@
       <h1 id="topbar-title" class="topbar-title">Stock</h1>
     </header>
 
+    <!-- Aviso de datos que no cargaron. Sin esto una consulta que falla deja
+         la pantalla vacía y parece que no hay información cargada. -->
+    <div id="carga-error" class="hidden mx-4 sm:mx-6 lg:mx-7 mt-4 border border-red-500/40 bg-red-500/10 p-3 text-sm">
+      <p id="carga-error-texto"></p>
+      <p id="carga-error-detalle" class="text-muted font-mono text-[10px] mt-1"></p>
+    </div>
+
   <main class="p-4 sm:p-6 lg:px-7 lg:py-7">
 
     <!-- STOCK -->
@@ -1731,6 +1738,45 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// ── Aviso de carga fallida ─────────────────────────────────────────────
+// Una consulta que falla dejaba la pantalla vacía y en la consola. Vacío y
+// "no cargó" se veían igual, que es la peor confusión posible en un sistema
+// de plata: hace pensar que se perdieron los datos.
+const cargaError = document.getElementById('carga-error');
+const CARGAS_FALLIDAS = new Set();
+
+function textoDeErrorDeCarga(error) {
+  const status = error?.status || error?.originalError?.status;
+  const texto = (error?.message || '').toLowerCase();
+  if (status === 402 || texto.includes('exceed') || texto.includes('quota')) {
+    return 'Supabase tiene el proyecto restringido por cuota, así que devuelve vacío. Los datos están, no se borraron.';
+  }
+  if (status === 401 || texto.includes('api key')) {
+    return 'Supabase rechazó la clave del panel. Los datos están, pero el panel no los puede pedir.';
+  }
+  if (texto.includes('failed to fetch') || texto.includes('load failed') || texto.includes('networkerror')) {
+    return 'No se pudo llegar a Supabase. Revisá la conexión.';
+  }
+  return 'Supabase devolvió un error al pedir los datos.';
+}
+
+function reportarErrorCarga(que, error) {
+  console.error(`Error cargando ${que}:`, error);
+  CARGAS_FALLIDAS.add(que);
+  document.getElementById('carga-error-texto').textContent =
+    `No se pudo cargar ${[...CARGAS_FALLIDAS].join(', ')}. ${textoDeErrorDeCarga(error)}`;
+  document.getElementById('carga-error-detalle').textContent =
+    (error?.status ? error.status + ' · ' : '') + (error?.message || 'sin detalle');
+  cargaError.classList.remove('hidden');
+}
+
+function marcarCargaOk(que) {
+  if (!CARGAS_FALLIDAS.delete(que)) return;
+  if (CARGAS_FALLIDAS.size === 0) cargaError.classList.add('hidden');
+  else document.getElementById('carga-error-texto').textContent =
+    `No se pudo cargar ${[...CARGAS_FALLIDAS].join(', ')}.`;
+}
+
 // ── STOCK: listado + búsqueda ──────────────────────────────────────────
 let PRODUCTOS = [];
 
@@ -1741,7 +1787,8 @@ async function cargarProductos() {
     .from('productos')
     .select('*, unidades(id, estado, talle, costo_usd)')
     .order('created_at', { ascending: false });
-  if (error) { console.error(error); return; }
+  if (error) { reportarErrorCarga('el stock', error); return; }
+  marcarCargaOk('el stock');
   const todos = data || [];
   // Las prendas de una compra que todavía no tienen foto viven aparte, en
   // "Próximos ingresos": no ensucian el listado de stock ni salen en la web.
@@ -2562,7 +2609,8 @@ let CLIENTE_SELECCIONADO = null;
 
 async function cargarClientes() {
   const { data, error } = await supabase.from('clientes').select('*').order('nombre');
-  if (error) { console.error(error); return; }
+  if (error) { reportarErrorCarga('los clientes', error); return; }
+  marcarCargaOk('los clientes');
   CLIENTES = data || [];
   renderDeudasClientes();
 }
@@ -3075,7 +3123,8 @@ async function cargarVentas() {
         unidades(codigo_barra, talle, productos(nombre)))
     `)
     .order('created_at', { ascending: false });
-  if (error) { console.error(error); return; }
+  if (error) { reportarErrorCarga('las ventas', error); return; }
+  marcarCargaOk('las ventas');
   VENTAS = data || [];
   poblarFiltroVentasAnios();
   filtrarVentas();
@@ -3548,12 +3597,16 @@ async function cargarEncargos() {
     .select('*, clientes(nombre, telefono, email), encargo_pagos(id, fecha, monto, moneda, monto_usd)')
     .order('fecha', { ascending: false });
   if (error) {
-    console.error(error);
-    document.getElementById('encargos-empty').textContent =
-      'No se pudieron cargar los encargos. ¿Corriste el SQL que crea las tablas?';
+    reportarErrorCarga('los encargos', error);
+    // Solo si la tabla no existe tiene sentido mandar a correr el SQL; si el
+    // problema es otro, ese mensaje hace perder el tiempo.
+    document.getElementById('encargos-empty').textContent = error.code === '42P01'
+      ? 'Falta correr el SQL que crea las tablas de encargos.'
+      : 'No se pudieron cargar los encargos.';
     document.getElementById('encargos-empty').classList.remove('hidden');
     return;
   }
+  marcarCargaOk('los encargos');
   ENCARGOS = data || [];
   renderSaldosTarjeta();
   renderAdrianaKgEnDeudas();
@@ -4564,12 +4617,14 @@ async function cargarCompras() {
     .select('*, productos(id, nombre, precio_venta_usd, unidades(costo_usd))')
     .order('fecha', { ascending: false });
   if (error) {
-    console.error(error);
-    document.getElementById('compras-empty').textContent =
-      'No se pudieron cargar las compras. ¿Corriste el SQL que crea las tablas?';
+    reportarErrorCarga('las compras', error);
+    document.getElementById('compras-empty').textContent = error.code === '42P01'
+      ? 'Falta correr el SQL que crea las tablas de compras.'
+      : 'No se pudieron cargar las compras.';
     document.getElementById('compras-empty').classList.remove('hidden');
     return;
   }
+  marcarCargaOk('las compras');
   COMPRAS = data || [];
   renderCompras();
   renderSaldosTarjeta();
@@ -4675,7 +4730,8 @@ function categoriaTexto(m) {
 
 async function cargarConfiguracion() {
   const { data, error } = await supabase.from('configuracion').select('*').single();
-  if (error) { console.error(error); return; }
+  if (error) { reportarErrorCarga('la configuración', error); return; }
+  marcarCargaOk('la configuración');
   COTIZACION_ACTUAL = Number(data?.cotizacion_usd_ars) || 0;
   document.getElementById('caja-cotizacion-actual').textContent = COTIZACION_ACTUAL
     ? `$${COTIZACION_ACTUAL.toFixed(2)}`
@@ -4686,7 +4742,8 @@ async function cargarConfiguracion() {
 
 async function cargarInversores() {
   const { data, error } = await supabase.from('inversores').select('*').order('nombre');
-  if (error) { console.error(error); return; }
+  if (error) { reportarErrorCarga('los inversores', error); return; }
+  marcarCargaOk('los inversores');
   INVERSORES = data || [];
   const select = document.getElementById('m-inversor');
   if (select) {
@@ -4702,7 +4759,8 @@ async function cargarCaja() {
     .from('caja_movimientos')
     .select('*')
     .order('fecha', { ascending: false });
-  if (error) { console.error(error); return; }
+  if (error) { reportarErrorCarga('el flujo de caja', error); return; }
+  marcarCargaOk('el flujo de caja');
   CAJA = data || [];
   renderResumenCaja();
   filtrarCaja();
