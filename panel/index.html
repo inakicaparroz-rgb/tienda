@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Cop or Drop — Sistema interno</title>
 <meta name="robots" content="noindex, nofollow" />
-<link rel="icon" type="image/png" href="../img/favicon.png" />
+<link rel="icon" type="image/png" href="favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" />
@@ -201,7 +201,7 @@
 <div id="login-screen" class="min-h-screen flex items-center justify-center px-4">
   <div class="w-full max-w-sm border border-border bg-surface p-6 sm:p-8">
     <div class="mb-7">
-      <img src="../img/logo-panel.png" alt="Cop or Drop" class="brand-logo" style="height:3.5rem" />
+      <img src="logo-panel.png" alt="Cop or Drop" class="brand-logo" style="height:3.5rem" />
       <p class="brand-sub">Sistema interno</p>
     </div>
     <div class="space-y-3">
@@ -223,7 +223,7 @@
 
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-brand">
-      <img src="../img/logo-panel.png" alt="Cop or Drop" class="brand-logo" />
+      <img src="logo-panel.png" alt="Cop or Drop" class="brand-logo" />
       <p class="brand-sub">Sistema interno</p>
     </div>
 
@@ -1622,13 +1622,54 @@ async function checkSession() {
   }
 }
 
+// Traducción de los errores de Supabase que se pueden llegar a ver acá. El
+// mensaje genérico de antes tapaba causas que no son la contraseña —quedarse
+// sin intentos, la clave de la API vencida, el celular sin señal— y hacían
+// perder tiempo probando contraseñas que estaban bien.
+function motivoDeLoginFallido(error) {
+  const texto = (error?.message || '').toLowerCase();
+  const codigo = error?.code || '';
+  if (texto.includes('invalid login credentials') || codigo === 'invalid_credentials') {
+    return 'Email o contraseña incorrectos.';
+  }
+  if (texto.includes('email not confirmed') || codigo === 'email_not_confirmed') {
+    return 'El usuario existe pero le falta confirmar el mail.';
+  }
+  if (codigo === 'over_request_rate_limit' || texto.includes('rate limit') || error?.status === 429) {
+    return 'Demasiados intentos seguidos. Esperá unos minutos y probá de nuevo.';
+  }
+  if (texto.includes('api key') || error?.status === 401) {
+    return 'El panel no está pudiendo autenticarse contra Supabase (clave de API).';
+  }
+  if (texto.includes('failed to fetch') || texto.includes('networkerror') || texto.includes('load failed')) {
+    return 'No se pudo llegar a Supabase. Revisá la conexión.';
+  }
+  return 'No se pudo entrar.';
+}
+
 document.getElementById('login-btn').addEventListener('click', async () => {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
+  const boton = document.getElementById('login-btn');
   loginError.classList.add('hidden');
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  boton.disabled = true;
+
+  let error;
+  try {
+    ({ error } = await supabase.auth.signInWithPassword({ email, password }));
+  } catch (e) {
+    error = e; // ni siquiera llegó a la red
+  }
+  boton.disabled = false;
+
   if (error) {
-    loginError.textContent = 'Email o contraseña incorrectos.';
+    console.error('Login fallido:', error);
+    // El detalle crudo va abajo, chico: es lo que hace falta para saber si el
+    // problema es la contraseña o el servidor.
+    loginError.innerHTML =
+      `${motivoDeLoginFallido(error)}<br><span class="text-muted text-[10px]">${
+        (error.status ? error.status + ' · ' : '') + (error.message || 'sin detalle')
+      }</span>`;
     loginError.classList.remove('hidden');
     return;
   }
