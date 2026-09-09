@@ -78,6 +78,7 @@ async function handleCreatePreference(request, env) {
         items: mpItems, payer, back_urls, auto_return: "approved",
         statement_descriptor: "COP OR DROP",
         notification_url: "https://copordropstore.com/functions/mp-webhook",
+        payment_methods: { installments: 3, default_installments: 3 },
         metadata: {
           customer_name: payer?.name || "", customer_phone: customer_phone || "",
           customer_email: payer?.email || "", delivery_method: delivery_method || "",
