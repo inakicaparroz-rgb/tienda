@@ -816,3 +816,22 @@ alter table caja_movimientos add constraint caja_movimientos_categoria_check
   check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
                        'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
                        'pago_tarjeta', 'compra_stock', 'pago_kg'));
+
+-- ─── Fondos pendientes (ventas de la web) ──────────────────────────────────
+-- La plata de una venta por la web entra a Mercado Pago, pero recién se puede
+-- usar a los 18 días. Hasta ese momento no es caja: se acumula aparte, en
+-- "Fondos pendientes", y pasa a caja sola al cumplirse el plazo o antes si se
+-- adelanta a mano desde el panel.
+alter table caja_movimientos add column if not exists fondo_pendiente boolean not null default false;
+
+-- Null = todavía sigue el plazo de 18 días desde la fecha del movimiento.
+-- Con fecha = se acreditó ese día (automático al vencer, o adelantado a mano).
+alter table caja_movimientos add column if not exists acreditado_at date;
+
+create index if not exists idx_caja_fondo_pendiente
+  on caja_movimientos(fondo_pendiente) where fondo_pendiente;
+
+-- ─── Inversiones anteriores al sistema ─────────────────────────────────────
+-- Plata que un inversor puso antes de que existiera el panel. Cuenta en su
+-- saldo, pero nunca fue un ingreso de caja: se ve solo en Deudas y deudores.
+alter table deudas_movimientos add column if not exists es_inversion_previa boolean not null default false;

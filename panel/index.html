@@ -575,7 +575,7 @@
 
     <!-- FLUJO DE CAJA -->
     <section id="tab-caja" class="tab-section hidden">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <div class="card border border-border p-4">
           <p class="text-muted font-mono text-xs uppercase mb-1">Saldo USD</p>
           <p id="caja-saldo-usd" class="text-xl font-bold">USD 0.00</p>
@@ -588,6 +588,27 @@
           <p class="text-muted font-mono text-xs uppercase mb-1">Saldo total (USD)</p>
           <p id="caja-saldo-total" class="text-xl font-bold">USD 0.00</p>
         </div>
+        <button id="caja-fondos-card" type="button" class="card border border-border p-4 text-left">
+          <p class="text-muted font-mono text-xs uppercase mb-1">Fondos pendientes</p>
+          <p id="caja-fondos-total" class="text-xl font-bold">ARS 0.00</p>
+          <p id="caja-fondos-detalle" class="text-muted font-mono text-[10px] mt-1">sin ventas web esperando</p>
+        </button>
+      </div>
+
+      <!-- Detalle de fondos pendientes: se abre al tocar la tarjeta -->
+      <div id="caja-fondos-panel" class="hidden border border-border p-3 sm:p-4 mb-4">
+        <div class="flex items-center justify-between gap-3 mb-1">
+          <h3 class="font-bold font-mono text-sm uppercase tracking-wide">Fondos pendientes</h3>
+          <button id="caja-fondos-cerrar" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar</button>
+        </div>
+        <p class="text-muted text-xs mb-3">
+          Ventas de la web cobradas por Mercado Pago. Pasan a Caja solas a los 18 días,
+          o antes si las ingresás a mano acá.
+        </p>
+        <div id="caja-fondos-lista" class="overflow-x-auto"></div>
+        <button id="caja-fondos-ingresar-todo" class="hidden bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold mt-3">
+          Ingresar todo a caja
+        </button>
       </div>
 
       <div class="flex flex-wrap items-center gap-3 mb-4 text-sm border border-border p-3">
@@ -837,6 +858,9 @@
                       <h4 id="deuda-inversor-detalle-titulo" class="font-bold"></h4>
                       <button id="deuda-inversor-cerrar" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
                     </div>
+                    <button id="btn-inversion-previa" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 mb-4">
+                      + Inversión anterior
+                    </button>
                     <div id="deuda-inversor-detalle-movimientos"></div>
                   </div>
                 </td>
@@ -849,6 +873,36 @@
     </section>
 
     </main>
+  </div>
+</div>
+
+<!-- Modal: inversión anterior al sistema -->
+<div id="modal-inversion-previa" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-surface border border-border p-4 sm:p-6">
+    <h3 class="font-bold mb-1">Inversión anterior</h3>
+    <p id="ip-contexto" class="text-muted text-xs mb-4"></p>
+    <p class="text-muted text-xs mb-4">
+      Plata que ya había puesto antes de que existiera el sistema. Suma a lo que le debemos,
+      pero <strong>no entra al flujo de caja</strong>: no fue un ingreso de ahora.
+    </p>
+    <div class="space-y-3 text-sm">
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Monto (USD)</label>
+        <input id="ip-monto" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
+        <input id="ip-fecha" type="date" class="w-full px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Detalle</label>
+        <input id="ip-motivo" type="text" placeholder="Inversión anterior" class="w-full px-3 py-2 text-sm" />
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="ip-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="ip-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -944,6 +998,19 @@
     </button>
 
     <div class="border border-border p-3 mt-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="font-mono text-xs uppercase">Venta de la web</p>
+          <p class="text-muted text-xs mt-0.5">Cobrada por Mercado Pago. La plata no entra a Caja todavía: queda en <strong>Fondos pendientes</strong> y se acredita a los 18 días.</p>
+        </div>
+        <button type="button" id="v-web-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+      <p id="v-web-nota" class="hidden text-muted text-xs mt-2 font-mono"></p>
+    </div>
+
+    <div class="border border-border p-3 mt-3">
       <div class="flex items-center justify-between gap-3">
         <div>
           <p class="font-mono text-xs uppercase">Pago en dos monedas</p>
@@ -2845,6 +2912,27 @@ document.getElementById('v-pago-ars').addEventListener('input', actualizarPrevie
 const vNoCajaSwitch = document.getElementById('v-no-caja-switch');
 vNoCajaSwitch.addEventListener('click', () => setSwitch(vNoCajaSwitch, vNoCajaSwitch.dataset.on !== 'true'));
 
+// Venta de la web: la plata la retiene Mercado Pago 18 días, así que el
+// ingreso se marca como fondo pendiente y no suma al saldo hasta acreditarse.
+const vWebSwitch = document.getElementById('v-web-switch');
+
+function esVentaWeb() { return vWebSwitch.dataset.on === 'true'; }
+
+function actualizarNotaVentaWeb() {
+  const nota = document.getElementById('v-web-nota');
+  nota.classList.toggle('hidden', !esVentaWeb());
+  if (!esVentaWeb()) return;
+  const fecha = document.getElementById('v-fecha').value || hoyIso();
+  const acredita = sumarDias(fecha, DIAS_ACREDITACION_WEB);
+  nota.textContent = `Se acredita en Caja el ${new Date(acredita + 'T00:00:00').toLocaleDateString('es-AR')}.`;
+}
+
+vWebSwitch.addEventListener('click', () => {
+  setSwitch(vWebSwitch, !esVentaWeb());
+  actualizarNotaVentaWeb();
+});
+document.getElementById('v-fecha').addEventListener('change', actualizarNotaVentaWeb);
+
 async function abrirModalVenta(venta) {
   EDITANDO_VENTA = venta || null;
   document.getElementById('modal-venta-titulo').textContent = venta ? 'Editar venta' : 'Nueva venta';
@@ -2861,6 +2949,8 @@ async function abrirModalVenta(venta) {
   setPagoMixto(!!venta?.pago_mixto);
   setCuentaCorriente(!!venta?.cuenta_corriente);
   setSwitch(vNoCajaSwitch, false);
+  setSwitch(vWebSwitch, venta?.canal === 'web');
+  actualizarNotaVentaWeb();
   modalVenta.classList.remove('hidden');
 
   if (venta) {
@@ -2879,7 +2969,7 @@ async function abrirModalVenta(venta) {
 document.getElementById('btn-nueva-venta').addEventListener('click', () => abrirModalVenta());
 document.getElementById('v-cancelar').addEventListener('click', () => modalVenta.classList.add('hidden'));
 
-async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales, cotizacion) {
+async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales, cotizacion, fondoPendiente = false) {
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
   const totalesPorMoneda = {};
   itemsFinales.forEach(({ moneda, monto }) => {
@@ -2889,6 +2979,7 @@ async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales, cotizacion) {
     await supabase.from('caja_movimientos').insert({
       tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
       cotizacion_usada: moneda === 'ARS' ? (cotizacion || null) : null,
+      fondo_pendiente: fondoPendiente,
     });
   }
 }
@@ -2898,12 +2989,13 @@ async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales, cotizacion) {
 // El ingreso en caja va en la moneda que realmente se cobró (USD o ARS),
 // no convertido — si convirtiéramos a USD el flujo de caja no coincidiría
 // con la plata que efectivamente entró.
-async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moneda, cotizacion) {
+async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moneda, cotizacion, fondoPendiente = false) {
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
   if (monto > 0) {
     await supabase.from('caja_movimientos').insert({
       tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
       cotizacion_usada: moneda === 'ARS' ? (cotizacion || null) : null,
+      fondo_pendiente: fondoPendiente,
     });
   }
 }
@@ -2911,18 +3003,20 @@ async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moned
 // Pago en dos monedas: a Caja pasa exactamente lo cargado en cada campo —
 // un ingreso en USD y otro en ARS (sin convertir), sea venta al contado o
 // cuenta corriente (ahí "montoUsd"/"montoArs" son lo abonado hoy, no el total).
-async function regenerarCajaDeVentaMixta(ventaId, motivo, montoUsd, montoArs, cotizacion) {
+async function regenerarCajaDeVentaMixta(ventaId, motivo, montoUsd, montoArs, cotizacion, fondoPendiente = false) {
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
   if (montoUsd > 0) {
     await supabase.from('caja_movimientos').insert({
       tipo: 'ingreso', motivo, categoria: 'venta', monto: montoUsd, moneda: 'USD', venta_id: ventaId,
       cotizacion_usada: null,
+      fondo_pendiente: fondoPendiente,
     });
   }
   if (montoArs > 0) {
     await supabase.from('caja_movimientos').insert({
       tipo: 'ingreso', motivo, categoria: 'venta', monto: montoArs, moneda: 'ARS', venta_id: ventaId,
       cotizacion_usada: cotizacion || null,
+      fondo_pendiente: fondoPendiente,
     });
   }
 }
@@ -2998,9 +3092,14 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   const deudaUsd = cuentaCorrienteActiva ? Math.max(0, totalUsdVentaModal - abonadoHoyEnUsd()) : 0;
   const ventaFecha = document.getElementById('v-fecha').value || new Date().toISOString().slice(0, 10);
 
+  // Una venta de la web se guarda con canal 'web' —igual que las que entran
+  // solas por el webhook de Mercado Pago— y su plata va a fondos pendientes.
+  const ventaWeb = esVentaWeb();
+
   const ventaPayload = {
     cliente_id: cliente.id,
     fecha: ventaFecha,
+    canal: ventaWeb ? 'web' : 'local',
     cuenta_corriente: cuentaCorrienteActiva,
     monto_abonado: (pagoMixtoActivo || cuentaCorrienteActiva) ? abonadoRaw : null,
     abonado_moneda: (pagoMixtoActivo || cuentaCorrienteActiva) ? abonadoMoneda : null,
@@ -3093,11 +3192,11 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   // están correctas). Ver comentario en el switch "v-no-caja-switch".
   if (vNoCajaSwitch.dataset.on !== 'true') {
     if (pagoMixtoActivo) {
-      await regenerarCajaDeVentaMixta(ventaId, cliente.nombre, montoUsdMixto, montoArsMixto, cotizacion);
+      await regenerarCajaDeVentaMixta(ventaId, cliente.nombre, montoUsdMixto, montoArsMixto, cotizacion, ventaWeb);
     } else if (cuentaCorrienteActiva) {
-      await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda, cotizacion);
+      await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda, cotizacion, ventaWeb);
     } else {
-      await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales, cotizacion);
+      await regenerarCajaDeVenta(ventaId, cliente.nombre, itemsFinales, cotizacion, ventaWeb);
     }
     await regenerarDeudaDeVenta(ventaId, cliente.id, ventaFecha, deudaUsd);
   }
@@ -4766,8 +4865,54 @@ async function cargarCaja() {
   filtrarCaja();
 }
 
+// ── Fondos pendientes ──────────────────────────────────────────────────
+// Lo que cobra Mercado Pago por una venta de la web no se puede usar hasta
+// pasados 18 días. Ese movimiento existe en el flujo desde el día de la venta
+// —la facturación es de ese día— pero no suma al saldo hasta acreditarse.
+// No hace falta ningún proceso que corra solo: la fecha de acreditación se
+// deduce del movimiento, así que al vencer el plazo pasa a caja por sí mismo.
+const DIAS_ACREDITACION_WEB = 18;
+
+function sumarDias(fechaIso, dias) {
+  const [a, m, d] = fechaIso.split('-').map(Number);
+  const f = new Date(a, m - 1, d);
+  f.setDate(f.getDate() + dias);
+  const dd = n => String(n).padStart(2, '0');
+  return `${f.getFullYear()}-${dd(f.getMonth() + 1)}-${dd(f.getDate())}`;
+}
+
+function hoyIso() {
+  const h = new Date();
+  const dd = n => String(n).padStart(2, '0');
+  return `${h.getFullYear()}-${dd(h.getMonth() + 1)}-${dd(h.getDate())}`;
+}
+
+// Cuándo esa plata pasa (o pasó) a ser caja.
+function fechaAcreditacion(m) {
+  if (!m.fondo_pendiente) return m.fecha;
+  return m.acreditado_at || sumarDias(m.fecha, DIAS_ACREDITACION_WEB);
+}
+
+function estaAcreditado(m) {
+  return !m.fondo_pendiente || fechaAcreditacion(m) <= hoyIso();
+}
+
+function movimientosPendientes(lista = CAJA) {
+  return lista.filter(m => m.fondo_pendiente && !estaAcreditado(m))
+    .sort((a, b) => fechaAcreditacion(a).localeCompare(fechaAcreditacion(b)));
+}
+
+function totalFondosPendientes(lista = CAJA) {
+  const total = { USD: 0, ARS: 0 };
+  movimientosPendientes(lista).forEach(m => {
+    if (m.tipo !== 'ingreso') return;
+    total[m.moneda === 'ARS' ? 'ARS' : 'USD'] += Number(m.monto);
+  });
+  return total;
+}
+
 function saldoNeto(lista, moneda) {
-  return lista.filter(m => m.moneda === moneda)
+  return lista.filter(m => m.moneda === moneda && estaAcreditado(m))
     .reduce((s, m) => s + (m.tipo === 'ingreso' ? Number(m.monto) : -Number(m.monto)), 0);
 }
 
@@ -4778,7 +4923,92 @@ function renderResumenCaja() {
   document.getElementById('caja-saldo-usd').textContent = `USD ${saldoUsd.toFixed(2)}`;
   document.getElementById('caja-saldo-ars').textContent = `ARS ${saldoArs.toFixed(2)}`;
   document.getElementById('caja-saldo-total').textContent = `USD ${saldoTotal.toFixed(2)}`;
+  renderFondosPendientes();
 }
+
+// La tarjeta muestra el total y, si hay algo, el panel de abajo lista cada
+// venta con su fecha de acreditación y el botón para adelantarla.
+function renderFondosPendientes() {
+  const pendientes = movimientosPendientes();
+  const total = totalFondosPendientes();
+  const partes = [];
+  if (total.ARS > 0.009) partes.push(`ARS ${total.ARS.toFixed(2)}`);
+  if (total.USD > 0.009) partes.push(`USD ${total.USD.toFixed(2)}`);
+
+  document.getElementById('caja-fondos-total').textContent = partes.join(' · ') || 'ARS 0.00';
+  document.getElementById('caja-fondos-detalle').textContent = pendientes.length
+    ? `${pendientes.length} venta${pendientes.length === 1 ? '' : 's'} web · tocá para ver`
+    : 'sin ventas web esperando';
+
+  const lista = document.getElementById('caja-fondos-lista');
+  const botonTodo = document.getElementById('caja-fondos-ingresar-todo');
+  botonTodo.classList.toggle('hidden', pendientes.length === 0);
+
+  if (pendientes.length === 0) {
+    lista.innerHTML = '<p class="text-muted text-sm">No hay plata esperando acreditarse.</p>';
+    return;
+  }
+
+  const hoy = hoyIso();
+  lista.innerHTML = `
+    <table class="w-full text-sm">
+      <thead><tr class="text-left text-muted font-mono text-xs uppercase">
+        <th class="p-2">Venta</th><th class="p-2">Fecha</th><th class="p-2">Monto</th>
+        <th class="p-2">Se acredita</th><th class="p-2"></th>
+      </tr></thead>
+      <tbody>
+        ${pendientes.map(m => {
+          const acredita = fechaAcreditacion(m);
+          const faltan = Math.round((new Date(acredita + 'T00:00:00') - new Date(hoy + 'T00:00:00')) / 86400000);
+          return `
+            <tr>
+              <td class="p-2">${m.motivo}</td>
+              <td class="p-2 text-muted">${new Date(m.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
+              <td class="p-2 text-accent">${m.moneda} ${Number(m.monto).toFixed(2)}</td>
+              <td class="p-2 text-muted">
+                ${new Date(acredita + 'T00:00:00').toLocaleDateString('es-AR')}
+                <span class="font-mono text-[10px]">· faltan ${faltan} día${faltan === 1 ? '' : 's'}</span>
+              </td>
+              <td class="p-2 text-right">
+                <button class="fondo-ingresar bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-1.5 whitespace-nowrap" data-id="${m.id}">
+                  Ingresar a caja
+                </button>
+              </td>
+            </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  lista.querySelectorAll('.fondo-ingresar').forEach(btn => {
+    btn.addEventListener('click', () => acreditarFondos([btn.dataset.id]));
+  });
+}
+
+// Adelantar la acreditación: se marca con la fecha de hoy, así el movimiento
+// entra a caja hoy y queda registrado que se adelantó.
+async function acreditarFondos(ids) {
+  if (ids.length === 0) return;
+  const { error } = await supabase.from('caja_movimientos')
+    .update({ acreditado_at: hoyIso() })
+    .in('id', ids);
+  if (error) { alert('No se pudo ingresar a caja.'); console.error(error); return; }
+  await cargarCaja();
+}
+
+document.getElementById('caja-fondos-card').addEventListener('click', () => {
+  document.getElementById('caja-fondos-panel').classList.toggle('hidden');
+});
+document.getElementById('caja-fondos-cerrar').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('caja-fondos-panel').classList.add('hidden');
+});
+document.getElementById('caja-fondos-ingresar-todo').addEventListener('click', () => {
+  const pendientes = movimientosPendientes();
+  if (pendientes.length === 0) return;
+  if (!confirm(`¿Ingresar a caja las ${pendientes.length} ventas pendientes?`)) return;
+  acreditarFondos(pendientes.map(m => m.id));
+});
 
 function renderCaja(lista) {
   const tbody = document.getElementById('caja-tbody');
@@ -4806,6 +5036,9 @@ function renderCaja(lista) {
         <span class="inline-flex items-center gap-2">
           <span>${m.motivo}</span>
           ${m.encargo_id ? '<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-accent text-accent whitespace-nowrap">Encargo</span>' : ''}
+          ${m.fondo_pendiente ? (estaAcreditado(m)
+            ? '<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-border text-muted whitespace-nowrap">Web · acreditado</span>'
+            : `<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-yellow-500/60 text-yellow-500 whitespace-nowrap">Web · pendiente ${new Date(fechaAcreditacion(m) + 'T00:00:00').toLocaleDateString('es-AR')}</span>`) : ''}
         </span>
       </td>
       <td class="p-2 ${colorMonto}">${signo}${m.moneda} ${Number(m.monto).toFixed(2)}</td>
@@ -5284,7 +5517,10 @@ function renderMovimientosDeuda(entidadTipo, entidadId) {
         ${movimientos.map(d => `
           <tr class="border-t border-border">
             <td class="p-2 text-muted">${new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
-            <td class="p-2">${d.motivo}</td>
+            <td class="p-2">
+              ${d.motivo}
+              ${d.es_inversion_previa ? '<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-border text-muted whitespace-nowrap ml-1">Anterior · fuera de caja</span>' : ''}
+            </td>
             <td class="p-2 ${d.tipo === 'debe' ? 'text-red-400' : 'text-accent'}">${d.tipo === 'debe' ? '+' : '-'}USD ${Number(d.monto).toFixed(2)}</td>
           </tr>
         `).join('')}
@@ -5379,6 +5615,53 @@ function renderDeudasInversores() {
 document.getElementById('deuda-inversor-cerrar').addEventListener('click', () => {
   filaDetalleDeudaInversor.classList.add('hidden');
   DEUDA_INVERSOR_ACTUAL = null;
+});
+
+// ── Inversión anterior al sistema ──────────────────────────────────────
+// Plata que el inversor puso antes de que existiera el panel. Va a
+// deudas_movimientos como un "debe" más —suma a su saldo— pero sin
+// caja_movimiento_id: nunca fue un ingreso de caja y no debe aparecer como
+// inversión en el flujo ni en los reportes del mes.
+const modalInversionPrevia = document.getElementById('modal-inversion-previa');
+
+document.getElementById('btn-inversion-previa').addEventListener('click', () => {
+  const inversor = INVERSORES.find(i => i.id === DEUDA_INVERSOR_ACTUAL);
+  if (!inversor) return;
+  document.getElementById('ip-contexto').textContent = inversor.nombre;
+  document.getElementById('ip-monto').value = '';
+  document.getElementById('ip-motivo').value = '';
+  document.getElementById('ip-fecha').value = hoyIso();
+  modalInversionPrevia.classList.remove('hidden');
+});
+
+document.getElementById('ip-cancelar').addEventListener('click', () =>
+  modalInversionPrevia.classList.add('hidden'));
+
+document.getElementById('ip-guardar').addEventListener('click', async () => {
+  const inversorId = DEUDA_INVERSOR_ACTUAL;
+  if (!inversorId) return;
+  const monto = parseFloat(document.getElementById('ip-monto').value) || 0;
+  if (monto <= 0) { alert('Ingresá el monto de la inversión.'); return; }
+  const fecha = document.getElementById('ip-fecha').value || hoyIso();
+  const motivo = document.getElementById('ip-motivo').value.trim() || 'Inversión anterior';
+
+  const boton = document.getElementById('ip-guardar');
+  boton.disabled = true;
+  const { error } = await supabase.from('deudas_movimientos').insert({
+    entidad_tipo: 'inversor', entidad_id: inversorId, tipo: 'debe',
+    motivo, monto, fecha, es_inversion_previa: true,
+  });
+  boton.disabled = false;
+  if (error) { alert('No se pudo guardar la inversión anterior.'); console.error(error); return; }
+
+  modalInversionPrevia.classList.add('hidden');
+  await cargarDeudas();
+  const inversor = INVERSORES.find(i => i.id === inversorId);
+  const saldo = saldoEntidad('inversor', inversorId);
+  document.getElementById('deuda-inversor-detalle-titulo').textContent =
+    `${inversor?.nombre || 'Inversor'} — le debemos USD ${saldo.toFixed(2)}`;
+  document.getElementById('deuda-inversor-detalle-movimientos').innerHTML =
+    renderMovimientosDeuda('inversor', inversorId);
 });
 
 // ── Nueva deuda de cliente (manual) ──

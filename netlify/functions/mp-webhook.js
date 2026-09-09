@@ -144,6 +144,9 @@ async function registrarVentaWeb({ paymentId, metadata, totalArs }) {
       moneda: "ARS",
       cotizacion_usada: cotizacion,
       venta_id: venta.id,
+      // Mercado Pago retiene la plata 18 días: entra a Fondos pendientes,
+      // no a Caja. El panel la acredita sola al vencer el plazo.
+      fondo_pendiente: true,
     }),
   });
 }
