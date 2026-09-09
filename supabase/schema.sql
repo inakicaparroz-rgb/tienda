@@ -835,3 +835,18 @@ create index if not exists idx_caja_fondo_pendiente
 -- Plata que un inversor puso antes de que existiera el panel. Cuenta en su
 -- saldo, pero nunca fue un ingreso de caja: se ve solo en Deudas y deudores.
 alter table deudas_movimientos add column if not exists es_inversion_previa boolean not null default false;
+
+-- ─── Crédito en tarjeta puesto por un inversor ─────────────────────────────
+-- El inversor no nos da efectivo: carga plata en la tarjeta. Se le debe igual
+-- (va como "debe" en deudas_movimientos, en USD como todo lo de ahí), pero no
+-- entra a Caja porque no hubo movimiento de efectivo.
+-- En el saldo Tarjeta ese crédito RESTA: si teníamos gastos por pagar, ahora
+-- debemos menos. A medida que se gasta con la tarjeta el saldo vuelve a subir.
+alter table deudas_movimientos add column if not exists es_credito_tarjeta boolean not null default false;
+
+-- El saldo Tarjeta se lleva por moneda y sin convertir, así que el crédito
+-- guarda su monto y su moneda tal como se cargaron en la tarjeta. El campo
+-- monto de la fila sigue siendo la deuda con el inversor, en USD.
+alter table deudas_movimientos add column if not exists tarjeta_monto numeric(12,2);
+alter table deudas_movimientos add column if not exists tarjeta_moneda text
+  check (tarjeta_moneda is null or tarjeta_moneda in ('USD', 'ARS'));
