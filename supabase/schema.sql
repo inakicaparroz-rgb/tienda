@@ -633,3 +633,186 @@ begin
   where id = p_unidad_id and estado = 'reservado';
 end;
 $$;
+
+-- ═══ MÓDULO ENCARGOS ═══════════════════════════════════════════════════════
+-- Pedidos especiales: el cliente encarga algo que todavía no tenemos, deja una
+-- seña, y salda el resto antes de retirarlo. No se vinculan a una unidad de
+-- stock (justamente porque todavía no existe cuando se toma el pedido).
+--
+-- Cada monto se guarda en su moneda original + la cotización del día, igual
+-- que en ventas, y la columna *_usd deja el equivalente fijado para siempre.
+
+create table if not exists encargos (
+  id uuid primary key default gen_random_uuid(),
+  cliente_id uuid references clientes(id),
+  fecha date not null default current_date,
+  item text not null,
+  talle text,
+
+  -- Seña: lo que paga el cliente al encargar.
+  senia numeric(12,2) not null default 0,
+  senia_moneda text not null default 'USD' check (senia_moneda in ('USD', 'ARS')),
+  senia_cotizacion numeric(10,2),
+  senia_usd numeric(12,2) generated always as (
+    case when senia_moneda = 'USD' then senia
+         else round(senia / nullif(senia_cotizacion, 0), 2) end
+  ) stored,
+
+  -- Costo: lo que nos cuesta conseguirlo. Si se paga con tarjeta no impacta
+  -- Caja al instante — queda en el saldo Tarjeta hasta que se paga el resumen.
+  costo numeric(12,2) not null default 0,
+  costo_moneda text not null default 'USD' check (costo_moneda in ('USD', 'ARS')),
+  costo_cotizacion numeric(10,2),
+  costo_medio_pago text not null default 'cash' check (costo_medio_pago in ('cash', 'tarjeta')),
+  costo_usd numeric(12,2) generated always as (
+    case when costo_moneda = 'USD' then costo
+         else round(costo / nullif(costo_cotizacion, 0), 2) end
+  ) stored,
+
+  -- Precio de venta: lo que le cobramos al cliente.
+  precio_venta numeric(12,2) not null default 0,
+  precio_venta_moneda text not null default 'USD' check (precio_venta_moneda in ('USD', 'ARS')),
+  precio_venta_cotizacion numeric(10,2),
+  precio_venta_usd numeric(12,2) generated always as (
+    case when precio_venta_moneda = 'USD' then precio_venta
+         else round(precio_venta / nullif(precio_venta_cotizacion, 0), 2) end
+  ) stored,
+
+  created_at timestamptz not null default now()
+);
+
+-- Pagos posteriores a la seña: el cliente puede ir saldando de a poco hasta
+-- llegar a deber 0 (ahí el encargo pasa a "completado").
+create table if not exists encargo_pagos (
+  id uuid primary key default gen_random_uuid(),
+  encargo_id uuid not null references encargos(id) on delete cascade,
+  fecha date not null default current_date,
+  monto numeric(12,2) not null,
+  moneda text not null check (moneda in ('USD', 'ARS')),
+  cotizacion_usada numeric(10,2),
+  monto_usd numeric(12,2) generated always as (
+    case when moneda = 'USD' then monto
+         else round(monto / nullif(cotizacion_usada, 0), 2) end
+  ) stored,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_encargos_fecha on encargos(fecha);
+create index if not exists idx_encargo_pagos_encargo on encargo_pagos(encargo_id);
+
+alter table encargos enable row level security;
+drop policy if exists "encargos_authenticated_all" on encargos;
+create policy "encargos_authenticated_all" on encargos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on encargos to authenticated;
+
+alter table encargo_pagos enable row level security;
+drop policy if exists "encargo_pagos_authenticated_all" on encargo_pagos;
+create policy "encargo_pagos_authenticated_all" on encargo_pagos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on encargo_pagos to authenticated;
+
+-- ─── Caja: categorías y vínculos que agrega el módulo de Encargos ─────────
+-- costo_encargo: lo que nos costó conseguir un encargo pagado en efectivo. Va
+--   aparte de gasto_operativo para no inflar ese indicador ni contar dos veces
+--   el costo (que ya se descuenta en la línea "Ganancia encargos" de Reportes).
+-- pago_tarjeta: el pago del resumen de la tarjeta. Descuenta del saldo Tarjeta
+--   que se muestra arriba de la pestaña Encargos.
+
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo', 'pago_tarjeta'));
+
+alter table caja_movimientos add column if not exists encargo_id uuid;
+alter table caja_movimientos add column if not exists encargo_pago_id uuid;
+create index if not exists idx_caja_encargo on caja_movimientos(encargo_id);
+
+-- ═══ MÓDULO COMPRAS ════════════════════════════════════════════════════════
+-- Una compra es una tanda de prendas que se compra junta: normalmente todas de
+-- la misma marca, o a un reseller (ahí cada prenda lleva su propia marca).
+-- Al completarla, cada ítem entra como producto + unidades, pero marcado como
+-- pendiente de ingreso: no se ve en la web hasta que se le carga la foto.
+
+create table if not exists compras (
+  id uuid primary key default gen_random_uuid(),
+  fecha date not null default current_date,
+  marca text,                    -- marca común (compra normal)
+  es_reseller boolean not null default false,
+  reseller_nombre text,          -- nombre del reseller (compra a reseller)
+  medio_pago text not null default 'cash' check (medio_pago in ('cash', 'tarjeta')),
+  moneda text not null default 'USD' check (moneda in ('USD', 'ARS')),
+  cotizacion_usada numeric(10,2),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_compras_fecha on compras(fecha);
+
+alter table compras enable row level security;
+drop policy if exists "compras_authenticated_all" on compras;
+create policy "compras_authenticated_all" on compras
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on compras to authenticated;
+
+-- De qué compra vino cada producto, y si todavía está esperando la foto para
+-- poder publicarse. Mientras pendiente_ingreso sea true no aparece ni en el
+-- listado normal de Stock ni en la web.
+alter table productos add column if not exists compra_id uuid;
+alter table productos add column if not exists pendiente_ingreso boolean not null default false;
+
+-- La FK no es solo integridad: sin ella PostgREST no puede traer los productos
+-- anidados dentro de una compra (compras -> productos -> unidades).
+alter table productos drop constraint if exists productos_compra_id_fkey;
+alter table productos add constraint productos_compra_id_fkey
+  foreign key (compra_id) references compras(id) on delete set null;
+create index if not exists idx_productos_compra on productos(compra_id);
+create index if not exists idx_productos_pendiente on productos(pendiente_ingreso);
+
+-- El peso es lo que define el costo de envío (USD 35 por kg); se guarda para
+-- poder rehacer la cuenta después.
+alter table unidades add column if not exists peso_kg numeric(10,3);
+
+-- Compra pagada en efectivo: sale de Caja al instante. Como es costo de
+-- mercadería, va en su propia categoría para no mezclarse con los gastos
+-- operativos ni contarse dos veces contra la ganancia.
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock'));
+
+alter table caja_movimientos add column if not exists compra_id uuid;
+create index if not exists idx_caja_compra on caja_movimientos(compra_id);
+
+-- La web solo muestra productos ya ingresados del todo.
+create or replace view productos_publicos as
+select
+  id, slug,
+  coalesce(nullif(nombre_web, ''), nombre) as nombre,
+  marca, categoria, imagen_url,
+  precio_venta_usd, precio_promocional_usd,
+  tiene_talles, fit, estado
+from productos
+where activo = true and alguna_vez_en_stock = true
+  and pendiente_ingreso = false
+  and nombre_web is not null and nombre_web <> '';
+
+-- ─── Encargos: peso (kg) y cuenta "Adriana kg" ─────────────────────────────
+-- Traer un encargo por peso se le paga a Adriana, no al proveedor. Es costo
+-- del encargo (baja la ganancia) pero es un pago aparte: no sale de Caja al
+-- guardarlo, se acumula en el saldo "Adriana kg" que se ve en Deudas y
+-- deudores, y baja cuando se carga un movimiento con categoría "Pago kg".
+alter table encargos add column if not exists peso_kg numeric(10,3) not null default 0;
+
+-- El costo por kilo se congela en el encargo: si mañana cambia la tarifa, el
+-- saldo acumulado no se mueve.
+alter table encargos add column if not exists costo_kg_usd numeric(12,2) not null default 0;
+
+alter table encargos add column if not exists costo_envio_usd numeric(12,2)
+  generated always as (round(peso_kg * costo_kg_usd, 2)) stored;
+
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock', 'pago_kg'));
