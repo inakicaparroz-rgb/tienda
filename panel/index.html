@@ -284,6 +284,9 @@
     <div id="carga-error" class="hidden mx-4 sm:mx-6 lg:mx-7 mt-4 border border-red-500/40 bg-red-500/10 p-3 text-sm">
       <p id="carga-error-texto"></p>
       <p id="carga-error-detalle" class="text-muted font-mono text-[10px] mt-1"></p>
+      <button id="carga-error-salir" class="hidden bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 mt-3">
+        Cerrar sesión y volver a entrar
+      </button>
     </div>
 
   <main class="p-4 sm:p-6 lg:px-7 lg:py-7">
@@ -1860,11 +1863,30 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 const cargaError = document.getElementById('carga-error');
 const CARGAS_FALLIDAS = new Set();
 
+// Un error de sesión se arregla volviendo a entrar, no esperando: conviene
+// distinguirlo del resto para poder ofrecer el botón que lo resuelve.
+function esErrorDeSesion(error) {
+  const texto = (error?.message || '').toLowerCase();
+  return texto.includes('jwt') || texto.includes('token') ||
+    ['PGRST301', 'PGRST302', 'PGRST303'].includes(error?.code);
+}
+
 function textoDeErrorDeCarga(error) {
   const status = error?.status || error?.originalError?.status;
   const texto = (error?.message || '').toLowerCase();
   if (status === 402 || texto.includes('exceed') || texto.includes('quota')) {
     return 'Supabase tiene el proyecto restringido por cuota, así que devuelve vacío. Los datos están, no se borraron.';
+  }
+  // "issued at future" es el reloj del dispositivo adelantado respecto del
+  // servidor: el token dice haberse emitido en un momento que todavía no llegó.
+  if (texto.includes('issued at future') || texto.includes('used before issued')) {
+    return 'Tu sesión quedó fechada en el futuro, así que Supabase la rechaza. Suele ser el reloj del teléfono adelantado: ponelo en automático y volvé a entrar. Tus datos están intactos.';
+  }
+  if (texto.includes('expired')) {
+    return 'Se venció la sesión. Volvé a entrar. Tus datos están intactos.';
+  }
+  if (esErrorDeSesion(error)) {
+    return 'Supabase rechazó la sesión. Volvé a entrar. Tus datos están intactos.';
   }
   if (status === 401 || texto.includes('api key')) {
     return 'Supabase rechazó la clave del panel. Los datos están, pero el panel no los puede pedir.';
@@ -1882,8 +1904,19 @@ function reportarErrorCarga(que, error) {
     `No se pudo cargar ${[...CARGAS_FALLIDAS].join(', ')}. ${textoDeErrorDeCarga(error)}`;
   document.getElementById('carga-error-detalle').textContent =
     (error?.status ? error.status + ' · ' : '') + (error?.message || 'sin detalle');
+  // Si el problema es la sesión, el panel puede resolverlo solo: sirve de poco
+  // explicarlo si además hay que ir a buscar el botón de salir a otra pantalla.
+  document.getElementById('carga-error-salir').classList.toggle('hidden', !esErrorDeSesion(error));
   cargaError.classList.remove('hidden');
 }
+
+// Borra la sesión guardada y vuelve al login. Es la salida de cualquier token
+// vencido, rechazado o fechado en el futuro.
+document.getElementById('carga-error-salir').addEventListener('click', async () => {
+  try { await supabase.auth.signOut(); } catch (e) { console.error(e); }
+  try { localStorage.clear(); } catch (e) { /* modo privado */ }
+  location.reload();
+});
 
 function marcarCargaOk(que) {
   if (!CARGAS_FALLIDAS.delete(que)) return;
