@@ -850,3 +850,12 @@ alter table deudas_movimientos add column if not exists es_credito_tarjeta boole
 alter table deudas_movimientos add column if not exists tarjeta_monto numeric(12,2);
 alter table deudas_movimientos add column if not exists tarjeta_moneda text
   check (tarjeta_moneda is null or tarjeta_moneda in ('USD', 'ARS'));
+
+-- ─── Compras pagadas en dos monedas ────────────────────────────────────────
+-- Una compra cash se puede pagar parte en USD y parte en ARS. Genera dos
+-- movimientos de caja, uno por moneda, con lo que salió de verdad en cada una.
+-- El campo moneda queda en 'USD' por convención; los montos reales de cada
+-- moneda viven acá.
+alter table compras add column if not exists pago_mixto boolean not null default false;
+alter table compras add column if not exists monto_usd numeric(12,2);
+alter table compras add column if not exists monto_ars numeric(12,2);
