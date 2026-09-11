@@ -1351,8 +1351,30 @@
         </button>
       </div>
     </div>
+    <div id="cc-mixto-wrap" class="border border-border p-3 mb-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="font-mono text-xs uppercase">Pago en dos monedas</p>
+          <p class="text-muted text-xs mt-0.5">Parte en USD y parte en ARS. A Caja pasan dos movimientos, exactamente lo que se cargue en cada campo.</p>
+        </div>
+        <button type="button" id="cc-mixto-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+      <div id="cc-mixto-campos" class="hidden grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Pagado en USD</label>
+          <input id="cc-pago-usd" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Pagado en ARS</label>
+          <input id="cc-pago-ars" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2 text-sm" />
+        </div>
+      </div>
+    </div>
+
     <div class="grid grid-cols-2 gap-3 mb-4">
-      <div>
+      <div id="cc-moneda-wrap">
         <label class="block text-muted font-mono text-xs uppercase mb-1">Moneda</label>
         <select id="cc-moneda" class="w-full px-3 py-2 text-sm">
           <option value="USD">USD</option>
@@ -1364,6 +1386,7 @@
         <input id="cc-cotizacion" type="number" step="0.01" class="w-full px-3 py-2 text-sm" />
       </div>
     </div>
+    <p id="cc-mixto-preview" class="hidden text-muted text-xs mb-4 font-mono"></p>
     <div id="cc-log" class="font-mono text-xs text-muted space-y-1 max-h-40 overflow-y-auto mb-4"></div>
     <div class="flex gap-2">
       <button id="cc-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Confirmar</button>
@@ -4681,12 +4704,63 @@ document.getElementById('sim-exportar').addEventListener('click', async () => {
 });
 
 // ── Completar ──
+// Pago en dos monedas: solo tiene sentido pagando cash. Un resumen de tarjeta
+// llega en una sola moneda, así que al elegir Tarjeta el bloque se esconde y
+// el interruptor se apaga para no dejar cargado algo que no se va a usar.
+const ccMixtoSwitch = document.getElementById('cc-mixto-switch');
+
+function compraPagoMixto() {
+  return ccMixtoSwitch.dataset.on === 'true' && ccCashSwitch.dataset.on === 'true';
+}
+
+function setPagoMixtoCompra(activo) {
+  setSwitch(ccMixtoSwitch, activo);
+  document.getElementById('cc-mixto-campos').classList.toggle('hidden', !activo);
+  // Con dos monedas el selector de moneda no aplica: los montos ya vienen
+  // separados por moneda en sus propios campos.
+  document.getElementById('cc-moneda-wrap').classList.toggle('hidden', activo);
+  actualizarPreviewCompraMixta();
+}
+
 function setMedioPagoCompra(medio) {
   setSwitch(ccCashSwitch, medio === 'cash');
   setSwitch(ccTarjetaSwitch, medio === 'tarjeta');
+  document.getElementById('cc-mixto-wrap').classList.toggle('hidden', medio !== 'cash');
+  if (medio !== 'cash') setPagoMixtoCompra(false);
 }
 ccCashSwitch.addEventListener('click', () => setMedioPagoCompra('cash'));
 ccTarjetaSwitch.addEventListener('click', () => setMedioPagoCompra('tarjeta'));
+ccMixtoSwitch.addEventListener('click', () => setPagoMixtoCompra(!compraPagoMixto()));
+
+// Compara lo cargado contra el costo real de la compra. No bloquea —puede
+// haber un redondeo o un descuento de último momento— pero lo dice, porque si
+// no coincide la Caja y el costo del stock quedan contando cosas distintas.
+function actualizarPreviewCompraMixta() {
+  const preview = document.getElementById('cc-mixto-preview');
+  preview.classList.toggle('hidden', !compraPagoMixto());
+  if (!compraPagoMixto()) return;
+
+  const usd = parseFloat(document.getElementById('cc-pago-usd').value) || 0;
+  const ars = parseFloat(document.getElementById('cc-pago-ars').value) || 0;
+  const cotizacion = parseFloat(document.getElementById('cc-cotizacion').value) || 0;
+  const costo = totalesCompra().costoCompra;
+
+  if (ars > 0 && cotizacion <= 0) {
+    preview.textContent = 'Falta la cotización para convertir la parte en ARS.';
+    return;
+  }
+  const cargadoUsd = usd + (cotizacion ? ars / cotizacion : 0);
+  const diferencia = cargadoUsd - costo;
+  const detalle = Math.abs(diferencia) < 0.01
+    ? 'coincide con el costo'
+    : diferencia > 0
+      ? `sobran USD ${diferencia.toFixed(2)} sobre el costo`
+      : `faltan USD ${Math.abs(diferencia).toFixed(2)} para el costo`;
+  preview.textContent = `Costo USD ${costo.toFixed(2)} · cargado USD ${cargadoUsd.toFixed(2)} — ${detalle}`;
+}
+
+['cc-pago-usd', 'cc-pago-ars', 'cc-cotizacion'].forEach(id =>
+  document.getElementById(id).addEventListener('input', actualizarPreviewCompraMixta));
 
 document.getElementById('cmp-completar').addEventListener('click', () => {
   if (COMPRA_ITEMS.length === 0) { alert('Agregá al menos una prenda.'); return; }
@@ -4704,6 +4778,9 @@ document.getElementById('cmp-completar').addEventListener('click', () => {
     `${t.items} ítems · ${t.unidades} unidades · a pagar acá USD ${t.costoCompra.toFixed(2)}`
     + (t.costoEnvio > 0.009 ? ` · kg a Adriana USD ${t.costoEnvio.toFixed(2)}` : '');
   document.getElementById('cc-log').innerHTML = '';
+  document.getElementById('cc-pago-usd').value = '';
+  document.getElementById('cc-pago-ars').value = '';
+  setPagoMixtoCompra(false);
   setMedioPagoCompra('cash');
   document.getElementById('cc-moneda').value = 'USD';
   document.getElementById('cc-cotizacion').value = COTIZACION_ACTUAL || '';
@@ -4716,9 +4793,20 @@ document.getElementById('cc-cancelar').addEventListener('click', () =>
 document.getElementById('cc-confirmar').addEventListener('click', async () => {
   const boton = document.getElementById('cc-confirmar');
   const log = document.getElementById('cc-log');
-  const moneda = document.getElementById('cc-moneda').value;
+  const mixto = compraPagoMixto();
+  const pagoUsd = mixto ? (parseFloat(document.getElementById('cc-pago-usd').value) || 0) : 0;
+  const pagoArs = mixto ? (parseFloat(document.getElementById('cc-pago-ars').value) || 0) : 0;
+  // Con dos monedas la moneda de la compra queda como USD por convención: los
+  // montos reales viven en monto_usd y monto_ars, uno por cada movimiento.
+  const moneda = mixto ? 'USD' : document.getElementById('cc-moneda').value;
   const cotizacion = parseFloat(document.getElementById('cc-cotizacion').value) || 0;
-  if (moneda === 'ARS' && cotizacion <= 0) { alert('Falta la cotización para una compra en ARS.'); return; }
+
+  if (mixto) {
+    if (pagoUsd <= 0 && pagoArs <= 0) { alert('Cargá cuánto se pagó en cada moneda.'); return; }
+    if (pagoArs > 0 && cotizacion <= 0) { alert('Falta la cotización para la parte en ARS.'); return; }
+  } else if (moneda === 'ARS' && cotizacion <= 0) {
+    alert('Falta la cotización para una compra en ARS.'); return;
+  }
 
   boton.disabled = true;
   log.innerHTML = '<p>Guardando compra…</p>';
@@ -4735,7 +4823,10 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
     reseller_nombre: reseller ? document.getElementById('cmp-reseller').value.trim() : null,
     medio_pago: medioPago,
     moneda,
-    cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
+    cotizacion_usada: (mixto || moneda === 'ARS') ? cotizacion : null,
+    pago_mixto: mixto,
+    monto_usd: mixto ? pagoUsd : null,
+    monto_ars: mixto ? pagoArs : null,
   }).select().single();
   if (errorCompra) {
     log.innerHTML = `<p class="text-red-400">Error al crear la compra: ${errorCompra.message}</p>`;
@@ -4782,15 +4873,28 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
   // El kg queda afuera en los dos casos: no se descuenta de Caja si es cash ni
   // se suma a Tarjeta si es tarjeta. Se le paga a Adriana aparte, así que va
   // entero al saldo "Adriana kg" y de ahí sale con un movimiento "Pago kg".
-  if (medioPago === 'cash' && totales.costoCompra > 0) {
-    const montoEnMoneda = moneda === 'ARS' ? totales.costoCompra * cotizacion : totales.costoCompra;
-    await supabase.from('caja_movimientos').insert({
-      tipo: 'gasto', categoria: 'compra_stock', fecha,
-      motivo: reseller ? (document.getElementById('cmp-reseller').value.trim() || 'Reseller') : document.getElementById('cmp-marca').value.trim(),
-      monto: montoEnMoneda, moneda,
-      cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
-      compra_id: compra.id,
-    });
+  if (medioPago === 'cash') {
+    const motivoCaja = reseller
+      ? (document.getElementById('cmp-reseller').value.trim() || 'Reseller')
+      : document.getElementById('cmp-marca').value.trim();
+
+    // Pagando en dos monedas salen dos movimientos, uno por moneda, con
+    // exactamente lo que se cargó en cada campo. Sin convertir: si se
+    // convirtiera, el flujo no coincidiría con la plata que realmente salió.
+    const salidas = mixto
+      ? [{ monto: pagoUsd, moneda: 'USD' }, { monto: pagoArs, moneda: 'ARS' }]
+      : [{ monto: moneda === 'ARS' ? totales.costoCompra * cotizacion : totales.costoCompra, moneda }];
+
+    for (const salida of salidas) {
+      if (salida.monto <= 0) continue;
+      await supabase.from('caja_movimientos').insert({
+        tipo: 'gasto', categoria: 'compra_stock', fecha,
+        motivo: motivoCaja,
+        monto: salida.monto, moneda: salida.moneda,
+        cotizacion_usada: salida.moneda === 'ARS' ? cotizacion : null,
+        compra_id: compra.id,
+      });
+    }
   }
 
   log.innerHTML += `<p class="mt-2 font-bold text-white">Listo: ${creados} unidades cargadas${errores ? `, ${errores} con error` : ''}.</p>`;
