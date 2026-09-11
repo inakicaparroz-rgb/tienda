@@ -859,3 +859,22 @@ alter table deudas_movimientos add column if not exists tarjeta_moneda text
 alter table compras add column if not exists pago_mixto boolean not null default false;
 alter table compras add column if not exists monto_usd numeric(12,2);
 alter table compras add column if not exists monto_ars numeric(12,2);
+
+-- ─── Vuelto en otra moneda ─────────────────────────────────────────────────
+-- Cuando el vuelto se devuelve en una moneda distinta de la que se cobró, a
+-- Caja entran dos movimientos reales: el ingreso por lo que entregó el cliente
+-- y este egreso por lo que se le devolvió. Va en su propia categoría para
+-- distinguirlo de un gasto y para poder restarlo de la facturación.
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock', 'pago_kg', 'vuelto'));
+
+alter table ventas add column if not exists con_vuelto boolean not null default false;
+alter table ventas add column if not exists vuelto_pago_monto numeric(12,2);
+alter table ventas add column if not exists vuelto_pago_moneda text
+  check (vuelto_pago_moneda is null or vuelto_pago_moneda in ('USD', 'ARS'));
+alter table ventas add column if not exists vuelto_monto numeric(12,2);
+alter table ventas add column if not exists vuelto_moneda text
+  check (vuelto_moneda is null or vuelto_moneda in ('USD', 'ARS'));
