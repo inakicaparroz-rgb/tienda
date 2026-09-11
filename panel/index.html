@@ -1089,6 +1089,54 @@
     <div class="border border-border p-3 mt-3">
       <div class="flex items-center justify-between gap-3">
         <div>
+          <p class="font-mono text-xs uppercase">Vuelto</p>
+          <p class="text-muted text-xs mt-0.5">Para cuando el vuelto va en otra moneda que la del pago. Si el vuelto es en lo mismo que se pagó, no hace falta: cargá el precio de venta y listo.</p>
+        </div>
+        <button type="button" id="v-vuelto-switch" class="switch-toggle h-5 w-9 rounded-full bg-border relative flex-shrink-0 transition-colors" data-on="false">
+          <span class="switch-knob absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform"></span>
+        </button>
+      </div>
+      <div id="v-vuelto-campos" class="hidden mt-3 space-y-3">
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Precio de venta</label>
+          <p class="text-muted text-xs mb-1">Lo que queda registrado en el listado de ventas.</p>
+          <div class="flex gap-2">
+            <input id="v-vuelto-precio" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+            <select id="v-vuelto-precio-moneda" class="px-3 py-2 text-sm">
+              <option value="USD">USD</option>
+              <option value="ARS">ARS</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Pago</label>
+          <p class="text-muted text-xs mb-1">Lo que entregó el cliente. Entra a Caja como ingreso.</p>
+          <div class="flex gap-2">
+            <input id="v-vuelto-pago" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+            <select id="v-vuelto-pago-moneda" class="px-3 py-2 text-sm">
+              <option value="ARS">ARS</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Vuelto</label>
+          <p class="text-muted text-xs mb-1">Lo que se le devolvió. Sale de Caja en su propia moneda.</p>
+          <div class="flex gap-2">
+            <input id="v-vuelto-monto" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+            <select id="v-vuelto-moneda" class="px-3 py-2 text-sm">
+              <option value="USD">USD</option>
+              <option value="ARS">ARS</option>
+            </select>
+          </div>
+        </div>
+        <p id="v-vuelto-preview" class="text-muted text-xs font-mono"></p>
+      </div>
+    </div>
+
+    <div class="border border-border p-3 mt-3">
+      <div class="flex items-center justify-between gap-3">
+        <div>
           <p class="font-mono text-xs uppercase">Cuenta corriente</p>
           <p class="text-muted text-xs mt-0.5">El cliente no paga el total ahora — la diferencia queda como deuda.</p>
         </div>
@@ -2989,6 +3037,7 @@ const vPagoMixtoCampos = document.getElementById('v-pago-mixto-campos');
 function setCuentaCorriente(activa) {
   setSwitch(vCuentaCorrienteSwitch, activa);
   vCuentaCorrienteCampos.classList.toggle('hidden', !activa);
+  if (activa && typeof setVuelto === 'function') setVuelto(false);
   actualizarPreviewDeuda();
 }
 
@@ -2999,8 +3048,68 @@ function setPagoMixto(activa) {
   // queda de más — se oculta y se avisa que se usa el de arriba.
   vAbonaSingleWrap.classList.toggle('hidden', activa);
   vAbonaMixtoNota.classList.toggle('hidden', !activa);
+  if (activa) setVuelto(false);
   actualizarPreviewDeuda();
 }
+
+// ── Vuelto en otra moneda ──────────────────────────────────────────────
+// Sirve solo cuando el vuelto se devuelve en una moneda distinta de la que se
+// cobró: ahí a Caja tienen que entrar dos movimientos reales —lo que entregó
+// el cliente y lo que se le devolvió— mientras la venta queda registrada a su
+// precio. Si el vuelto fuese en la misma moneda alcanza con cargar el precio,
+// porque la diferencia nunca llegó a estar en la caja.
+const vVueltoSwitch = document.getElementById('v-vuelto-switch');
+
+function ventaConVuelto() { return vVueltoSwitch.dataset.on === 'true'; }
+
+function setVuelto(activo) {
+  setSwitch(vVueltoSwitch, activo);
+  document.getElementById('v-vuelto-campos').classList.toggle('hidden', !activo);
+  if (activo) {
+    // Los tres definen de dónde sale la plata que entra a Caja: activos a la
+    // vez se pisarían entre sí.
+    setPagoMixto(false);
+    setCuentaCorriente(false);
+  }
+  actualizarPreviewVuelto();
+}
+
+vVueltoSwitch.addEventListener('click', () => setVuelto(!ventaConVuelto()));
+
+function actualizarPreviewVuelto() {
+  const preview = document.getElementById('v-vuelto-preview');
+  if (!ventaConVuelto()) { preview.textContent = ''; return; }
+
+  const cotizacion = parseFloat(document.getElementById('v-cotizacion').value) || 0;
+  const aUsdVenta = (monto, moneda) => moneda === 'ARS' ? (cotizacion ? monto / cotizacion : 0) : monto;
+
+  const precio = parseFloat(document.getElementById('v-vuelto-precio').value) || 0;
+  const precioMoneda = document.getElementById('v-vuelto-precio-moneda').value;
+  const pago = parseFloat(document.getElementById('v-vuelto-pago').value) || 0;
+  const pagoMoneda = document.getElementById('v-vuelto-pago-moneda').value;
+  const vuelto = parseFloat(document.getElementById('v-vuelto-monto').value) || 0;
+  const vueltoMoneda = document.getElementById('v-vuelto-moneda').value;
+
+  if (!precio && !pago) { preview.textContent = ''; return; }
+
+  const netoUsd = aUsdVenta(pago, pagoMoneda) - aUsdVenta(vuelto, vueltoMoneda);
+  const precioUsd = aUsdVenta(precio, precioMoneda);
+  const diferencia = netoUsd - precioUsd;
+  // Que no cierre exacto es lo normal cuando se cambia de moneda: quiere decir
+  // que los pesos se tomaron a otra cotización que la del campo. Se muestra
+  // como dato, no como error, porque la venta y la caja son correctas igual.
+  const nota = Math.abs(diferencia) < 0.01
+    ? 'cierra con la cotización cargada'
+    : `difiere USD ${Math.abs(diferencia).toFixed(2)} de la cotización cargada`;
+
+  preview.textContent =
+    `Venta USD ${precioUsd.toFixed(2)} · a Caja entra ${pagoMoneda} ${pago.toFixed(2)} y sale ${vueltoMoneda} ${vuelto.toFixed(2)} · ${nota}`;
+}
+
+['v-vuelto-precio', 'v-vuelto-pago', 'v-vuelto-monto'].forEach(id =>
+  document.getElementById(id).addEventListener('input', actualizarPreviewVuelto));
+['v-vuelto-precio-moneda', 'v-vuelto-pago-moneda', 'v-vuelto-moneda'].forEach(id =>
+  document.getElementById(id).addEventListener('change', actualizarPreviewVuelto));
 
 vCuentaCorrienteSwitch.addEventListener('click', () => setCuentaCorriente(vCuentaCorrienteSwitch.dataset.on !== 'true'));
 document.getElementById('v-abona-hoy').addEventListener('input', actualizarPreviewDeuda);
@@ -3052,6 +3161,13 @@ async function abrirModalVenta(venta) {
   document.getElementById('v-pago-ars').value = venta?.pago_mixto ? (venta?.monto_abonado_ars ?? '') : '';
   setPagoMixto(!!venta?.pago_mixto);
   setCuentaCorriente(!!venta?.cuenta_corriente);
+  document.getElementById('v-vuelto-precio').value = '';
+  document.getElementById('v-vuelto-precio-moneda').value = 'USD';
+  document.getElementById('v-vuelto-pago').value = venta?.vuelto_pago_monto ?? '';
+  document.getElementById('v-vuelto-pago-moneda').value = venta?.vuelto_pago_moneda || 'ARS';
+  document.getElementById('v-vuelto-monto').value = venta?.vuelto_monto ?? '';
+  document.getElementById('v-vuelto-moneda').value = venta?.vuelto_moneda || 'USD';
+  setVuelto(!!venta?.con_vuelto);
   setSwitch(vNoCajaSwitch, false);
   setSwitch(vWebSwitch, venta?.canal === 'web');
   actualizarNotaVentaWeb();
@@ -3100,6 +3216,33 @@ async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moned
       tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
       cotizacion_usada: moneda === 'ARS' ? (cotizacion || null) : null,
       fondo_pendiente: fondoPendiente,
+    });
+  }
+}
+
+// Venta con vuelto en otra moneda: a Caja van los dos movimientos reales, el
+// ingreso por lo que entregó el cliente y un egreso por lo que se le devolvió,
+// cada uno en su moneda y sin convertir. El precio de la venta no interviene
+// acá: vive en los ítems.
+async function regenerarCajaDeVentaConVuelto(ventaId, motivo, pago, vuelto, cotizacion, fondoPendiente = false) {
+  await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
+
+  if (pago.monto > 0) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'ingreso', motivo, categoria: 'venta',
+      monto: pago.monto, moneda: pago.moneda, venta_id: ventaId,
+      cotizacion_usada: pago.moneda === 'ARS' ? (cotizacion || null) : null,
+      fondo_pendiente: fondoPendiente,
+    });
+  }
+
+  // El vuelto sale con categoría propia para que se distinga de un gasto y
+  // para poder descontarlo de la facturación, que si no contaría de más.
+  if (vuelto.monto > 0) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: 'gasto', motivo: `${motivo} — vuelto`, categoria: 'vuelto',
+      monto: vuelto.monto, moneda: vuelto.moneda, venta_id: ventaId,
+      cotizacion_usada: vuelto.moneda === 'ARS' ? (cotizacion || null) : null,
     });
   }
 }
@@ -3178,6 +3321,13 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
 
   const cuentaCorrienteActiva = vCuentaCorrienteSwitch.dataset.on === 'true';
   const pagoMixtoActivo = vPagoMixtoSwitch.dataset.on === 'true';
+  const conVuelto = ventaConVuelto();
+  const vueltoPrecio = conVuelto ? (parseFloat(document.getElementById('v-vuelto-precio').value) || 0) : 0;
+  const vueltoPrecioMoneda = document.getElementById('v-vuelto-precio-moneda').value;
+  const vueltoPago = conVuelto ? (parseFloat(document.getElementById('v-vuelto-pago').value) || 0) : 0;
+  const vueltoPagoMoneda = document.getElementById('v-vuelto-pago-moneda').value;
+  const vueltoMonto = conVuelto ? (parseFloat(document.getElementById('v-vuelto-monto').value) || 0) : 0;
+  const vueltoMoneda = document.getElementById('v-vuelto-moneda').value;
   const totalUsdVentaModal = totalUsdItemsModal();
 
   const montoUsdMixto = pagoMixtoActivo ? (parseFloat(document.getElementById('v-pago-usd').value) || 0) : null;
@@ -3209,6 +3359,11 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
     abonado_moneda: (pagoMixtoActivo || cuentaCorrienteActiva) ? abonadoMoneda : null,
     pago_mixto: pagoMixtoActivo,
     monto_abonado_ars: pagoMixtoActivo ? montoArsMixto : null,
+    con_vuelto: conVuelto,
+    vuelto_pago_monto: conVuelto ? vueltoPago : null,
+    vuelto_pago_moneda: conVuelto ? vueltoPagoMoneda : null,
+    vuelto_monto: conVuelto ? vueltoMonto : null,
+    vuelto_moneda: conVuelto ? vueltoMoneda : null,
   };
 
   let ventaId;
@@ -3240,6 +3395,34 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   // de lista. Repartido proporcionalmente si hay más de un ítem; si con
   // cuenta corriente activa esto NO se toca, porque ahí el precio del ítem
   // tiene que seguir siendo el total real de la venta (lo abonado es parcial).
+  // Con vuelto el precio real de la venta es el que se carga a mano: lo que
+  // entró y salió de Caja son otros dos números. Se reparte entre los ítems
+  // igual que con pago mixto, para que la planilla no quede en precio de lista.
+  if (conVuelto && items.length > 0 && vueltoPrecio > 0) {
+    const precioUsd = vueltoPrecioMoneda === 'ARS'
+      ? (cotizacion ? vueltoPrecio / cotizacion : 0)
+      : vueltoPrecio;
+    const pesos = items.map(fila => {
+      const moneda = fila.querySelector('.v-item-moneda').value;
+      const precio = parseFloat(fila.querySelector('.v-item-precio').value) || 0;
+      return moneda === 'ARS' ? (cotizacion ? precio / cotizacion : 0) : precio;
+    });
+    const totalPesos = pesos.reduce((s, p) => s + p, 0);
+    let acumulado = 0;
+    items.forEach((fila, i) => {
+      let nuevoUsd;
+      if (i === items.length - 1) {
+        nuevoUsd = precioUsd - acumulado; // el último absorbe el redondeo
+      } else {
+        const peso = totalPesos > 0 ? pesos[i] / totalPesos : 1 / items.length;
+        nuevoUsd = peso * precioUsd;
+        acumulado += nuevoUsd;
+      }
+      fila.querySelector('.v-item-precio').value = Math.max(0, nuevoUsd).toFixed(2);
+      fila.querySelector('.v-item-moneda').value = 'USD';
+    });
+  }
+
   if (pagoMixtoActivo && !cuentaCorrienteActiva && items.length > 0) {
     const recibidoUsd = montoUsdMixto + (cotizacion ? montoArsMixto / cotizacion : 0);
     const pesos = items.map(fila => {
@@ -3295,7 +3478,11 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
   // Temporal: para cargar ventas atrasadas sin tocar Caja/Deudas (que ya
   // están correctas). Ver comentario en el switch "v-no-caja-switch".
   if (vNoCajaSwitch.dataset.on !== 'true') {
-    if (pagoMixtoActivo) {
+    if (conVuelto) {
+      await regenerarCajaDeVentaConVuelto(ventaId, cliente.nombre,
+        { monto: vueltoPago, moneda: vueltoPagoMoneda },
+        { monto: vueltoMonto, moneda: vueltoMoneda }, cotizacion, ventaWeb);
+    } else if (pagoMixtoActivo) {
       await regenerarCajaDeVentaMixta(ventaId, cliente.nombre, montoUsdMixto, montoArsMixto, cotizacion, ventaWeb);
     } else if (cuentaCorrienteActiva) {
       await regenerarCajaDeVentaCuentaCorriente(ventaId, cliente.nombre, abonadoRaw, abonadoMoneda, cotizacion, ventaWeb);
@@ -5012,7 +5199,7 @@ const CATEGORIA_LABEL = {
   gasto_operativo: 'Gasto operativo', gasto_comercial: 'Gasto comercial', pago_inversor: 'Pago a inversor',
   pago_deuda: 'Pago deuda', cambio_moneda: 'Cambio de moneda',
   costo_encargo: 'Costo encargo', pago_tarjeta: 'Pago tarjeta', compra_stock: 'Compra de stock',
-  pago_kg: 'Pago kg',
+  pago_kg: 'Pago kg', vuelto: 'Vuelto',
 };
 
 const RETIRO_SOCIO_LABEL = { emi: 'Emi', ina: 'Iña', ambos: 'Emi y Iña' };
@@ -5403,7 +5590,7 @@ const mRetiroInaSwitch = document.getElementById('m-retiro-ina-switch');
 
 const CATEGORIAS_POR_TIPO = {
   ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda'], ['cambio_moneda', 'Cambio de moneda']],
-  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock'], ['pago_kg', 'Pago kg']],
+  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock'], ['pago_kg', 'Pago kg'], ['vuelto', 'Vuelto']],
 };
 
 function actualizarCamposMovimiento() {
@@ -6279,7 +6466,12 @@ function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, f
 
   // ── Facturación del mes (ingresos de categoría Venta) ──
   const movsFacturacion = cajaMes.filter(m => m.categoria === 'venta' && m.tipo === 'ingreso');
-  const facturacionTotal = movsFacturacion.reduce((s, m) => s + aUsd(m.monto, m.moneda, m.cotizacion_usada), 0);
+  // El vuelto es plata de una venta que volvió al cliente: si no se resta, la
+  // facturación cuenta de más todo lo que se devolvió.
+  const vueltosUsd = cajaMes
+    .filter(m => m.categoria === 'vuelto')
+    .reduce((s, m) => s + aUsd(m.monto, m.moneda, m.cotizacion_usada), 0);
+  const facturacionTotal = movsFacturacion.reduce((s, m) => s + aUsd(m.monto, m.moneda, m.cotizacion_usada), 0) - vueltosUsd;
   const detalleFacturacion = agruparPorMotivo(movsFacturacion, m => aUsd(m.monto, m.moneda, m.cotizacion_usada));
 
   // ── Stock al cierre del mes, valorizado a precio descarte (precio venta −20%) ──
