@@ -878,3 +878,67 @@ alter table ventas add column if not exists vuelto_pago_moneda text
 alter table ventas add column if not exists vuelto_monto numeric(12,2);
 alter table ventas add column if not exists vuelto_moneda text
   check (vuelto_moneda is null or vuelto_moneda in ('USD', 'ARS'));
+
+-- ═══ TRADES ════════════════════════════════════════════════════════════════
+-- Un trade es un canje de mercadería: entra una prenda, sale otra del stock y
+-- a veces hay plata de por medio. NO es una venta: no genera facturación ni
+-- ganancia. La ganancia aparece después, al vender la prenda que entró.
+
+-- La prenda que sale no se marca vendida —se colaría en la facturación y en
+-- los rankings de más vendida— sino con estado propio.
+alter table unidades drop constraint if exists unidades_estado_check;
+alter table unidades add constraint unidades_estado_check
+  check (estado in ('disponible', 'reservado', 'vendido', 'permutado'));
+
+alter table unidades add column if not exists permutado_at timestamptz;
+
+create table if not exists trades (
+  id uuid primary key default gen_random_uuid(),
+  fecha date not null default current_date,
+  cliente_id uuid references clientes(id),
+
+  unidad_sale_id uuid references unidades(id),
+  producto_entra_id uuid references productos(id),
+  unidad_entra_id uuid references unidades(id),
+
+  -- Precios y costos congelados al momento del trade: si después se repreciara
+  -- la prenda, el reporte de este mes no tiene que moverse.
+  precio_sale_usd numeric(12,2) not null default 0,
+  precio_entra_usd numeric(12,2) not null default 0,
+  costo_sale_usd numeric(12,2) not null default 0,
+  costo_entra_usd numeric(12,2) not null default 0,
+
+  -- Plata que se movió, si hubo.
+  diferencia_monto numeric(12,2) not null default 0,
+  diferencia_moneda text check (diferencia_moneda is null or diferencia_moneda in ('USD', 'ARS')),
+  diferencia_direccion text check (diferencia_direccion is null or diferencia_direccion in ('recibimos', 'pagamos')),
+  cotizacion_usada numeric(10,2),
+
+  -- (precio entra − precio sale) + nos pagaron − pagamos. Positivo = salimos
+  -- ganando en el canje. Es el número que va al reporte del mes.
+  diferencia_mercaderia_usd numeric(12,2) not null default 0,
+
+  notas text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_trades_fecha on trades(fecha);
+create index if not exists idx_trades_cliente on trades(cliente_id);
+
+alter table trades enable row level security;
+drop policy if exists "trades_authenticated_all" on trades;
+create policy "trades_authenticated_all" on trades
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on trades to authenticated;
+
+-- La plata de un trade no es ingreso ni gasto: es reasignación de capital,
+-- como un cambio de moneda. Va con categoría propia para no contarse en
+-- facturación ni en gastos operativos.
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock', 'pago_kg', 'vuelto', 'trade'));
+
+alter table caja_movimientos add column if not exists trade_id uuid;
+create index if not exists idx_caja_trade on caja_movimientos(trade_id);
