@@ -250,6 +250,11 @@
         <span>Compras</span>
       </button>
 
+      <button data-tab="trades" class="tab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>
+        <span>Trades</span>
+      </button>
+
       <p class="sidebar-label" style="margin-top:.5rem">Control</p>
       <button data-tab="deudas" class="tab-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M18 20a6 6 0 0 0-2.5-4.9"/></svg>
@@ -708,6 +713,22 @@
       </div>
       </div>
 
+      <!-- Trades del mes. Va aparte de la cascada de ganancia a propósito: es
+           movimiento de mercadería, no plata ganada. -->
+      <div class="card border border-border p-4 mb-6">
+        <div class="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <h4 class="font-bold font-mono text-xs uppercase tracking-wide">Trades del mes</h4>
+            <p id="rep-trades-detalle" class="text-muted text-xs mt-1">Sin trades este mes.</p>
+          </div>
+          <p id="rep-trades-dif" class="text-xl font-bold font-mono">USD 0.00</p>
+        </div>
+        <p class="text-muted font-mono text-[10px] mt-2">
+          Diferencia de mercadería a precio de venta, con la plata de los canjes incluida.
+          No es ganancia: la ganancia aparece cuando se vendan esas prendas.
+        </p>
+      </div>
+
       <!-- Detalle facturación / gastos operativos -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div class="card border border-border p-4">
@@ -788,6 +809,65 @@
         </div>
       </div>
     </section>
+    <!-- TRADES -->
+    <section id="tab-trades" class="tab-section hidden">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div class="card border border-border p-4">
+          <p class="text-muted font-mono text-xs uppercase mb-1">Trades cargados</p>
+          <p id="trades-cantidad" class="text-xl font-bold">0</p>
+        </div>
+        <div class="card border border-border p-4">
+          <p class="text-muted font-mono text-xs uppercase mb-1">Dif. mercadería acumulada</p>
+          <p id="trades-dif-total" class="text-xl font-bold">USD 0.00</p>
+          <p class="text-muted font-mono text-[10px] mt-1">positivo = salimos ganando</p>
+        </div>
+        <div class="card border border-border p-4">
+          <p class="text-muted font-mono text-xs uppercase mb-1">Plata movida</p>
+          <p id="trades-plata" class="text-xl font-bold">—</p>
+          <p class="text-muted font-mono text-[10px] mt-1">diferencias abonadas</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 mb-2">
+        <input id="trades-search" type="text" placeholder="Buscar por cliente o prenda…"
+          class="flex-1 px-3 py-2 text-sm" />
+        <button id="btn-nuevo-trade" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
+          + Nuevo trade
+        </button>
+      </div>
+      <p id="trades-contador" class="text-muted font-mono text-xs mb-3"></p>
+
+      <div class="border border-border overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-muted font-mono text-xs uppercase">
+              <th class="p-2">Fecha</th>
+              <th class="p-2">Cliente</th>
+              <th class="p-2">Sale</th>
+              <th class="p-2">Entra</th>
+              <th class="p-2">Dif. mercadería</th>
+              <th class="p-2"></th>
+            </tr>
+          </thead>
+          <tbody id="trades-tbody"></tbody>
+          <tbody id="trades-detalle-tbody">
+            <tr id="fila-detalle-trade" class="hidden">
+              <td colspan="6" class="p-0">
+                <div class="border-t border-border bg-surface p-5">
+                  <div class="flex items-center justify-between mb-4">
+                    <h4 id="trade-detalle-titulo" class="font-bold"></h4>
+                    <button id="trade-cerrar-detalle" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar ✕</button>
+                  </div>
+                  <div id="trade-detalle-contenido"></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p id="trades-empty" class="p-6 text-center text-muted text-sm hidden">Todavía no cargaste ningún trade.</p>
+      </div>
+    </section>
+
     <!-- DEUDAS Y DEUDORES -->
     <section id="tab-deudas" class="tab-section hidden">
       <div class="mb-8">
@@ -881,6 +961,97 @@
     </section>
 
     </main>
+  </div>
+</div>
+
+<!-- Modal: nuevo trade -->
+<div id="modal-trade" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-surface border border-border p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+    <h3 class="font-bold mb-1">Nuevo trade</h3>
+    <p class="text-muted text-xs mb-4">
+      Canje de mercadería: sale una prenda del stock y entra otra. No es una venta —no suma
+      facturación ni ganancia— el costo se traslada de una prenda a la otra.
+    </p>
+
+    <div class="space-y-3 text-sm">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="relative">
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Cliente</label>
+          <input id="t-cliente-nombre" type="text" placeholder="Nombre" class="w-full px-3 py-2 text-sm" autocomplete="off" />
+          <div id="t-cliente-sugerencias" class="hidden absolute z-10 left-0 right-0 bg-surface-elevated border border-border text-sm max-h-40 overflow-y-auto"></div>
+        </div>
+        <div>
+          <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
+          <input id="t-fecha" type="date" class="w-full px-3 py-2 text-sm" />
+        </div>
+      </div>
+
+      <div class="border border-border p-3">
+        <p class="font-mono text-xs uppercase mb-1">Sale de stock</p>
+        <p class="text-muted text-xs mb-2">Escaneá el código de tu prenda, la que se va.</p>
+        <input id="t-codigo" type="text" placeholder="Escanear o tipear" class="w-full px-3 py-2 text-sm font-mono" autocomplete="off" />
+        <p id="t-sale-info" class="text-muted text-xs mt-1"></p>
+      </div>
+
+      <div class="border border-border p-3">
+        <p class="font-mono text-xs uppercase mb-1">Entra al stock</p>
+        <p class="text-muted text-xs mb-2">La prenda que recibís. Queda en Próximos ingresos hasta que le cargues la foto.</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Prenda</label>
+            <input id="t-entra-nombre" type="text" placeholder="Ej: Hoodie Alcatraz" class="w-full px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Marca</label>
+            <input id="t-entra-marca" type="text" placeholder="Ej: CORTEIZ" class="w-full px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Talle</label>
+            <input id="t-entra-talle" type="text" placeholder="Ej: M" class="w-full px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Precio venta USD</label>
+            <input id="t-entra-precio" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2 text-sm" />
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-border p-3">
+        <p class="font-mono text-xs uppercase mb-1">Diferencia en plata</p>
+        <p class="text-muted text-xs mb-2">Si alguna de las dos partes pone plata arriba.</p>
+        <select id="t-dif-direccion" class="w-full px-3 py-2 text-sm mb-3">
+          <option value="ninguna">Sin diferencia</option>
+          <option value="recibimos">Nos pagan</option>
+          <option value="pagamos">Pagamos</option>
+        </select>
+        <div id="t-dif-campos" class="hidden grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Monto</label>
+            <div class="flex gap-2">
+              <input id="t-dif-monto" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2 text-sm" />
+              <select id="t-dif-moneda" class="px-3 py-2 text-sm">
+                <option value="ARS">ARS</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-xs uppercase mb-1">Cotización</label>
+            <input id="t-cotizacion" type="number" step="0.01" class="w-full px-3 py-2 text-sm" />
+          </div>
+        </div>
+      </div>
+
+      <div id="t-preview" class="bg-surface-elevated border border-border p-3 font-mono text-xs space-y-1"></div>
+      <p id="t-alerta" class="hidden text-red-400 text-xs"></p>
+    </div>
+
+    <div id="t-log" class="font-mono text-xs text-muted space-y-1 mt-3"></div>
+
+    <div class="flex gap-2 mt-5">
+      <button id="t-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar trade</button>
+      <button id="t-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -1921,6 +2092,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
     if (btn.dataset.tab === 'encargos') { cargarClientes(); cargarConfiguracion(); cargarEncargos(); }
     if (btn.dataset.tab === 'compras') { cargarConfiguracion(); cargarProductos(); cargarCompras(); }
+    if (btn.dataset.tab === 'trades') { cargarClientes(); cargarConfiguracion(); cargarTrades(); }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
     if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); renderTarjetaEnDeudas(); renderAdrianaKgEnDeudas(); }
     if (btn.dataset.tab === 'reportes') { cargarConfiguracion(); cargarReportes(); }
@@ -4501,6 +4673,427 @@ document.getElementById('btn-filtrar-encargos').addEventListener('click', (e) =>
   });
 });
 
+// ── TRADES ────────────────────────────────────────────────────────────────
+// Canje de mercadería: sale una prenda del stock y entra otra, a veces con
+// plata de por medio. No es una venta —no suma facturación ni ganancia— sino
+// una reasignación de capital: el costo se traslada de una prenda a la otra y
+// la ganancia aparece después, al vender la que entró.
+let TRADES = [];
+let TRADE_CLIENTE_SELECCIONADO = null;
+let TRADE_UNIDAD_SALE = null;
+let TRADE_ACTUAL = null;
+
+const modalTrade = document.getElementById('modal-trade');
+const filaDetalleTrade = document.getElementById('fila-detalle-trade');
+
+// El costo que se traslada: lo que valía la prenda que sale, menos lo que nos
+// pagaron, más lo que pusimos. Así el capital metido en stock no cambia.
+function costoTradeQueEntra(costoSale, direccion, montoUsd) {
+  if (direccion === 'recibimos') return costoSale - montoUsd;
+  if (direccion === 'pagamos') return costoSale + montoUsd;
+  return costoSale;
+}
+
+// Lo que va al reporte: cuánto valor de mercadería ganamos o resignamos en el
+// canje, contado a precio de venta y con la plata incluida.
+function difMercaderiaTrade(precioSale, precioEntra, direccion, montoUsd) {
+  const porPlata = direccion === 'recibimos' ? montoUsd : direccion === 'pagamos' ? -montoUsd : 0;
+  return (precioEntra - precioSale) + porPlata;
+}
+
+async function cargarTrades() {
+  const { data, error } = await supabase
+    .from('trades')
+    .select(`*, clientes(nombre),
+             unidad_sale:unidades!trades_unidad_sale_id_fkey(codigo_barra, talle, productos(nombre, marca)),
+             producto_entra:productos!trades_producto_entra_id_fkey(nombre, marca)`)
+    .order('fecha', { ascending: false });
+  if (error) {
+    reportarErrorCarga('los trades', error);
+    document.getElementById('trades-empty').textContent = error.code === '42P01'
+      ? 'Falta correr el SQL que crea la tabla de trades.'
+      : 'No se pudieron cargar los trades.';
+    document.getElementById('trades-empty').classList.remove('hidden');
+    return;
+  }
+  marcarCargaOk('los trades');
+  TRADES = data || [];
+  renderResumenTrades();
+  filtrarTrades();
+}
+
+function renderResumenTrades() {
+  const difTotal = TRADES.reduce((s, t) => s + Number(t.diferencia_mercaderia_usd || 0), 0);
+  const plata = { USD: 0, ARS: 0 };
+  TRADES.forEach(t => {
+    if (!t.diferencia_direccion || !Number(t.diferencia_monto)) return;
+    const signo = t.diferencia_direccion === 'recibimos' ? 1 : -1;
+    plata[t.diferencia_moneda === 'ARS' ? 'ARS' : 'USD'] += signo * Number(t.diferencia_monto);
+  });
+  const partes = [];
+  if (Math.abs(plata.USD) > 0.009) partes.push(`${plata.USD >= 0 ? '+' : '−'}USD ${Math.abs(plata.USD).toFixed(2)}`);
+  if (Math.abs(plata.ARS) > 0.009) partes.push(`${plata.ARS >= 0 ? '+' : '−'}ARS ${Math.abs(plata.ARS).toFixed(2)}`);
+
+  document.getElementById('trades-cantidad').textContent = TRADES.length;
+  const elDif = document.getElementById('trades-dif-total');
+  elDif.textContent = `${difTotal >= 0 ? '+' : '−'}USD ${Math.abs(difTotal).toFixed(2)}`;
+  elDif.className = `text-xl font-bold ${difTotal >= 0 ? 'text-accent' : 'text-red-400'}`;
+  document.getElementById('trades-plata').textContent = partes.join(' · ') || '—';
+}
+
+function filtrarTrades() {
+  const q = document.getElementById('trades-search').value.trim().toLowerCase();
+  let lista = TRADES;
+  if (q) {
+    lista = lista.filter(t => [
+      t.clientes?.nombre,
+      t.unidad_sale?.productos?.nombre,
+      t.unidad_sale?.productos?.marca,
+      t.producto_entra?.nombre,
+      t.producto_entra?.marca,
+    ].join(' ').toLowerCase().includes(q));
+  }
+  renderTrades(lista);
+}
+
+function renderTrades(lista) {
+  const tbody = document.getElementById('trades-tbody');
+  const empty = document.getElementById('trades-empty');
+  tbody.innerHTML = '';
+  empty.classList.toggle('hidden', lista.length > 0);
+  document.getElementById('trades-contador').textContent = `Mostrando ${lista.length}/${TRADES.length}`;
+
+  lista.forEach(t => {
+    const dif = Number(t.diferencia_mercaderia_usd || 0);
+    const tr = document.createElement('tr');
+    tr.className = 'cursor-pointer hover:bg-surface-elevated';
+    tr.dataset.id = t.id;
+    tr.innerHTML = `
+      <td class="p-2 text-muted">${new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
+      <td class="p-2">${t.clientes?.nombre || 'Sin cliente'}</td>
+      <td class="p-2">${t.unidad_sale?.productos?.nombre || '—'}</td>
+      <td class="p-2">${t.producto_entra?.nombre || '—'}</td>
+      <td class="p-2 ${dif >= 0 ? 'text-accent' : 'text-red-400'}">${dif >= 0 ? '+' : '−'}USD ${Math.abs(dif).toFixed(2)}</td>
+      <td class="p-2 text-right text-muted text-xs font-mono uppercase">Ver ▾</td>
+    `;
+    tr.addEventListener('click', () => {
+      const yaAbierto = TRADE_ACTUAL?.id === t.id && !filaDetalleTrade.classList.contains('hidden');
+      if (yaAbierto) { filaDetalleTrade.classList.add('hidden'); TRADE_ACTUAL = null; }
+      else abrirDetalleTrade(t, tr);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function abrirDetalleTrade(trade, fila) {
+  TRADE_ACTUAL = trade;
+  document.getElementById('trade-detalle-titulo').textContent =
+    `${trade.clientes?.nombre || 'Cliente'} — ${new Date(trade.fecha + 'T00:00:00').toLocaleDateString('es-AR')}`;
+  fila.insertAdjacentElement('afterend', filaDetalleTrade);
+  filaDetalleTrade.classList.remove('hidden');
+
+  const dif = Number(trade.diferencia_mercaderia_usd || 0);
+  const plata = trade.diferencia_direccion && Number(trade.diferencia_monto)
+    ? `${trade.diferencia_direccion === 'recibimos' ? 'Nos pagaron' : 'Pagamos'} ${trade.diferencia_moneda} ${Number(trade.diferencia_monto).toFixed(2)}`
+    : 'Sin diferencia en plata';
+
+  document.getElementById('trade-detalle-contenido').innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div class="border border-border p-3">
+        <p class="text-muted font-mono text-xs uppercase mb-2">Sale</p>
+        <p class="text-sm mb-1">${trade.unidad_sale?.productos?.nombre || '—'}${trade.unidad_sale?.talle ? ' · talle ' + trade.unidad_sale.talle : ''}</p>
+        <p class="text-muted font-mono text-xs">${trade.unidad_sale?.codigo_barra || ''}</p>
+        <div class="mt-2 font-mono text-sm space-y-1">
+          <div class="flex justify-between"><span class="text-muted">Costo</span><span>USD ${Number(trade.costo_sale_usd || 0).toFixed(2)}</span></div>
+          <div class="flex justify-between"><span class="text-muted">Precio venta</span><span>USD ${Number(trade.precio_sale_usd || 0).toFixed(2)}</span></div>
+        </div>
+      </div>
+      <div class="border border-border p-3">
+        <p class="text-muted font-mono text-xs uppercase mb-2">Entra</p>
+        <p class="text-sm mb-1">${trade.producto_entra?.nombre || '—'}</p>
+        <p class="text-muted font-mono text-xs">${trade.producto_entra?.marca || ''}</p>
+        <div class="mt-2 font-mono text-sm space-y-1">
+          <div class="flex justify-between"><span class="text-muted">Costo</span><span>USD ${Number(trade.costo_entra_usd || 0).toFixed(2)}</span></div>
+          <div class="flex justify-between"><span class="text-muted">Precio venta</span><span>USD ${Number(trade.precio_entra_usd || 0).toFixed(2)}</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="font-mono text-sm space-y-1">
+      <div class="flex justify-between"><span class="text-muted">Plata</span><span>${plata}</span></div>
+      <div class="flex justify-between border-t border-border pt-2 font-bold">
+        <span>Diferencia de mercadería</span>
+        <span class="${dif >= 0 ? 'text-accent' : 'text-red-400'}">${dif >= 0 ? '+' : '−'}USD ${Math.abs(dif).toFixed(2)}</span>
+      </div>
+    </div>
+    <p class="text-muted text-xs mt-3">No cuenta como facturación ni como ganancia: la ganancia va a aparecer cuando se venda la prenda que entró.</p>
+  `;
+}
+
+document.getElementById('trade-cerrar-detalle').addEventListener('click', () => {
+  filaDetalleTrade.classList.add('hidden');
+  TRADE_ACTUAL = null;
+});
+document.getElementById('trades-search').addEventListener('input', filtrarTrades);
+
+// ── Trade: formulario ──
+const tClienteNombre = document.getElementById('t-cliente-nombre');
+const tClienteSugerencias = document.getElementById('t-cliente-sugerencias');
+
+tClienteNombre.addEventListener('input', () => {
+  TRADE_CLIENTE_SELECCIONADO = null;
+  const q = tClienteNombre.value.trim().toLowerCase();
+  if (!q) { tClienteSugerencias.classList.add('hidden'); return; }
+  const coincidencias = CLIENTES.filter(c => c.nombre.toLowerCase().includes(q)).slice(0, 8);
+  if (coincidencias.length === 0) { tClienteSugerencias.classList.add('hidden'); return; }
+  tClienteSugerencias.innerHTML = coincidencias.map(c =>
+    `<div class="t-sugerencia px-3 py-2 hover:bg-surface-elevated cursor-pointer" data-id="${c.id}">${c.nombre}</div>`
+  ).join('');
+  tClienteSugerencias.classList.remove('hidden');
+  tClienteSugerencias.querySelectorAll('.t-sugerencia').forEach(el => {
+    el.addEventListener('click', () => {
+      TRADE_CLIENTE_SELECCIONADO = CLIENTES.find(x => x.id === el.dataset.id);
+      tClienteNombre.value = TRADE_CLIENTE_SELECCIONADO.nombre;
+      tClienteSugerencias.classList.add('hidden');
+    });
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!tClienteSugerencias.contains(e.target) && e.target !== tClienteNombre) {
+    tClienteSugerencias.classList.add('hidden');
+  }
+});
+
+async function buscarUnidadTrade() {
+  const codigo = document.getElementById('t-codigo').value.trim();
+  const info = document.getElementById('t-sale-info');
+  if (!codigo) { TRADE_UNIDAD_SALE = null; info.textContent = ''; actualizarPreviewTrade(); return; }
+
+  const { data, error } = await supabase
+    .from('unidades')
+    .select('*, productos(nombre, marca, precio_venta_usd, precio_promocional_usd)')
+    .eq('codigo_barra', codigo)
+    .eq('estado', 'disponible')
+    .maybeSingle();
+
+  if (error || !data) {
+    TRADE_UNIDAD_SALE = null;
+    info.textContent = 'Código no encontrado o la prenda ya no está disponible.';
+    info.className = 'text-xs text-red-400 mt-1';
+  } else {
+    TRADE_UNIDAD_SALE = data;
+    const precio = Number(data.productos?.precio_promocional_usd || data.productos?.precio_venta_usd || 0);
+    info.textContent = `${data.productos.nombre}${data.talle ? ' · talle ' + data.talle : ''} — costo USD ${Number(data.costo_usd || 0).toFixed(2)} · precio USD ${precio.toFixed(2)}`;
+    info.className = 'text-xs text-accent mt-1';
+  }
+  actualizarPreviewTrade();
+}
+
+document.getElementById('t-codigo').addEventListener('blur', buscarUnidadTrade);
+document.getElementById('t-codigo').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); buscarUnidadTrade(); }
+});
+
+function direccionTrade() { return document.getElementById('t-dif-direccion').value; }
+
+function montoTradeEnUsd() {
+  if (direccionTrade() === 'ninguna') return 0;
+  const monto = parseFloat(document.getElementById('t-dif-monto').value) || 0;
+  if (document.getElementById('t-dif-moneda').value !== 'ARS') return monto;
+  const cotizacion = parseFloat(document.getElementById('t-cotizacion').value) || 0;
+  return cotizacion ? monto / cotizacion : 0;
+}
+
+function actualizarPreviewTrade() {
+  const preview = document.getElementById('t-preview');
+  const alerta = document.getElementById('t-alerta');
+  const direccion = direccionTrade();
+  document.getElementById('t-dif-campos').classList.toggle('hidden', direccion === 'ninguna');
+
+  if (!TRADE_UNIDAD_SALE) {
+    preview.innerHTML = '<p class="text-muted">Escaneá la prenda que sale para ver las cuentas.</p>';
+    alerta.classList.add('hidden');
+    return;
+  }
+
+  const costoSale = Number(TRADE_UNIDAD_SALE.costo_usd || 0);
+  const precioSale = Number(TRADE_UNIDAD_SALE.productos?.precio_promocional_usd
+    || TRADE_UNIDAD_SALE.productos?.precio_venta_usd || 0);
+  const precioEntra = parseFloat(document.getElementById('t-entra-precio').value) || 0;
+  const montoUsd = montoTradeEnUsd();
+
+  const costoEntra = costoTradeQueEntra(costoSale, direccion, montoUsd);
+  const dif = difMercaderiaTrade(precioSale, precioEntra, direccion, montoUsd);
+
+  const fila = (etiqueta, valor, clase = '') =>
+    `<div class="flex justify-between gap-3"><span class="text-muted">${etiqueta}</span><span class="${clase}">${valor}</span></div>`;
+
+  preview.innerHTML =
+    fila('Costo que traslada', `USD ${costoSale.toFixed(2)}`) +
+    (direccion !== 'ninguna' && montoUsd > 0
+      ? fila(direccion === 'recibimos' ? 'Nos pagan' : 'Pagamos', `USD ${montoUsd.toFixed(2)}`)
+      : '') +
+    fila('Costo de la que entra', `USD ${costoEntra.toFixed(2)}`, 'font-bold') +
+    fila('Dif. mercadería', `${dif >= 0 ? '+' : '−'}USD ${Math.abs(dif).toFixed(2)}`,
+      `font-bold ${dif >= 0 ? 'text-accent' : 'text-red-400'}`);
+
+  // Si el costo daría negativo, el canje dejó de serlo: te dieron prenda más
+  // plata por encima de lo que te costó la tuya, y eso es una venta con
+  // ganancia. Cargarlo como trade escondería esa ganancia.
+  const rompe = costoEntra < -0.009;
+  alerta.classList.toggle('hidden', !rompe);
+  if (rompe) {
+    alerta.textContent = `Con esa diferencia el costo daría USD ${costoEntra.toFixed(2)}, que no existe. `
+      + 'Eso no fue un canje sino una venta con ganancia: cargala en Ventas.';
+  }
+  document.getElementById('t-confirmar').disabled = rompe;
+}
+
+['t-entra-precio', 't-dif-monto', 't-cotizacion'].forEach(id =>
+  document.getElementById(id).addEventListener('input', actualizarPreviewTrade));
+document.getElementById('t-dif-direccion').addEventListener('change', actualizarPreviewTrade);
+document.getElementById('t-dif-moneda').addEventListener('change', actualizarPreviewTrade);
+
+async function abrirModalTrade() {
+  TRADE_CLIENTE_SELECCIONADO = null;
+  TRADE_UNIDAD_SALE = null;
+  tClienteNombre.value = '';
+  document.getElementById('t-fecha').value = hoyIso();
+  document.getElementById('t-codigo').value = '';
+  document.getElementById('t-sale-info').textContent = '';
+  ['t-entra-nombre', 't-entra-marca', 't-entra-talle', 't-entra-precio', 't-dif-monto'].forEach(id =>
+    document.getElementById(id).value = '');
+  document.getElementById('t-dif-direccion').value = 'ninguna';
+  document.getElementById('t-dif-moneda').value = 'ARS';
+  document.getElementById('t-log').innerHTML = '';
+  document.getElementById('t-confirmar').disabled = false;
+  modalTrade.classList.remove('hidden');
+  document.getElementById('t-cotizacion').value = COTIZACION_ACTUAL || await obtenerCotizacionSugerida();
+  actualizarPreviewTrade();
+}
+
+document.getElementById('btn-nuevo-trade').addEventListener('click', abrirModalTrade);
+document.getElementById('t-cancelar').addEventListener('click', () => modalTrade.classList.add('hidden'));
+
+document.getElementById('t-confirmar').addEventListener('click', async () => {
+  const log = document.getElementById('t-log');
+  const boton = document.getElementById('t-confirmar');
+
+  if (!TRADE_UNIDAD_SALE) { alert('Escaneá la prenda que sale del stock.'); return; }
+  const nombreEntra = document.getElementById('t-entra-nombre').value.trim();
+  if (!nombreEntra) { alert('Completá el nombre de la prenda que entra.'); return; }
+  const nombreCliente = tClienteNombre.value.trim();
+
+  const direccion = direccionTrade();
+  const montoRaw = direccion === 'ninguna' ? 0 : (parseFloat(document.getElementById('t-dif-monto').value) || 0);
+  const monedaDif = document.getElementById('t-dif-moneda').value;
+  const cotizacion = parseFloat(document.getElementById('t-cotizacion').value) || 0;
+  if (direccion !== 'ninguna') {
+    if (montoRaw <= 0) { alert('Cargá el monto de la diferencia.'); return; }
+    if (monedaDif === 'ARS' && cotizacion <= 0) { alert('Falta la cotización para una diferencia en ARS.'); return; }
+  }
+
+  const montoUsd = montoTradeEnUsd();
+  const costoSale = Number(TRADE_UNIDAD_SALE.costo_usd || 0);
+  const precioSale = Number(TRADE_UNIDAD_SALE.productos?.precio_promocional_usd
+    || TRADE_UNIDAD_SALE.productos?.precio_venta_usd || 0);
+  const precioEntra = parseFloat(document.getElementById('t-entra-precio').value) || 0;
+  const costoEntra = costoTradeQueEntra(costoSale, direccion, montoUsd);
+  if (costoEntra < -0.009) { alert('Esa diferencia hace que el costo dé negativo. Cargalo como venta.'); return; }
+
+  boton.disabled = true;
+  log.innerHTML = '<p>Guardando trade…</p>';
+
+  // Cliente: el mismo criterio que en ventas y encargos.
+  let cliente = TRADE_CLIENTE_SELECCIONADO;
+  if (!cliente && nombreCliente) {
+    cliente = CLIENTES.find(c => c.nombre.toLowerCase() === nombreCliente.toLowerCase());
+    if (!cliente) {
+      const { data, error } = await supabase.from('clientes').insert({ nombre: nombreCliente }).select().single();
+      if (error) { log.innerHTML = `<p class="text-red-400">Error al crear el cliente: ${error.message}</p>`; boton.disabled = false; return; }
+      cliente = data;
+    }
+  }
+
+  const fecha = document.getElementById('t-fecha').value || hoyIso();
+
+  // La prenda que entra nace pendiente de ingreso, igual que en Compras: sin
+  // foto todavía, así que invisible en la web hasta que se complete.
+  const { data: producto, error: errorProducto } = await supabase.from('productos').insert({
+    nombre: nombreEntra,
+    marca: document.getElementById('t-entra-marca').value.trim() || null,
+    precio_venta_usd: precioEntra,
+    tiene_talles: !!document.getElementById('t-entra-talle').value.trim(),
+    pendiente_ingreso: true,
+    slug: slugify(nombreEntra) + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
+  }).select().single();
+  if (errorProducto) {
+    log.innerHTML = `<p class="text-red-400">Error al crear la prenda: ${errorProducto.message}</p>`;
+    boton.disabled = false; return;
+  }
+
+  const { data: codigo } = await supabase.rpc('generar_codigo_barra');
+  const { data: unidadEntra, error: errorUnidad } = await supabase.from('unidades').insert({
+    producto_id: producto.id,
+    talle: document.getElementById('t-entra-talle').value.trim() || null,
+    codigo_barra: codigo,
+    costo_compra_usd: Math.max(0, costoEntra),
+    costo_envio_usd: 0,
+    fecha_ingreso: fecha,
+  }).select().single();
+  if (errorUnidad) {
+    log.innerHTML = `<p class="text-red-400">Error al crear la unidad: ${errorUnidad.message}</p>`;
+    boton.disabled = false; return;
+  }
+
+  const { data: trade, error: errorTrade } = await supabase.from('trades').insert({
+    fecha,
+    cliente_id: cliente?.id || null,
+    unidad_sale_id: TRADE_UNIDAD_SALE.id,
+    producto_entra_id: producto.id,
+    unidad_entra_id: unidadEntra.id,
+    precio_sale_usd: precioSale,
+    precio_entra_usd: precioEntra,
+    costo_sale_usd: costoSale,
+    costo_entra_usd: Math.max(0, costoEntra),
+    diferencia_monto: montoRaw,
+    diferencia_moneda: direccion === 'ninguna' ? null : monedaDif,
+    diferencia_direccion: direccion === 'ninguna' ? null : direccion,
+    cotizacion_usada: monedaDif === 'ARS' ? cotizacion : null,
+    diferencia_mercaderia_usd: difMercaderiaTrade(precioSale, precioEntra, direccion, montoUsd),
+  }).select().single();
+  if (errorTrade) {
+    log.innerHTML = `<p class="text-red-400">Error al guardar el trade: ${errorTrade.message}</p>`;
+    boton.disabled = false; return;
+  }
+
+  // La prenda que sale deja el stock sin marcarse vendida.
+  await supabase.from('unidades')
+    .update({ estado: 'permutado', permutado_at: fecha + 'T00:00:00' })
+    .eq('id', TRADE_UNIDAD_SALE.id);
+
+  // La plata, si la hubo, sí se movió de verdad: va a Caja con categoría
+  // propia, que no cuenta ni en facturación ni en gastos operativos.
+  if (direccion !== 'ninguna' && montoRaw > 0) {
+    await supabase.from('caja_movimientos').insert({
+      tipo: direccion === 'recibimos' ? 'ingreso' : 'gasto',
+      categoria: 'trade',
+      fecha,
+      motivo: `Trade — ${cliente?.nombre || 'sin cliente'}`,
+      monto: montoRaw,
+      moneda: monedaDif,
+      cotizacion_usada: monedaDif === 'ARS' ? cotizacion : null,
+      trade_id: trade.id,
+    });
+  }
+
+  boton.disabled = false;
+  modalTrade.classList.add('hidden');
+  await cargarClientes();
+  await cargarProductos();
+  await cargarTrades();
+  alert(`Trade cargado. "${nombreEntra}" quedó en Próximos ingresos esperando la foto.`);
+});
+
 // ── COMPRAS ───────────────────────────────────────────────────────────────
 // Simulador y carga de compras. Cada prenda tiene un costo y un peso; el envío
 // se cobra por kilo, así que el costo real de una prenda es costo + peso × kg.
@@ -5199,7 +5792,7 @@ const CATEGORIA_LABEL = {
   gasto_operativo: 'Gasto operativo', gasto_comercial: 'Gasto comercial', pago_inversor: 'Pago a inversor',
   pago_deuda: 'Pago deuda', cambio_moneda: 'Cambio de moneda',
   costo_encargo: 'Costo encargo', pago_tarjeta: 'Pago tarjeta', compra_stock: 'Compra de stock',
-  pago_kg: 'Pago kg', vuelto: 'Vuelto',
+  pago_kg: 'Pago kg', vuelto: 'Vuelto', trade: 'Trade',
 };
 
 const RETIRO_SOCIO_LABEL = { emi: 'Emi', ina: 'Iña', ambos: 'Emi y Iña' };
@@ -5589,8 +6182,8 @@ const mRetiroEmiSwitch = document.getElementById('m-retiro-emi-switch');
 const mRetiroInaSwitch = document.getElementById('m-retiro-ina-switch');
 
 const CATEGORIAS_POR_TIPO = {
-  ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda'], ['cambio_moneda', 'Cambio de moneda']],
-  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock'], ['pago_kg', 'Pago kg'], ['vuelto', 'Vuelto']],
+  ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda'], ['cambio_moneda', 'Cambio de moneda'], ['trade', 'Trade']],
+  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock'], ['pago_kg', 'Pago kg'], ['vuelto', 'Vuelto'], ['trade', 'Trade']],
 };
 
 function actualizarCamposMovimiento() {
@@ -6275,14 +6868,20 @@ async function cargarGananciaMensual() {
     .select('precio_venta_usd, costo_usd, costo_envio_usd')
     .gte('fecha', inicio).lt('fecha', fin);
 
+  // Trades del mes. Van a su propio bloque, fuera de la ganancia.
+  const { data: tradesMes } = await supabase
+    .from('trades')
+    .select('diferencia_mercaderia_usd')
+    .gte('fecha', inicio).lt('fecha', fin);
+
   // Stock al cierre del mes: todo lo que ya había ingresado antes del corte y
   // que en ese momento seguía sin venderse (aunque se haya vendido después).
   const { data: unidadesStock } = await supabase
     .from('unidades')
-    .select('estado, vendido_at, productos(nombre, precio_venta_usd)')
+    .select('estado, vendido_at, permutado_at, productos(nombre, precio_venta_usd)')
     .lt('fecha_ingreso', fin);
 
-  renderGananciaMensual(ventasMes || [], cajaMes || [], encargosMes || [], unidadesStock || [], fin);
+  renderGananciaMensual(ventasMes || [], cajaMes || [], encargosMes || [], unidadesStock || [], fin, tradesMes || []);
 }
 
 async function cargarRankings() {
@@ -6395,7 +6994,7 @@ function renderListaDetalle(elId, items, formato, vacio) {
   `).join('');
 }
 
-function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, finMes) {
+function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, finMes, tradesMes = []) {
   // Lo que dejaron las ventas de stock: precio de venta menos el costo que
   // tenía esa prenda puntual, congelado al momento de venderla.
   const gananciaVentas = ventasMes.reduce((s, v) =>
@@ -6476,6 +7075,11 @@ function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, f
 
   // ── Stock al cierre del mes, valorizado a precio descarte (precio venta −20%) ──
   const stockVigente = (unidadesStock || []).filter(u => {
+    // Una prenda que salió en un trade dejó el stock igual que una vendida.
+    if (u.estado === 'permutado') {
+      if (!u.permutado_at) return false;
+      if (String(u.permutado_at).slice(0, 10) < finMes) return false;
+    }
     if (u.estado === 'vendido') {
       // Sin fecha de venta (unidades viejas importadas) no hay forma de saber
       // cuándo salió: se asume vendida antes del corte y no se cuenta.
@@ -6494,6 +7098,15 @@ function renderGananciaMensual(ventasMes, cajaMes, encargosMes, unidadesStock, f
   document.getElementById('rep-rentabilidad').textContent = `${rentabilidad.toFixed(1)}%`;
   document.getElementById('rep-gastos-pct').textContent = `${gastosSobreBruta.toFixed(1)}%`;
   document.getElementById('rep-stock-pct').textContent = `${facturacionSobreStock.toFixed(1)}%`;
+  // ── Trades del mes ──
+  const difTrades = tradesMes.reduce((s, t) => s + Number(t.diferencia_mercaderia_usd || 0), 0);
+  const elTrades = document.getElementById('rep-trades-dif');
+  elTrades.textContent = `${difTrades >= 0 ? '+' : '−'}USD ${Math.abs(difTrades).toFixed(2)} mercadería`;
+  elTrades.className = `text-xl font-bold font-mono ${difTrades >= 0 ? 'text-accent' : 'text-red-400'}`;
+  document.getElementById('rep-trades-detalle').textContent = tradesMes.length
+    ? `${tradesMes.length} trade${tradesMes.length === 1 ? '' : 's'} en el mes`
+    : 'Sin trades este mes.';
+
   document.getElementById('rep-stock-detalle').textContent =
     `${stockVigente.length} u. · USD ${stockDescarte.toFixed(2)} a precio descarte`;
 
