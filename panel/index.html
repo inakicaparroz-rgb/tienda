@@ -2214,7 +2214,10 @@ function renderProductos(lista) {
     tr.dataset.id = p.id;
     tr.innerHTML = `
       <td class="p-2"><img src="${p.imagen_url || ''}" loading="lazy" class="w-10 h-10 object-cover bg-surface-elevated" onerror="this.style.opacity=0"/></td>
-      <td class="p-2">${p.nombre}</td>
+      <td class="p-2">
+        ${p.nombre}
+        ${(p.unidades || []).length === 0 ? '<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-yellow-500/60 text-yellow-500 whitespace-nowrap ml-1">Sin unidades</span>' : ''}
+      </td>
       <td class="p-2 text-muted">${p.marca || '-'}</td>
       <td class="p-2 text-muted">${p.categoria || '-'}</td>
       <td class="p-2">USD ${Number(p.precio_venta_usd).toFixed(2)}</td>
@@ -5632,19 +5635,31 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
       errores++; continue;
     }
 
+    let creadasDeEsteItem = 0;
     for (const u of unidades) {
-      const { data: codigo } = await supabase.rpc('generar_codigo_barra');
-      const { error: errorUnidad } = await supabase.from('unidades').insert({
-        producto_id: producto.id,
-        talle: u.talle || null,
-        codigo_barra: codigo,
-        costo_compra_usd: u.costo,
-        costo_envio_usd: u.peso * costoPorKg(),
-        peso_kg: u.peso,
-        fecha_ingreso: fecha,
-      });
+      // El código lo da la base; si esa llamada falla, insertar igual dejaría
+      // la unidad sin código y el producto huérfano.
+      const { data: codigo, error: errorCodigo } = await supabase.rpc('generar_codigo_barra');
+      const { error: errorUnidad } = errorCodigo || !codigo
+        ? { error: errorCodigo || { message: 'no se pudo generar el código de barra' } }
+        : await supabase.from('unidades').insert({
+            producto_id: producto.id,
+            talle: u.talle || null,
+            codigo_barra: codigo,
+            costo_compra_usd: u.costo,
+            costo_envio_usd: u.peso * costoPorKg(),
+            peso_kg: u.peso,
+            fecha_ingreso: fecha,
+          });
       if (errorUnidad) { log.innerHTML += `<p class="text-red-400">Error en unidad de "${item.nombre}": ${errorUnidad.message}</p>`; errores++; }
-      else creados++;
+      else { creados++; creadasDeEsteItem++; }
+    }
+
+    // Una prenda sin ninguna unidad no es stock, es basura: aparecería en el
+    // listado con 0 unidades y se confundiría con un duplicado. Se deshace.
+    if (creadasDeEsteItem === 0) {
+      await supabase.from('productos').delete().eq('id', producto.id);
+      log.innerHTML += `<p class="text-red-400">"${item.nombre}" no se cargó: se deshizo para no dejar una prenda vacía en el stock.</p>`;
     }
   }
 
@@ -5680,12 +5695,22 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
   log.innerHTML += `<p class="mt-2 font-bold text-white">Listo: ${creados} unidades cargadas${errores ? `, ${errores} con error` : ''}.</p>`;
   boton.disabled = false;
 
+  await cargarProductos();
+  await cargarCompras();
+
+  // Con errores el modal queda abierto: si se cerrara, el detalle de qué falló
+  // desaparecería y una carga a medias se vería igual que una exitosa.
+  if (errores > 0) {
+    alert(`La compra se cargó con problemas: ${creados} unidades entraron y ${errores} fallaron.\n\n`
+      + 'El detalle está en la ventana. Revisalo antes de volver a cargar la compra, '
+      + 'para no duplicar lo que sí entró.');
+    return;
+  }
+
   COMPRA_ITEMS = [];
   renderItemsCompra();
   cerrarFormularioCompra();
   document.getElementById('modal-completar-compra').classList.add('hidden');
-  await cargarProductos();
-  await cargarCompras();
   alert(`Compra cargada. ${creados} unidades quedaron en "Próximos ingresos" esperando la foto.`);
 });
 
