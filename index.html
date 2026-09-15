@@ -390,7 +390,16 @@
     </div>
     <div class="flex items-center justify-between gap-4">
       <span class="spec-label" id="results-count" aria-live="polite">MOSTRANDO 114 / 114 PRODUCTOS</span>
-      <button id="clear-filters" class="btn-ghost hidden">Limpiar filtros ×</button>
+      <div class="flex items-center gap-3">
+        <button id="clear-filters" class="btn-ghost hidden">Limpiar filtros ×</button>
+        <select id="sort-select" style="background:transparent;border:1px solid var(--border);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;padding:.4rem .6rem;outline:none;cursor:pointer;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <option value="default">ORDENAR</option>
+          <option value="price-asc">PRECIO: MENOR A MAYOR</option>
+          <option value="price-desc">PRECIO: MAYOR A MENOR</option>
+          <option value="date-asc">MÁS ANTIGUO</option>
+          <option value="date-desc">MÁS RECIENTE</option>
+        </select>
+      </div>
     </div>
   </div>
   <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 md:gap-x-6 gap-y-12"></div>
@@ -779,6 +788,7 @@
         fotos: [p.imagen_url, ...(fotosPorProducto[p.id] || [])].filter(Boolean),
         w1: words[0] || "",
         w2: words[1] || words[0] || "",
+        created_at: p.created_at || "",
       };
     });
   }
@@ -796,7 +806,7 @@ const WA_NUMBER = "541134435571";
   const resultsCount = document.getElementById("results-count");
   const clearBtn = document.getElementById("clear-filters");
   const searchInput = document.getElementById("search-input");
-  let activeCat = "todas", activeStatus = "todos", searchQuery = "";
+  let activeCat = "todas", activeStatus = "todos", searchQuery = "", activeSort = "default";
 
   function render() {
     const q = searchQuery.toLowerCase();
@@ -806,6 +816,10 @@ const WA_NUMBER = "541134435571";
       const okQ = !q || p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q);
       return okCat && okSt && okQ;
     });
+    if (activeSort === "price-asc") filtered.sort((a, b) => a.priceUSD - b.priceUSD);
+    else if (activeSort === "price-desc") filtered.sort((a, b) => b.priceUSD - a.priceUSD);
+    else if (activeSort === "date-asc") filtered.sort((a, b) => new Date(a.created_at||0) - new Date(b.created_at||0));
+    else if (activeSort === "date-desc") filtered.sort((a, b) => new Date(b.created_at||0) - new Date(a.created_at||0));
     resultsCount.textContent = `MOSTRANDO ${filtered.length} / ${PRODUCTS.length} PRODUCTOS`;
     clearBtn.classList.toggle("hidden", activeCat==="todas" && activeStatus==="todos" && !searchQuery);
     if (filtered.length === 0) {
@@ -878,6 +892,7 @@ const WA_NUMBER = "541134435571";
     render();
   });
   searchInput.addEventListener("input", () => { searchQuery = searchInput.value.trim(); render(); });
+  document.getElementById("sort-select").addEventListener("change", (e) => { activeSort = e.target.value; render(); });
 
   document.querySelectorAll(".cat-jump").forEach(a => {
     a.addEventListener("click", () => {
