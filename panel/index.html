@@ -2592,6 +2592,27 @@ document.getElementById('p-imagen-file').addEventListener('change', (e) => {
 document.getElementById('p-guardar').addEventListener('click', async () => {
   const nombre = document.getElementById('p-nombre').value.trim();
   if (!nombre) { alert('El nombre es obligatorio.'); return; }
+
+  // Crear una prenda que ya existe es la forma más fácil de duplicar el stock
+  // sin darse cuenta: la que vino de una compra está esperando en Próximos
+  // ingresos y no aparece en el listado normal, así que parece que no está.
+  // Se avisa antes de pedir el resto de los datos.
+  if (!EDITANDO_PRODUCTO) {
+    const yaExiste = PRODUCTOS.concat(PRODUCTOS_PENDIENTES)
+      .find(p => normalizarTexto(p.nombre) === normalizarTexto(nombre));
+    if (yaExiste) {
+      const disponibles = (yaExiste.unidades || []).filter(u => u.estado === 'disponible').length;
+      const donde = yaExiste.pendiente_ingreso
+        ? 'esperando en "Próximos ingresos"'
+        : `en el stock, con ${disponibles} ${disponibles === 1 ? 'unidad disponible' : 'unidades disponibles'}`;
+      const seguir = confirm(
+        `Ya existe una prenda que se llama "${yaExiste.nombre}", ${donde}.\n\n`
+        + 'Si es la misma, cancelá y trabajá sobre esa en vez de crear otra.\n\n'
+        + '¿Crear igual una prenda nueva?');
+      if (!seguir) return;
+    }
+  }
+
   const nombreWeb = document.getElementById('p-nombre-web').value.trim();
   if (!EDITANDO_PRODUCTO && !nombreWeb) { alert('El nombre web es obligatorio en productos nuevos.'); return; }
 
