@@ -633,3 +633,312 @@ begin
   where id = p_unidad_id and estado = 'reservado';
 end;
 $$;
+
+-- ═══ MÓDULO ENCARGOS ═══════════════════════════════════════════════════════
+-- Pedidos especiales: el cliente encarga algo que todavía no tenemos, deja una
+-- seña, y salda el resto antes de retirarlo. No se vinculan a una unidad de
+-- stock (justamente porque todavía no existe cuando se toma el pedido).
+--
+-- Cada monto se guarda en su moneda original + la cotización del día, igual
+-- que en ventas, y la columna *_usd deja el equivalente fijado para siempre.
+
+create table if not exists encargos (
+  id uuid primary key default gen_random_uuid(),
+  cliente_id uuid references clientes(id),
+  fecha date not null default current_date,
+  item text not null,
+  talle text,
+
+  -- Seña: lo que paga el cliente al encargar.
+  senia numeric(12,2) not null default 0,
+  senia_moneda text not null default 'USD' check (senia_moneda in ('USD', 'ARS')),
+  senia_cotizacion numeric(10,2),
+  senia_usd numeric(12,2) generated always as (
+    case when senia_moneda = 'USD' then senia
+         else round(senia / nullif(senia_cotizacion, 0), 2) end
+  ) stored,
+
+  -- Costo: lo que nos cuesta conseguirlo. Si se paga con tarjeta no impacta
+  -- Caja al instante — queda en el saldo Tarjeta hasta que se paga el resumen.
+  costo numeric(12,2) not null default 0,
+  costo_moneda text not null default 'USD' check (costo_moneda in ('USD', 'ARS')),
+  costo_cotizacion numeric(10,2),
+  costo_medio_pago text not null default 'cash' check (costo_medio_pago in ('cash', 'tarjeta')),
+  costo_usd numeric(12,2) generated always as (
+    case when costo_moneda = 'USD' then costo
+         else round(costo / nullif(costo_cotizacion, 0), 2) end
+  ) stored,
+
+  -- Precio de venta: lo que le cobramos al cliente.
+  precio_venta numeric(12,2) not null default 0,
+  precio_venta_moneda text not null default 'USD' check (precio_venta_moneda in ('USD', 'ARS')),
+  precio_venta_cotizacion numeric(10,2),
+  precio_venta_usd numeric(12,2) generated always as (
+    case when precio_venta_moneda = 'USD' then precio_venta
+         else round(precio_venta / nullif(precio_venta_cotizacion, 0), 2) end
+  ) stored,
+
+  created_at timestamptz not null default now()
+);
+
+-- Pagos posteriores a la seña: el cliente puede ir saldando de a poco hasta
+-- llegar a deber 0 (ahí el encargo pasa a "completado").
+create table if not exists encargo_pagos (
+  id uuid primary key default gen_random_uuid(),
+  encargo_id uuid not null references encargos(id) on delete cascade,
+  fecha date not null default current_date,
+  monto numeric(12,2) not null,
+  moneda text not null check (moneda in ('USD', 'ARS')),
+  cotizacion_usada numeric(10,2),
+  monto_usd numeric(12,2) generated always as (
+    case when moneda = 'USD' then monto
+         else round(monto / nullif(cotizacion_usada, 0), 2) end
+  ) stored,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_encargos_fecha on encargos(fecha);
+create index if not exists idx_encargo_pagos_encargo on encargo_pagos(encargo_id);
+
+alter table encargos enable row level security;
+drop policy if exists "encargos_authenticated_all" on encargos;
+create policy "encargos_authenticated_all" on encargos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on encargos to authenticated;
+
+alter table encargo_pagos enable row level security;
+drop policy if exists "encargo_pagos_authenticated_all" on encargo_pagos;
+create policy "encargo_pagos_authenticated_all" on encargo_pagos
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on encargo_pagos to authenticated;
+
+-- ─── Caja: categorías y vínculos que agrega el módulo de Encargos ─────────
+-- costo_encargo: lo que nos costó conseguir un encargo pagado en efectivo. Va
+--   aparte de gasto_operativo para no inflar ese indicador ni contar dos veces
+--   el costo (que ya se descuenta en la línea "Ganancia encargos" de Reportes).
+-- pago_tarjeta: el pago del resumen de la tarjeta. Descuenta del saldo Tarjeta
+--   que se muestra arriba de la pestaña Encargos.
+
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo', 'pago_tarjeta'));
+
+alter table caja_movimientos add column if not exists encargo_id uuid;
+alter table caja_movimientos add column if not exists encargo_pago_id uuid;
+create index if not exists idx_caja_encargo on caja_movimientos(encargo_id);
+
+-- ═══ MÓDULO COMPRAS ════════════════════════════════════════════════════════
+-- Una compra es una tanda de prendas que se compra junta: normalmente todas de
+-- la misma marca, o a un reseller (ahí cada prenda lleva su propia marca).
+-- Al completarla, cada ítem entra como producto + unidades, pero marcado como
+-- pendiente de ingreso: no se ve en la web hasta que se le carga la foto.
+
+create table if not exists compras (
+  id uuid primary key default gen_random_uuid(),
+  fecha date not null default current_date,
+  marca text,                    -- marca común (compra normal)
+  es_reseller boolean not null default false,
+  reseller_nombre text,          -- nombre del reseller (compra a reseller)
+  medio_pago text not null default 'cash' check (medio_pago in ('cash', 'tarjeta')),
+  moneda text not null default 'USD' check (moneda in ('USD', 'ARS')),
+  cotizacion_usada numeric(10,2),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_compras_fecha on compras(fecha);
+
+alter table compras enable row level security;
+drop policy if exists "compras_authenticated_all" on compras;
+create policy "compras_authenticated_all" on compras
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on compras to authenticated;
+
+-- De qué compra vino cada producto, y si todavía está esperando la foto para
+-- poder publicarse. Mientras pendiente_ingreso sea true no aparece ni en el
+-- listado normal de Stock ni en la web.
+alter table productos add column if not exists compra_id uuid;
+alter table productos add column if not exists pendiente_ingreso boolean not null default false;
+
+-- La FK no es solo integridad: sin ella PostgREST no puede traer los productos
+-- anidados dentro de una compra (compras -> productos -> unidades).
+alter table productos drop constraint if exists productos_compra_id_fkey;
+alter table productos add constraint productos_compra_id_fkey
+  foreign key (compra_id) references compras(id) on delete set null;
+create index if not exists idx_productos_compra on productos(compra_id);
+create index if not exists idx_productos_pendiente on productos(pendiente_ingreso);
+
+-- El peso es lo que define el costo de envío (USD 35 por kg); se guarda para
+-- poder rehacer la cuenta después.
+alter table unidades add column if not exists peso_kg numeric(10,3);
+
+-- Compra pagada en efectivo: sale de Caja al instante. Como es costo de
+-- mercadería, va en su propia categoría para no mezclarse con los gastos
+-- operativos ni contarse dos veces contra la ganancia.
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock'));
+
+alter table caja_movimientos add column if not exists compra_id uuid;
+create index if not exists idx_caja_compra on caja_movimientos(compra_id);
+
+-- La web solo muestra productos ya ingresados del todo.
+create or replace view productos_publicos as
+select
+  id, slug,
+  coalesce(nullif(nombre_web, ''), nombre) as nombre,
+  marca, categoria, imagen_url,
+  precio_venta_usd, precio_promocional_usd,
+  tiene_talles, fit, estado
+from productos
+where activo = true and alguna_vez_en_stock = true
+  and pendiente_ingreso = false
+  and nombre_web is not null and nombre_web <> '';
+
+-- ─── Encargos: peso (kg) y cuenta "Adriana kg" ─────────────────────────────
+-- Traer un encargo por peso se le paga a Adriana, no al proveedor. Es costo
+-- del encargo (baja la ganancia) pero es un pago aparte: no sale de Caja al
+-- guardarlo, se acumula en el saldo "Adriana kg" que se ve en Deudas y
+-- deudores, y baja cuando se carga un movimiento con categoría "Pago kg".
+alter table encargos add column if not exists peso_kg numeric(10,3) not null default 0;
+
+-- El costo por kilo se congela en el encargo: si mañana cambia la tarifa, el
+-- saldo acumulado no se mueve.
+alter table encargos add column if not exists costo_kg_usd numeric(12,2) not null default 0;
+
+alter table encargos add column if not exists costo_envio_usd numeric(12,2)
+  generated always as (round(peso_kg * costo_kg_usd, 2)) stored;
+
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock', 'pago_kg'));
+
+-- ─── Fondos pendientes (ventas de la web) ──────────────────────────────────
+-- La plata de una venta por la web entra a Mercado Pago, pero recién se puede
+-- usar a los 18 días. Hasta ese momento no es caja: se acumula aparte, en
+-- "Fondos pendientes", y pasa a caja sola al cumplirse el plazo o antes si se
+-- adelanta a mano desde el panel.
+alter table caja_movimientos add column if not exists fondo_pendiente boolean not null default false;
+
+-- Null = todavía sigue el plazo de 18 días desde la fecha del movimiento.
+-- Con fecha = se acreditó ese día (automático al vencer, o adelantado a mano).
+alter table caja_movimientos add column if not exists acreditado_at date;
+
+create index if not exists idx_caja_fondo_pendiente
+  on caja_movimientos(fondo_pendiente) where fondo_pendiente;
+
+-- ─── Inversiones anteriores al sistema ─────────────────────────────────────
+-- Plata que un inversor puso antes de que existiera el panel. Cuenta en su
+-- saldo, pero nunca fue un ingreso de caja: se ve solo en Deudas y deudores.
+alter table deudas_movimientos add column if not exists es_inversion_previa boolean not null default false;
+
+-- ─── Crédito en tarjeta puesto por un inversor ─────────────────────────────
+-- El inversor no nos da efectivo: carga plata en la tarjeta. Se le debe igual
+-- (va como "debe" en deudas_movimientos, en USD como todo lo de ahí), pero no
+-- entra a Caja porque no hubo movimiento de efectivo.
+-- En el saldo Tarjeta ese crédito RESTA: si teníamos gastos por pagar, ahora
+-- debemos menos. A medida que se gasta con la tarjeta el saldo vuelve a subir.
+alter table deudas_movimientos add column if not exists es_credito_tarjeta boolean not null default false;
+
+-- El saldo Tarjeta se lleva por moneda y sin convertir, así que el crédito
+-- guarda su monto y su moneda tal como se cargaron en la tarjeta. El campo
+-- monto de la fila sigue siendo la deuda con el inversor, en USD.
+alter table deudas_movimientos add column if not exists tarjeta_monto numeric(12,2);
+alter table deudas_movimientos add column if not exists tarjeta_moneda text
+  check (tarjeta_moneda is null or tarjeta_moneda in ('USD', 'ARS'));
+
+-- ─── Compras pagadas en dos monedas ────────────────────────────────────────
+-- Una compra cash se puede pagar parte en USD y parte en ARS. Genera dos
+-- movimientos de caja, uno por moneda, con lo que salió de verdad en cada una.
+-- El campo moneda queda en 'USD' por convención; los montos reales de cada
+-- moneda viven acá.
+alter table compras add column if not exists pago_mixto boolean not null default false;
+alter table compras add column if not exists monto_usd numeric(12,2);
+alter table compras add column if not exists monto_ars numeric(12,2);
+
+-- ─── Vuelto en otra moneda ─────────────────────────────────────────────────
+-- Cuando el vuelto se devuelve en una moneda distinta de la que se cobró, a
+-- Caja entran dos movimientos reales: el ingreso por lo que entregó el cliente
+-- y este egreso por lo que se le devolvió. Va en su propia categoría para
+-- distinguirlo de un gasto y para poder restarlo de la facturación.
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock', 'pago_kg', 'vuelto'));
+
+alter table ventas add column if not exists con_vuelto boolean not null default false;
+alter table ventas add column if not exists vuelto_pago_monto numeric(12,2);
+alter table ventas add column if not exists vuelto_pago_moneda text
+  check (vuelto_pago_moneda is null or vuelto_pago_moneda in ('USD', 'ARS'));
+alter table ventas add column if not exists vuelto_monto numeric(12,2);
+alter table ventas add column if not exists vuelto_moneda text
+  check (vuelto_moneda is null or vuelto_moneda in ('USD', 'ARS'));
+
+-- ═══ TRADES ════════════════════════════════════════════════════════════════
+-- Un trade es un canje de mercadería: entra una prenda, sale otra del stock y
+-- a veces hay plata de por medio. NO es una venta: no genera facturación ni
+-- ganancia. La ganancia aparece después, al vender la prenda que entró.
+
+-- La prenda que sale no se marca vendida —se colaría en la facturación y en
+-- los rankings de más vendida— sino con estado propio.
+alter table unidades drop constraint if exists unidades_estado_check;
+alter table unidades add constraint unidades_estado_check
+  check (estado in ('disponible', 'reservado', 'vendido', 'permutado'));
+
+alter table unidades add column if not exists permutado_at timestamptz;
+
+create table if not exists trades (
+  id uuid primary key default gen_random_uuid(),
+  fecha date not null default current_date,
+  cliente_id uuid references clientes(id),
+
+  unidad_sale_id uuid references unidades(id),
+  producto_entra_id uuid references productos(id),
+  unidad_entra_id uuid references unidades(id),
+
+  -- Precios y costos congelados al momento del trade: si después se repreciara
+  -- la prenda, el reporte de este mes no tiene que moverse.
+  precio_sale_usd numeric(12,2) not null default 0,
+  precio_entra_usd numeric(12,2) not null default 0,
+  costo_sale_usd numeric(12,2) not null default 0,
+  costo_entra_usd numeric(12,2) not null default 0,
+
+  -- Plata que se movió, si hubo.
+  diferencia_monto numeric(12,2) not null default 0,
+  diferencia_moneda text check (diferencia_moneda is null or diferencia_moneda in ('USD', 'ARS')),
+  diferencia_direccion text check (diferencia_direccion is null or diferencia_direccion in ('recibimos', 'pagamos')),
+  cotizacion_usada numeric(10,2),
+
+  -- (precio entra − precio sale) + nos pagaron − pagamos. Positivo = salimos
+  -- ganando en el canje. Es el número que va al reporte del mes.
+  diferencia_mercaderia_usd numeric(12,2) not null default 0,
+
+  notas text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_trades_fecha on trades(fecha);
+create index if not exists idx_trades_cliente on trades(cliente_id);
+
+alter table trades enable row level security;
+drop policy if exists "trades_authenticated_all" on trades;
+create policy "trades_authenticated_all" on trades
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on trades to authenticated;
+
+-- La plata de un trade no es ingreso ni gasto: es reasignación de capital,
+-- como un cambio de moneda. Va con categoría propia para no contarse en
+-- facturación ni en gastos operativos.
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock', 'pago_kg', 'vuelto', 'trade'));
+
+alter table caja_movimientos add column if not exists trade_id uuid;
+create index if not exists idx_caja_trade on caja_movimientos(trade_id);
