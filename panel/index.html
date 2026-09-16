@@ -988,7 +988,11 @@
 
       <div class="border border-border p-3">
         <p class="font-mono text-xs uppercase mb-1">Sale de stock</p>
-        <p class="text-muted text-xs mb-2">Escaneá el código de tu prenda, la que se va.</p>
+        <p class="text-muted text-xs mb-2">Buscala por nombre o escaneá su código.</p>
+        <div class="relative mb-2">
+          <input id="t-buscar" type="text" placeholder="Buscar por nombre o marca…" class="w-full px-3 py-2 text-sm" autocomplete="off" />
+          <div id="t-sugerencias" class="hidden absolute z-20 left-0 right-0 bg-surface-elevated border border-border text-sm max-h-52 overflow-y-auto"></div>
+        </div>
         <input id="t-codigo" type="text" placeholder="Escanear o tipear" class="w-full px-3 py-2 text-sm font-mono" autocomplete="off" />
         <p id="t-sale-info" class="text-muted text-xs mt-1"></p>
       </div>
@@ -3083,6 +3087,60 @@ async function obtenerCotizacionSugerida() {
 let ITEM_VENTA_SEQ = 0;
 let EDITANDO_VENTA = null; // null = venta nueva; objeto = edición
 
+// ── Buscador de prenda ────────────────────────────────────────────────────
+// Busca sobre las unidades disponibles que ya están cargadas en memoria, no
+// una por una contra la base. Cada resultado es una unidad concreta —no una
+// prenda— porque una misma prenda puede tener varios talles y cada uno es un
+// código distinto: elegir "la prenda" no alcanzaría para saber cuál sale.
+function unidadesDisponiblesQueCoinciden(q, tope = 30) {
+  const texto = normalizarTexto(q);
+  const resultados = [];
+  for (const p of PRODUCTOS) {
+    if (p.pendiente_ingreso) continue;
+    if (!normalizarTexto(`${p.nombre} ${p.marca || ''}`).includes(texto)) continue;
+    for (const u of (p.unidades || [])) {
+      if (u.estado !== 'disponible' || !u.codigo_barra) continue;
+      resultados.push({ producto: p, unidad: u });
+      if (resultados.length >= tope) return resultados;
+    }
+  }
+  return resultados;
+}
+
+function montarBuscadorDePrenda(inputBuscar, sugerencias, alElegir) {
+  const cerrar = () => sugerencias.classList.add('hidden');
+
+  inputBuscar.addEventListener('input', () => {
+    const q = inputBuscar.value.trim();
+    if (q.length < 2) { cerrar(); return; }
+    const encontrados = unidadesDisponiblesQueCoinciden(q).slice(0, 12);
+    if (encontrados.length === 0) {
+      sugerencias.innerHTML = '<p class="px-3 py-2 text-muted text-xs">Sin prendas disponibles con ese nombre.</p>';
+      sugerencias.classList.remove('hidden');
+      return;
+    }
+    sugerencias.innerHTML = encontrados.map(({ producto, unidad }) => `
+      <div class="buscador-opcion px-3 py-2 hover:bg-surface cursor-pointer border-b border-border" data-codigo="${unidad.codigo_barra}">
+        <p class="text-sm">${producto.nombre}${unidad.talle ? ' <span class="text-muted">· talle ' + unidad.talle + '</span>' : ''}</p>
+        <p class="text-muted font-mono text-[10px]">${producto.marca ? producto.marca + ' · ' : ''}${unidad.codigo_barra} · USD ${Number(producto.precio_promocional_usd || producto.precio_venta_usd || 0).toFixed(2)}</p>
+      </div>`).join('');
+    sugerencias.classList.remove('hidden');
+
+    sugerencias.querySelectorAll('.buscador-opcion').forEach(el => {
+      el.addEventListener('click', () => {
+        inputBuscar.value = '';
+        cerrar();
+        alElegir(el.dataset.codigo);
+      });
+    });
+  });
+
+  inputBuscar.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
+  document.addEventListener('click', (e) => {
+    if (!sugerencias.contains(e.target) && e.target !== inputBuscar) cerrar();
+  });
+}
+
 function agregarItemVenta(existente) {
   const idx = ITEM_VENTA_SEQ++;
   const div = document.createElement('div');
@@ -3123,58 +3181,11 @@ function agregarItemVenta(existente) {
   const inputBuscar = div.querySelector('.v-item-buscar');
   const sugerencias = div.querySelector('.v-item-sugerencias');
 
-  // Buscador por nombre: se busca sobre las unidades disponibles que ya están
-  // cargadas en memoria, no una por una contra la base. Cada resultado es una
-  // unidad concreta —no una prenda— porque una misma prenda puede tener varios
-  // talles y cada uno es un código distinto: elegir "la prenda" no alcanza.
-  function unidadesDisponiblesQueCoinciden(q) {
-    const texto = normalizarTexto(q);
-    const resultados = [];
-    for (const p of PRODUCTOS) {
-      if (p.pendiente_ingreso) continue;
-      if (!normalizarTexto(`${p.nombre} ${p.marca || ''}`).includes(texto)) continue;
-      for (const u of (p.unidades || [])) {
-        if (u.estado !== 'disponible' || !u.codigo_barra) continue;
-        resultados.push({ producto: p, unidad: u });
-        if (resultados.length >= 30) return resultados;
-      }
-    }
-    return resultados;
-  }
-
-  function cerrarSugerencias() { sugerencias.classList.add('hidden'); }
-
-  inputBuscar.addEventListener('input', () => {
-    const q = inputBuscar.value.trim();
-    if (q.length < 2) { cerrarSugerencias(); return; }
-    const encontrados = unidadesDisponiblesQueCoinciden(q).slice(0, 12);
-    if (encontrados.length === 0) {
-      sugerencias.innerHTML = '<p class="px-3 py-2 text-muted text-xs">Sin prendas disponibles con ese nombre.</p>';
-      sugerencias.classList.remove('hidden');
-      return;
-    }
-    sugerencias.innerHTML = encontrados.map(({ producto, unidad }) => `
-      <div class="v-sugerencia px-3 py-2 hover:bg-surface cursor-pointer border-b border-border" data-codigo="${unidad.codigo_barra}">
-        <p class="text-sm">${producto.nombre}${unidad.talle ? ' <span class="text-muted">· talle ' + unidad.talle + '</span>' : ''}</p>
-        <p class="text-muted font-mono text-[10px]">${producto.marca || ''} ${producto.marca ? '·' : ''} ${unidad.codigo_barra} · USD ${Number(producto.precio_promocional_usd || producto.precio_venta_usd || 0).toFixed(2)}</p>
-      </div>`).join('');
-    sugerencias.classList.remove('hidden');
-
-    sugerencias.querySelectorAll('.v-sugerencia').forEach(el => {
-      el.addEventListener('click', () => {
-        // Se completa el código y se dispara la misma búsqueda de siempre, así
-        // el precio y el resto salen por el camino ya probado del escáner.
-        inputCodigo.value = el.dataset.codigo;
-        inputBuscar.value = '';
-        cerrarSugerencias();
-        buscarCodigo();
-      });
-    });
-  });
-
-  inputBuscar.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarSugerencias(); });
-  document.addEventListener('click', (e) => {
-    if (!sugerencias.contains(e.target) && e.target !== inputBuscar) cerrarSugerencias();
+  // Mismo buscador que en Trades: elegir completa el código y dispara la
+  // búsqueda de siempre, así el precio sale por el camino ya probado.
+  montarBuscadorDePrenda(inputBuscar, sugerencias, (codigo) => {
+    inputCodigo.value = codigo;
+    buscarCodigo();
   });
 
   async function buscarCodigo() {
@@ -4982,6 +4993,14 @@ document.getElementById('t-codigo').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); buscarUnidadTrade(); }
 });
 
+montarBuscadorDePrenda(
+  document.getElementById('t-buscar'),
+  document.getElementById('t-sugerencias'),
+  (codigo) => {
+    document.getElementById('t-codigo').value = codigo;
+    buscarUnidadTrade();
+  });
+
 function direccionTrade() { return document.getElementById('t-dif-direccion').value; }
 
 function montoTradeEnUsd() {
@@ -5048,6 +5067,8 @@ async function abrirModalTrade() {
   tClienteNombre.value = '';
   document.getElementById('t-fecha').value = hoyIso();
   document.getElementById('t-codigo').value = '';
+  document.getElementById('t-buscar').value = '';
+  document.getElementById('t-sugerencias').classList.add('hidden');
   document.getElementById('t-sale-info').textContent = '';
   ['t-entra-nombre', 't-entra-marca', 't-entra-talle', 't-entra-precio', 't-dif-monto'].forEach(id =>
     document.getElementById(id).value = '');
