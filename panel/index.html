@@ -2176,7 +2176,7 @@ let PRODUCTOS_PENDIENTES = [];
 async function cargarProductos() {
   const { data, error } = await supabase
     .from('productos')
-    .select('*, unidades(id, estado, talle, costo_usd)')
+    .select('*, unidades(id, estado, talle, costo_usd, codigo_barra)')
     .order('created_at', { ascending: false });
   if (error) { reportarErrorCarga('el stock', error); return; }
   marcarCargaOk('el stock');
@@ -3090,6 +3090,11 @@ function agregarItemVenta(existente) {
   div.dataset.idx = idx;
   div.innerHTML = `
     <div>
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Prenda</label>
+      <div class="relative mb-2">
+        <input class="v-item-buscar w-full px-3 py-2 text-sm" placeholder="Buscar por nombre o marca…" autocomplete="off" />
+        <div class="v-item-sugerencias hidden absolute z-20 left-0 right-0 bg-surface-elevated border border-border text-sm max-h-52 overflow-y-auto"></div>
+      </div>
       <label class="block text-muted font-mono text-xs uppercase mb-1">Código</label>
       <input class="v-item-codigo w-full px-3 py-2 text-sm font-mono" placeholder="Escanear o tipear" />
       <p class="v-item-info text-xs text-muted mt-1">Sin escanear.</p>
@@ -3115,6 +3120,62 @@ function agregarItemVenta(existente) {
   const info = div.querySelector('.v-item-info');
   const inputPrecio = div.querySelector('.v-item-precio');
   const selectMoneda = div.querySelector('.v-item-moneda');
+  const inputBuscar = div.querySelector('.v-item-buscar');
+  const sugerencias = div.querySelector('.v-item-sugerencias');
+
+  // Buscador por nombre: se busca sobre las unidades disponibles que ya están
+  // cargadas en memoria, no una por una contra la base. Cada resultado es una
+  // unidad concreta —no una prenda— porque una misma prenda puede tener varios
+  // talles y cada uno es un código distinto: elegir "la prenda" no alcanza.
+  function unidadesDisponiblesQueCoinciden(q) {
+    const texto = normalizarTexto(q);
+    const resultados = [];
+    for (const p of PRODUCTOS) {
+      if (p.pendiente_ingreso) continue;
+      if (!normalizarTexto(`${p.nombre} ${p.marca || ''}`).includes(texto)) continue;
+      for (const u of (p.unidades || [])) {
+        if (u.estado !== 'disponible' || !u.codigo_barra) continue;
+        resultados.push({ producto: p, unidad: u });
+        if (resultados.length >= 30) return resultados;
+      }
+    }
+    return resultados;
+  }
+
+  function cerrarSugerencias() { sugerencias.classList.add('hidden'); }
+
+  inputBuscar.addEventListener('input', () => {
+    const q = inputBuscar.value.trim();
+    if (q.length < 2) { cerrarSugerencias(); return; }
+    const encontrados = unidadesDisponiblesQueCoinciden(q).slice(0, 12);
+    if (encontrados.length === 0) {
+      sugerencias.innerHTML = '<p class="px-3 py-2 text-muted text-xs">Sin prendas disponibles con ese nombre.</p>';
+      sugerencias.classList.remove('hidden');
+      return;
+    }
+    sugerencias.innerHTML = encontrados.map(({ producto, unidad }) => `
+      <div class="v-sugerencia px-3 py-2 hover:bg-surface cursor-pointer border-b border-border" data-codigo="${unidad.codigo_barra}">
+        <p class="text-sm">${producto.nombre}${unidad.talle ? ' <span class="text-muted">· talle ' + unidad.talle + '</span>' : ''}</p>
+        <p class="text-muted font-mono text-[10px]">${producto.marca || ''} ${producto.marca ? '·' : ''} ${unidad.codigo_barra} · USD ${Number(producto.precio_promocional_usd || producto.precio_venta_usd || 0).toFixed(2)}</p>
+      </div>`).join('');
+    sugerencias.classList.remove('hidden');
+
+    sugerencias.querySelectorAll('.v-sugerencia').forEach(el => {
+      el.addEventListener('click', () => {
+        // Se completa el código y se dispara la misma búsqueda de siempre, así
+        // el precio y el resto salen por el camino ya probado del escáner.
+        inputCodigo.value = el.dataset.codigo;
+        inputBuscar.value = '';
+        cerrarSugerencias();
+        buscarCodigo();
+      });
+    });
+  });
+
+  inputBuscar.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarSugerencias(); });
+  document.addEventListener('click', (e) => {
+    if (!sugerencias.contains(e.target) && e.target !== inputBuscar) cerrarSugerencias();
+  });
 
   async function buscarCodigo() {
     const codigo = inputCodigo.value.trim();
@@ -3146,6 +3207,10 @@ function agregarItemVenta(existente) {
     inputCodigo.value = existente.unidades?.codigo_barra || '';
     inputCodigo.disabled = true;
     inputCodigo.classList.add('opacity-50');
+    // En una venta que se edita la prenda ya está elegida y el código no se
+    // puede cambiar: el buscador sobra y solo confunde.
+    inputBuscar.closest('.relative').classList.add('hidden');
+    div.querySelector('label').classList.add('hidden');
     info.textContent = `${existente.unidades?.productos?.nombre || ''}${existente.unidades?.talle ? ' — talle ' + existente.unidades.talle : ''}`;
     info.className = 'v-item-info text-xs text-accent mt-1';
     inputPrecio.value = existente.precio_venta;
