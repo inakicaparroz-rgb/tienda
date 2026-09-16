@@ -392,13 +392,19 @@
       <span class="spec-label" id="results-count" aria-live="polite">MOSTRANDO 114 / 114 PRODUCTOS</span>
       <div class="flex items-center gap-3">
         <button id="clear-filters" class="btn-ghost hidden">Limpiar filtros ×</button>
-        <select id="sort-select" style="background:transparent;border:1px solid var(--border);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;padding:.4rem .6rem;outline:none;cursor:pointer;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-          <option value="default">ORDENAR</option>
-          <option value="price-asc">PRECIO: MENOR A MAYOR</option>
-          <option value="price-desc">PRECIO: MAYOR A MENOR</option>
-          <option value="date-asc">MÁS ANTIGUO</option>
-          <option value="date-desc">MÁS RECIENTE</option>
-        </select>
+        <div id="sort-dropdown" style="position:relative">
+          <button id="sort-btn" style="border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:all .2s ease;white-space:nowrap;display:flex;align-items:center;gap:.5rem" onmouseenter="this.style.borderColor='var(--ink)';this.style.color='var(--ink)'" onmouseleave="if(!document.getElementById('sort-menu').classList.contains('open')){this.style.borderColor='var(--border)';this.style.color='var(--muted)'}">
+            <span id="sort-label">ORDENAR</span>
+            <span style="font-size:9px">▾</span>
+          </button>
+          <div id="sort-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--bg);border:1px solid var(--border);z-index:50;min-width:220px;flex-direction:column">
+            <button class="sort-option" data-val="default" style="padding:.6rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);background:transparent;border:none;cursor:pointer;text-align:left;transition:all .15s" onmouseenter="this.style.color='var(--ink)';this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.color='var(--muted)';this.style.background='transparent'">Por defecto</button>
+            <button class="sort-option" data-val="price-asc" style="padding:.6rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);background:transparent;border:none;cursor:pointer;text-align:left;transition:all .15s" onmouseenter="this.style.color='var(--ink)';this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.color='var(--muted)';this.style.background='transparent'">Precio: menor a mayor</button>
+            <button class="sort-option" data-val="price-desc" style="padding:.6rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);background:transparent;border:none;cursor:pointer;text-align:left;transition:all .15s" onmouseenter="this.style.color='var(--ink)';this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.color='var(--muted)';this.style.background='transparent'">Precio: mayor a menor</button>
+            <button class="sort-option" data-val="date-desc" style="padding:.6rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);background:transparent;border:none;cursor:pointer;text-align:left;transition:all .15s" onmouseenter="this.style.color='var(--ink)';this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.color='var(--muted)';this.style.background='transparent'">Más reciente</button>
+            <button class="sort-option" data-val="date-asc" style="padding:.6rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);background:transparent;border:none;cursor:pointer;text-align:left;transition:all .15s" onmouseenter="this.style.color='var(--ink)';this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.color='var(--muted)';this.style.background='transparent'">Más antiguo</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -892,7 +898,32 @@ const WA_NUMBER = "541134435571";
     render();
   });
   searchInput.addEventListener("input", () => { searchQuery = searchInput.value.trim(); render(); });
-  document.getElementById("sort-select").addEventListener("change", (e) => { activeSort = e.target.value; render(); });
+  const sortBtn = document.getElementById("sort-btn");
+  const sortMenu = document.getElementById("sort-menu");
+  const sortLabel = document.getElementById("sort-label");
+  const sortLabels = { default:"ORDENAR", "price-asc":"PRECIO ↑", "price-desc":"PRECIO ↓", "date-desc":"MÁS RECIENTE", "date-asc":"MÁS ANTIGUO" };
+  sortBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = sortMenu.classList.toggle("open");
+    sortMenu.style.display = open ? "flex" : "none";
+    sortBtn.style.borderColor = open ? "var(--accent)" : "var(--border)";
+    sortBtn.style.color = open ? "var(--ink)" : "var(--muted)";
+  });
+  document.addEventListener("click", () => {
+    sortMenu.classList.remove("open");
+    sortMenu.style.display = "none";
+    sortBtn.style.borderColor = "var(--border)";
+    sortBtn.style.color = "var(--muted)";
+  });
+  document.querySelectorAll(".sort-option").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeSort = btn.dataset.val;
+      sortLabel.textContent = sortLabels[activeSort] || "ORDENAR";
+      sortBtn.style.borderColor = activeSort !== "default" ? "var(--accent)" : "var(--border)";
+      sortBtn.style.color = activeSort !== "default" ? "var(--accent)" : "var(--muted)";
+      render();
+    });
+  });
 
   document.querySelectorAll(".cat-jump").forEach(a => {
     a.addEventListener("click", () => {
