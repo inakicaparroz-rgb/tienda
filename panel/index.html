@@ -2118,6 +2118,33 @@ function esErrorDeSesion(error) {
     ['PGRST301', 'PGRST302', 'PGRST303'].includes(error?.code);
 }
 
+// "issued at future" es un caso aparte: el token está bien, lo que pasa es que
+// el servidor que lo valida tiene el reloj unos segundos atrás del que lo
+// firmó, así que por ese rato lo ve emitido en el futuro. Se corrige solo al
+// pasar esos segundos, y renovar el token lo empeoraría: uno nuevo quedaría
+// todavía más adelante.
+function esTokenEnFuturo(error) {
+  const texto = (error?.message || '').toLowerCase();
+  return texto.includes('issued at future') || texto.includes('used before issued');
+}
+
+// Los errores de sesión pasajeros no tienen por qué llegar a la pantalla:
+// se espera un momento y se reintenta. Solo si sigue fallando se avisa.
+async function consultarConReintento(hacerConsulta, intentos = 3) {
+  let resultado = await hacerConsulta();
+  for (let intento = 1; intento < intentos; intento++) {
+    if (!esErrorDeSesion(resultado?.error)) break;
+    await new Promise(r => setTimeout(r, 1200 * intento));
+    // Un token vencido sí hay que renovarlo; uno "emitido en el futuro" no,
+    // que renovarlo lo aleja más todavía.
+    if (!esTokenEnFuturo(resultado.error)) {
+      try { await supabase.auth.refreshSession(); } catch (e) { console.error(e); }
+    }
+    resultado = await hacerConsulta();
+  }
+  return resultado;
+}
+
 function textoDeErrorDeCarga(error) {
   const status = error?.status || error?.originalError?.status;
   const texto = (error?.message || '').toLowerCase();
@@ -2127,7 +2154,9 @@ function textoDeErrorDeCarga(error) {
   // "issued at future" es el reloj del dispositivo adelantado respecto del
   // servidor: el token dice haberse emitido en un momento que todavía no llegó.
   if (texto.includes('issued at future') || texto.includes('used before issued')) {
-    return 'Tu sesión quedó fechada en el futuro, así que Supabase la rechaza. Suele ser el reloj del teléfono adelantado: ponelo en automático y volvé a entrar. Tus datos están intactos.';
+    return 'Supabase está viendo tu sesión como emitida en el futuro: sus relojes quedaron desfasados. '
+      + 'Ya se reintentó solo varias veces sin suerte. Esperá un minuto y recargá; si sigue, cerrá sesión y volvé a entrar. '
+      + 'Tus datos están intactos.';
   }
   if (texto.includes('expired')) {
     return 'Se venció la sesión. Volvé a entrar. Tus datos están intactos.';
@@ -2178,10 +2207,10 @@ let PRODUCTOS = [];
 let PRODUCTOS_PENDIENTES = [];
 
 async function cargarProductos() {
-  const { data, error } = await supabase
+  const { data, error } = await consultarConReintento(() => supabase
     .from('productos')
     .select('*, unidades(id, estado, talle, costo_usd, codigo_barra)')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }));
   if (error) { reportarErrorCarga('el stock', error); return; }
   marcarCargaOk('el stock');
   const todos = data || [];
@@ -3027,7 +3056,7 @@ let CLIENTES = [];
 let CLIENTE_SELECCIONADO = null;
 
 async function cargarClientes() {
-  const { data, error } = await supabase.from('clientes').select('*').order('nombre');
+  const { data, error } = await consultarConReintento(() => supabase.from('clientes').select('*').order('nombre'));
   if (error) { reportarErrorCarga('los clientes', error); return; }
   marcarCargaOk('los clientes');
   CLIENTES = data || [];
@@ -3776,7 +3805,7 @@ document.getElementById('v-confirmar').addEventListener('click', async () => {
 let VENTAS = [];
 
 async function cargarVentas() {
-  const { data, error } = await supabase
+  const { data, error } = await consultarConReintento(() => supabase
     .from('ventas')
     .select(`
       *,
@@ -3784,7 +3813,7 @@ async function cargarVentas() {
       venta_items(id, precio_venta, moneda, cotizacion_usada, precio_venta_usd, costo_usd_snapshot, precio_lista_usd_snapshot,
         unidades(codigo_barra, talle, productos(nombre)))
     `)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }));
   if (error) { reportarErrorCarga('las ventas', error); return; }
   marcarCargaOk('las ventas');
   VENTAS = data || [];
@@ -4254,10 +4283,10 @@ function estadoEncargo(encargo) {
 }
 
 async function cargarEncargos() {
-  const { data, error } = await supabase
+  const { data, error } = await consultarConReintento(() => supabase
     .from('encargos')
     .select('*, clientes(nombre, telefono, email), encargo_pagos(id, fecha, monto, moneda, monto_usd)')
-    .order('fecha', { ascending: false });
+    .order('fecha', { ascending: false }));
   if (error) {
     reportarErrorCarga('los encargos', error);
     // Solo si la tabla no existe tiene sentido mandar a correr el SQL; si el
@@ -4802,12 +4831,12 @@ function difMercaderiaTrade(precioSale, precioEntra, direccion, montoUsd) {
 }
 
 async function cargarTrades() {
-  const { data, error } = await supabase
+  const { data, error } = await consultarConReintento(() => supabase
     .from('trades')
     .select(`*, clientes(nombre),
              unidad_sale:unidades!trades_unidad_sale_id_fkey(codigo_barra, talle, productos(nombre, marca)),
              producto_entra:productos!trades_producto_entra_id_fkey(nombre, marca)`)
-    .order('fecha', { ascending: false });
+    .order('fecha', { ascending: false }));
   if (error) {
     reportarErrorCarga('los trades', error);
     document.getElementById('trades-empty').textContent = error.code === '42P01'
@@ -5823,10 +5852,10 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
 
 // ── Listado de compras ──
 async function cargarCompras() {
-  const { data, error } = await supabase
+  const { data, error } = await consultarConReintento(() => supabase
     .from('compras')
     .select('*, productos(id, nombre, precio_venta_usd, unidades(costo_usd))')
-    .order('fecha', { ascending: false });
+    .order('fecha', { ascending: false }));
   if (error) {
     reportarErrorCarga('las compras', error);
     document.getElementById('compras-empty').textContent = error.code === '42P01'
@@ -5940,7 +5969,7 @@ function categoriaTexto(m) {
 }
 
 async function cargarConfiguracion() {
-  const { data, error } = await supabase.from('configuracion').select('*').single();
+  const { data, error } = await consultarConReintento(() => supabase.from('configuracion').select('*').single());
   if (error) { reportarErrorCarga('la configuración', error); return; }
   marcarCargaOk('la configuración');
   COTIZACION_ACTUAL = Number(data?.cotizacion_usd_ars) || 0;
@@ -5952,7 +5981,7 @@ async function cargarConfiguracion() {
 }
 
 async function cargarInversores() {
-  const { data, error } = await supabase.from('inversores').select('*').order('nombre');
+  const { data, error } = await consultarConReintento(() => supabase.from('inversores').select('*').order('nombre'));
   if (error) { reportarErrorCarga('los inversores', error); return; }
   marcarCargaOk('los inversores');
   INVERSORES = data || [];
@@ -5966,10 +5995,10 @@ async function cargarInversores() {
 }
 
 async function cargarCaja() {
-  const { data, error } = await supabase
+  const { data, error } = await consultarConReintento(() => supabase
     .from('caja_movimientos')
     .select('*')
-    .order('fecha', { ascending: false });
+    .order('fecha', { ascending: false }));
   if (error) { reportarErrorCarga('el flujo de caja', error); return; }
   marcarCargaOk('el flujo de caja');
   CAJA = data || [];
