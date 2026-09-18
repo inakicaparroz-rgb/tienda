@@ -801,11 +801,10 @@
 
   const BRANDS = ["HELLSTAR","SUPREME","CORTEIZ","DENIM TEARS","CASABLANCA","BAPE","ADIDAS","VALE FOREVER","STÜSSY","OFF-WHITE","MIXED EMOTION","ESSENTIALS","KITH","JORDAN","NIKE","SYNA","ERIC EMANUEL","BROKEN PLANET","ALL SAINTS","NOCTA","PRADA","SP5DER","NORTH FACE","SPRAYGROUND","DIESEL"];
 
-  const BLUE = 1530; // dólar blue 26/06/2026
+  let BLUE = 1530;
   const MARGIN = 1.225; // USD × blue × 22.5%
   const effectiveARS = (p) => Math.round(p.priceUSD * BLUE * MARGIN / 1000) * 1000;
-  const BLUE_TRANSF = 1560;
-  const transferARS = (p) => Math.round(p.priceUSD * BLUE_TRANSF / 1000) * 1000;
+  const transferARS = (p) => Math.round(p.priceUSD * BLUE / 1000) * 1000;
   const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
@@ -997,20 +996,25 @@ const WA_NUMBER = "541134435571";
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
-  // Carga productos desde el sistema (Supabase) — reemplaza al viejo Google Sheets
-  cargarProductosDesdeSupabase()
-    .then(productos => { PRODUCTS = productos; })
-    .catch(err => console.error(err))
+  // Carga cotización del panel y luego productos
+  supabase.from("configuracion").select("cotizacion_usd_ars").single()
+    .then(({ data }) => { if (data?.cotizacion_usd_ars) BLUE = Number(data.cotizacion_usd_ars); })
+    .catch(() => {})
     .finally(() => {
-      document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
-      const brandParam = new URLSearchParams(location.search).get("buscar");
-      if (brandParam) {
-        searchQuery = brandParam;
-        searchInput.value = brandParam;
-        document.getElementById("catalogo").scrollIntoView();
-      }
-      render();
-      initCart();
+      cargarProductosDesdeSupabase()
+        .then(productos => { PRODUCTS = productos; })
+        .catch(err => console.error(err))
+        .finally(() => {
+          document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
+          const brandParam = new URLSearchParams(location.search).get("buscar");
+          if (brandParam) {
+            searchQuery = brandParam;
+            searchInput.value = brandParam;
+            document.getElementById("catalogo").scrollIntoView();
+          }
+          render();
+          initCart();
+        });
     });
 
   // ── CARRITO ──────────────────────────────────────────────────────────────
