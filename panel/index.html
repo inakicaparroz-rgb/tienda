@@ -948,6 +948,9 @@
                       <button id="btn-credito-tarjeta" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
                         + Crédito en tarjeta
                       </button>
+                      <button id="btn-saldar-con-tarjeta" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
+                        − Saldar con saldo de tarjeta
+                      </button>
                     </div>
                     <div id="deuda-inversor-detalle-movimientos"></div>
                   </div>
@@ -1055,6 +1058,51 @@
     <div class="flex gap-2 mt-5">
       <button id="t-confirmar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar trade</button>
       <button id="t-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: saldar deuda de un inversor con el saldo a favor de la tarjeta -->
+<div id="modal-saldar-tarjeta" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-surface border border-border p-4 sm:p-6">
+    <h3 class="font-bold mb-1">Saldar con saldo de tarjeta</h3>
+    <p id="st-contexto" class="text-muted text-xs mb-4"></p>
+    <p class="text-muted text-xs mb-4">
+      Usa el saldo a favor de la tarjeta para cancelar lo que le debemos.
+      <strong>No sale plata de Caja</strong>: baja la deuda con el inversor y baja
+      el saldo disponible en la tarjeta.
+    </p>
+    <div id="st-disponible" class="bg-surface-elevated border border-border p-3 font-mono text-xs space-y-1 mb-3"></div>
+    <div class="space-y-3 text-sm">
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Monto a usar</label>
+        <div class="flex gap-2">
+          <input id="st-monto" type="number" step="0.01" placeholder="0.00" class="w-32 px-3 py-2 text-sm" />
+          <select id="st-moneda" class="px-3 py-2 text-sm">
+            <option value="ARS">ARS</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+      </div>
+      <div id="st-cotizacion-wrap">
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Cotización</label>
+        <input id="st-cotizacion" type="number" step="0.01" class="w-full px-3 py-2 text-sm" />
+        <p class="text-muted text-xs mt-1">Para descontar de la deuda, que se lleva en USD.</p>
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Fecha</label>
+        <input id="st-fecha" type="date" class="w-full px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Detalle</label>
+        <input id="st-motivo" type="text" placeholder="Saldado con saldo de tarjeta" class="w-full px-3 py-2 text-sm" />
+      </div>
+    </div>
+    <p id="st-resumen" class="text-muted text-xs mt-3 font-mono"></p>
+    <p id="st-alerta" class="hidden text-yellow-500 text-xs mt-2"></p>
+    <div class="flex gap-2 mt-5">
+      <button id="st-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="st-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
     </div>
   </div>
 </div>
@@ -4346,12 +4394,16 @@ async function calcularSaldosTarjeta() {
   // La plata que un inversor carga en la tarjeta resta: es saldo disponible,
   // no gasto por pagar. Al gastar con la tarjeta el saldo vuelve a subir solo,
   // porque cada encargo o compra en tarjeta ya suma más arriba.
+  // El signo lo da el tipo del movimiento: cargar crédito ("debe", se le pasa
+  // a deber al inversor) baja el saldo de la tarjeta, y usar ese saldo a favor
+  // para saldarle la deuda ("pago") lo devuelve.
   const { data: creditos } = await supabase
     .from('deudas_movimientos')
-    .select('tarjeta_monto, tarjeta_moneda')
+    .select('tipo, tarjeta_monto, tarjeta_moneda')
     .eq('es_credito_tarjeta', true);
   (creditos || []).forEach(c => {
-    saldos[c.tarjeta_moneda === 'ARS' ? 'ARS' : 'USD'] -= Number(c.tarjeta_monto || 0);
+    const signo = c.tipo === 'pago' ? 1 : -1;
+    saldos[c.tarjeta_moneda === 'ARS' ? 'ARS' : 'USD'] += signo * Number(c.tarjeta_monto || 0);
   });
 
   return saldos;
@@ -6661,7 +6713,7 @@ function renderMovimientosDeuda(entidadTipo, entidadId) {
             <td class="p-2">
               ${d.motivo}
               ${d.es_inversion_previa ? '<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-border text-muted whitespace-nowrap ml-1">Anterior · fuera de caja</span>' : ''}
-              ${d.es_credito_tarjeta ? `<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-accent text-accent whitespace-nowrap ml-1">Tarjeta · ${d.tarjeta_moneda || 'USD'} ${Number(d.tarjeta_monto || 0).toFixed(2)}</span>` : ''}
+              ${d.es_credito_tarjeta ? `<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-accent text-accent whitespace-nowrap ml-1">${d.tipo === 'pago' ? 'Usa tarjeta' : 'Carga tarjeta'} · ${d.tarjeta_moneda || 'USD'} ${Number(d.tarjeta_monto || 0).toFixed(2)}</span>` : ''}
             </td>
             <td class="p-2 ${d.tipo === 'debe' ? 'text-red-400' : 'text-accent'}">${d.tipo === 'debe' ? '+' : '-'}USD ${Number(d.monto).toFixed(2)}</td>
           </tr>
@@ -6823,6 +6875,122 @@ document.getElementById('btn-credito-tarjeta').addEventListener('click', () => {
 
 document.getElementById('ct-cancelar').addEventListener('click', () =>
   modalCreditoTarjeta.classList.add('hidden'));
+
+// ── Saldar deuda de un inversor con el saldo a favor de la tarjeta ─────
+// Es el movimiento inverso al crédito: baja lo que le debemos y devuelve ese
+// saldo a la tarjeta. No toca Caja porque no se mueve plata.
+const modalSaldarTarjeta = document.getElementById('modal-saldar-tarjeta');
+let SALDOS_TARJETA_AL_ABRIR = { USD: 0, ARS: 0 };
+
+// Lo disponible es el saldo negativo: si la tarjeta está en −500.000, hay
+// 500.000 a favor. Un saldo positivo es deuda con la tarjeta, no hay nada.
+function disponibleEnTarjeta(moneda) {
+  return Math.max(0, -Number(SALDOS_TARJETA_AL_ABRIR[moneda] || 0));
+}
+
+function saldarTarjetaEnUsd() {
+  const monto = parseFloat(document.getElementById('st-monto').value) || 0;
+  if (document.getElementById('st-moneda').value !== 'ARS') return monto;
+  const cotizacion = parseFloat(document.getElementById('st-cotizacion').value) || 0;
+  return cotizacion ? monto / cotizacion : 0;
+}
+
+function actualizarResumenSaldarTarjeta() {
+  const moneda = document.getElementById('st-moneda').value;
+  document.getElementById('st-cotizacion-wrap').classList.toggle('hidden', moneda !== 'ARS');
+
+  const monto = parseFloat(document.getElementById('st-monto').value) || 0;
+  const usd = saldarTarjetaEnUsd();
+  const disponible = disponibleEnTarjeta(moneda);
+  const deuda = saldoEntidad('inversor', DEUDA_INVERSOR_ACTUAL);
+
+  document.getElementById('st-resumen').textContent = monto
+    ? `Cancela USD ${usd.toFixed(2)} de la deuda · quedan ${moneda} ${Math.max(0, disponible - monto).toFixed(2)} a favor en la tarjeta`
+    : '';
+
+  const alerta = document.getElementById('st-alerta');
+  const avisos = [];
+  if (monto > disponible + 0.009) {
+    avisos.push(`Estás usando ${moneda} ${(monto - disponible).toFixed(2)} más de lo que hay a favor: `
+      + 'esa parte pasa a ser deuda con la tarjeta.');
+  }
+  if (usd > deuda + 0.009) {
+    avisos.push(`Supera lo que le debemos por USD ${(usd - deuda).toFixed(2)}: le quedaría saldo a favor.`);
+  }
+  alerta.textContent = avisos.join(' ');
+  alerta.classList.toggle('hidden', avisos.length === 0);
+}
+
+['st-monto', 'st-cotizacion'].forEach(id =>
+  document.getElementById(id).addEventListener('input', actualizarResumenSaldarTarjeta));
+document.getElementById('st-moneda').addEventListener('change', actualizarResumenSaldarTarjeta);
+
+document.getElementById('btn-saldar-con-tarjeta').addEventListener('click', async () => {
+  const inversor = INVERSORES.find(i => i.id === DEUDA_INVERSOR_ACTUAL);
+  if (!inversor) return;
+  const deuda = saldoEntidad('inversor', inversor.id);
+  document.getElementById('st-contexto').textContent = `${inversor.nombre} — le debemos USD ${deuda.toFixed(2)}`;
+  document.getElementById('st-monto').value = '';
+  document.getElementById('st-motivo').value = '';
+  document.getElementById('st-moneda').value = 'ARS';
+  document.getElementById('st-cotizacion').value = COTIZACION_ACTUAL || '';
+  document.getElementById('st-fecha').value = hoyIso();
+  document.getElementById('st-disponible').innerHTML = '<p class="text-muted">Calculando saldo…</p>';
+  modalSaldarTarjeta.classList.remove('hidden');
+
+  SALDOS_TARJETA_AL_ABRIR = await calcularSaldosTarjeta();
+  const fila = (m) => {
+    const disp = disponibleEnTarjeta(m);
+    return `<div class="flex justify-between"><span class="text-muted">A favor en ${m}</span><span class="${disp > 0.009 ? 'text-accent' : ''}">${m} ${disp.toFixed(2)}</span></div>`;
+  };
+  document.getElementById('st-disponible').innerHTML = fila('ARS') + fila('USD');
+  actualizarResumenSaldarTarjeta();
+});
+
+document.getElementById('st-cancelar').addEventListener('click', () =>
+  modalSaldarTarjeta.classList.add('hidden'));
+
+document.getElementById('st-guardar').addEventListener('click', async () => {
+  const inversorId = DEUDA_INVERSOR_ACTUAL;
+  if (!inversorId) return;
+  const monto = parseFloat(document.getElementById('st-monto').value) || 0;
+  if (monto <= 0) { alert('Ingresá el monto a usar.'); return; }
+  const moneda = document.getElementById('st-moneda').value;
+  const montoUsd = saldarTarjetaEnUsd();
+  if (montoUsd <= 0) { alert('Falta la cotización para pasar el monto a USD.'); return; }
+
+  const disponible = disponibleEnTarjeta(moneda);
+  if (monto > disponible + 0.009) {
+    const seguir = confirm(
+      `La tarjeta tiene ${moneda} ${disponible.toFixed(2)} a favor y estás usando ${moneda} ${monto.toFixed(2)}.\n\n`
+      + `La diferencia de ${moneda} ${(monto - disponible).toFixed(2)} pasa a ser deuda con la tarjeta.\n\n¿Seguir igual?`);
+    if (!seguir) return;
+  }
+
+  const boton = document.getElementById('st-guardar');
+  boton.disabled = true;
+  const { error } = await supabase.from('deudas_movimientos').insert({
+    entidad_tipo: 'inversor', entidad_id: inversorId, tipo: 'pago',
+    motivo: document.getElementById('st-motivo').value.trim() || 'Saldado con saldo de tarjeta',
+    monto: Number(montoUsd.toFixed(2)),
+    fecha: document.getElementById('st-fecha').value || hoyIso(),
+    es_credito_tarjeta: true,
+    tarjeta_monto: monto,
+    tarjeta_moneda: moneda,
+  });
+  boton.disabled = false;
+  if (error) { alert('No se pudo saldar la deuda.'); console.error(error); return; }
+
+  modalSaldarTarjeta.classList.add('hidden');
+  await cargarDeudas();
+  await renderTarjetaEnDeudas();
+  const inversor = INVERSORES.find(i => i.id === inversorId);
+  const saldo = saldoEntidad('inversor', inversorId);
+  document.getElementById('deuda-inversor-detalle-titulo').textContent =
+    `${inversor?.nombre || 'Inversor'} — le debemos USD ${saldo.toFixed(2)}`;
+  document.getElementById('deuda-inversor-detalle-movimientos').innerHTML =
+    renderMovimientosDeuda('inversor', inversorId);
+});
 
 document.getElementById('ct-guardar').addEventListener('click', async () => {
   const inversorId = DEUDA_INVERSOR_ACTUAL;
