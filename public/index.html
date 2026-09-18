@@ -804,6 +804,8 @@
   const BLUE = 1530; // dólar blue 26/06/2026
   const MARGIN = 1.225; // USD × blue × 22.5%
   const effectiveARS = (p) => Math.round(p.priceUSD * BLUE * MARGIN / 1000) * 1000;
+  const BLUE_TRANSF = 1560;
+  const transferARS = (p) => Math.round(p.priceUSD * BLUE_TRANSF / 1000) * 1000;
   const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
@@ -1086,9 +1088,9 @@ const WA_NUMBER = "541134435571";
       `).join("");
 
       // WhatsApp: mensaje pre-cargado con el carrito
-      const lines = cart.map(p => `• ${p.name}${p.talle ? ` (Talle ${p.talle})` : ""} — USD ${p.priceUSD}`).join("\n");
-      const total_usd = cart.reduce((s, p) => s + p.priceUSD, 0);
-      const total_line = `\nTOTAL: USD ${total_usd} (≈ ${formatARS(total)} ARS)`;
+      const lines = cart.map(p => `• ${p.name}${p.talle ? ` (Talle ${p.talle})` : ""} — ${formatARS(transferARS(p))}`).join("\n");
+      const total_transf = cart.reduce((s, p) => s + transferARS(p), 0);
+      const total_line = `\nTOTAL: ${formatARS(total_transf)} ARS (precio transferencia)`;
       const msg = encodeURIComponent(`Hola! Quiero comprar:\n${lines}${total_line}`);
       btnWsp.href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
       window._cartWspMsg = msg;
