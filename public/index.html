@@ -106,14 +106,14 @@
     .badge-encargo{border-color:var(--ink);color:var(--ink)}
     .badge-sin-stock{border-color:var(--muted);color:var(--muted)}
     .reveal{opacity:0;transform:translateY(28px);transition:opacity .9s cubic-bezier(0.16,1,0.3,1),transform .9s cubic-bezier(0.16,1,0.3,1)}
-    .sort-trigger{display:inline-flex;align-items:center;gap:.6rem;border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:border-color .2s ease,color .2s ease;white-space:nowrap}
+    .sort-trigger{display:inline-flex;align-items:center;gap:.6rem;border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:border-color .2s ease,color .2s ease;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .sort-trigger:hover{border-color:var(--ink);color:var(--ink)}
     .sort-trigger.on{border-color:var(--accent);color:var(--accent)}
     .sort-trigger .caret{font-size:8px;transition:transform .2s ease}
     .sort-trigger.open .caret{transform:rotate(180deg)}
     #sort-menu{position:fixed;z-index:9999;background:#0b0b0b;border:1px solid var(--accent);min-width:230px;display:none;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.9)}
     #sort-menu.open{display:flex}
-    #sort-menu button{padding:.8rem 1.1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);background:transparent;border:0;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;width:100%;transition:color .15s ease,background .15s ease}
+    #sort-menu button{padding:.8rem 1.1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);background:transparent;border:0;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;width:100%;transition:color .15s ease,background .15s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     #sort-menu button:last-child{border-bottom:0}
     #sort-menu button:hover{color:var(--ink);background:rgba(255,255,255,.05)}
     #sort-menu button.sel{color:var(--accent)}
@@ -938,7 +938,8 @@ const WA_NUMBER = "541134435571";
     sortBtn.setAttribute("aria-expanded", "false");
   }
 
-  sortBtn.addEventListener("click", (e) => {
+  sortBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (sortMenu.classList.contains("open")) { closeSortMenu(); return; }
     sortMenu.classList.add("open");
@@ -948,12 +949,14 @@ const WA_NUMBER = "541134435571";
     placeSortMenu();
   });
 
-  sortBackdrop.addEventListener("click", closeSortMenu);
+  sortBackdrop.addEventListener("pointerdown", (e) => { e.preventDefault(); closeSortMenu(); });
   window.addEventListener("resize", () => { if (sortMenu.classList.contains("open")) placeSortMenu(); });
   window.addEventListener("scroll", () => { if (sortMenu.classList.contains("open")) placeSortMenu(); }, { passive: true });
 
   sortMenu.querySelectorAll("button").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       activeSort = btn.dataset.val;
       sortLabel.textContent = sortLabels[activeSort] || "ORDENAR";
       sortBtn.classList.toggle("on", activeSort !== "default");
