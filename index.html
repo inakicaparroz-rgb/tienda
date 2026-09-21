@@ -106,6 +106,19 @@
     .badge-encargo{border-color:var(--ink);color:var(--ink)}
     .badge-sin-stock{border-color:var(--muted);color:var(--muted)}
     .reveal{opacity:0;transform:translateY(28px);transition:opacity .9s cubic-bezier(0.16,1,0.3,1),transform .9s cubic-bezier(0.16,1,0.3,1)}
+    .sort-trigger{display:inline-flex;align-items:center;gap:.6rem;border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:border-color .2s ease,color .2s ease;white-space:nowrap}
+    .sort-trigger:hover{border-color:var(--ink);color:var(--ink)}
+    .sort-trigger.on{border-color:var(--accent);color:var(--accent)}
+    .sort-trigger .caret{font-size:8px;transition:transform .2s ease}
+    .sort-trigger.open .caret{transform:rotate(180deg)}
+    #sort-menu{position:fixed;z-index:9999;background:#0b0b0b;border:1px solid var(--accent);min-width:230px;display:none;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.9)}
+    #sort-menu.open{display:flex}
+    #sort-menu button{padding:.8rem 1.1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);background:transparent;border:0;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;width:100%;transition:color .15s ease,background .15s ease}
+    #sort-menu button:last-child{border-bottom:0}
+    #sort-menu button:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+    #sort-menu button.sel{color:var(--accent)}
+    #sort-backdrop{position:fixed;inset:0;z-index:9998;display:none}
+    #sort-backdrop.open{display:block}
     .reveal.active{opacity:1;transform:translateY(0)}
     .pcard{display:flex;flex-direction:column;gap:.75rem;color:inherit;cursor:default}
     .pcard .pimg{position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--surface);border:1px solid transparent;transition:border-color .3s ease}
@@ -392,19 +405,10 @@
       <span class="spec-label" id="results-count" aria-live="polite">MOSTRANDO 114 / 114 PRODUCTOS</span>
       <div class="flex items-center gap-3">
         <button id="clear-filters" class="btn-ghost hidden">Limpiar filtros ×</button>
-        <div id="sort-dropdown" style="position:relative">
-          <button id="sort-btn" style="border:1px solid var(--border);padding:.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);cursor:pointer;background:transparent;transition:all .2s ease;white-space:nowrap;display:flex;align-items:center;gap:.5rem" onmouseenter="this.style.borderColor='var(--ink)';this.style.color='var(--ink)'" onmouseleave="if(!document.getElementById('sort-menu').classList.contains('open')){this.style.borderColor='var(--border)';this.style.color='var(--muted)'}">
-            <span id="sort-label">ORDENAR</span>
-            <span style="font-size:9px">▾</span>
-          </button>
-          <div id="sort-menu" style="display:none;position:absolute;right:0;bottom:calc(100% + 6px);background:#111;border:1px solid var(--accent);z-index:200;min-width:240px;flex-direction:column;box-shadow:0 -8px 32px rgba(0,0,0,.8)">
-            <button class="sort-option" data-val="default" style="padding:.75rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);background:transparent;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;width:100%;transition:all .15s">Por defecto</button>
-            <button class="sort-option" data-val="price-asc" style="padding:.75rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;width:100%;transition:all .15s">Precio: menor a mayor</button>
-            <button class="sort-option" data-val="price-desc" style="padding:.75rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;width:100%;transition:all .15s">Precio: mayor a menor</button>
-            <button class="sort-option" data-val="date-desc" style="padding:.75rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;width:100%;transition:all .15s">Más reciente</button>
-            <button class="sort-option" data-val="date-asc" style="padding:.75rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:var(--ink);background:transparent;border:none;cursor:pointer;text-align:left;width:100%;transition:all .15s">Más antiguo</button>
-          </div>
-        </div>
+        <button id="sort-btn" class="sort-trigger" aria-haspopup="true" aria-expanded="false">
+          <span id="sort-label">ORDENAR</span>
+          <span class="caret">▼</span>
+        </button>
       </div>
     </div>
   </div>
@@ -740,6 +744,15 @@
   </div>
 </aside>
 
+<div id="sort-backdrop"></div>
+<div id="sort-menu" role="menu">
+  <button data-val="default" class="sel">Por defecto</button>
+  <button data-val="price-asc">Precio: menor a mayor</button>
+  <button data-val="price-desc">Precio: mayor a menor</button>
+  <button data-val="date-desc">Más reciente</button>
+  <button data-val="date-asc">Más antiguo</button>
+</div>
+
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   const SUPABASE_URL = 'https://anaonrcaxhwxvuqcsyfg.supabase.co';
@@ -903,27 +916,49 @@ const WA_NUMBER = "541134435571";
   searchInput.addEventListener("input", () => { searchQuery = searchInput.value.trim(); render(); });
   const sortBtn = document.getElementById("sort-btn");
   const sortMenu = document.getElementById("sort-menu");
+  const sortBackdrop = document.getElementById("sort-backdrop");
   const sortLabel = document.getElementById("sort-label");
   const sortLabels = { default:"ORDENAR", "price-asc":"PRECIO ↑", "price-desc":"PRECIO ↓", "date-desc":"MÁS RECIENTE", "date-asc":"MÁS ANTIGUO" };
+
+  function placeSortMenu() {
+    const r = sortBtn.getBoundingClientRect();
+    const h = sortMenu.offsetHeight;
+    const gap = 6;
+    const below = window.innerHeight - r.bottom;
+    const top = (below >= h + gap || below >= r.top) ? r.bottom + gap : r.top - h - gap;
+    sortMenu.style.top = `${Math.max(gap, Math.min(top, window.innerHeight - h - gap))}px`;
+    const left = r.right - sortMenu.offsetWidth;
+    sortMenu.style.left = `${Math.max(gap, left)}px`;
+  }
+
+  function closeSortMenu() {
+    sortMenu.classList.remove("open");
+    sortBackdrop.classList.remove("open");
+    sortBtn.classList.remove("open");
+    sortBtn.setAttribute("aria-expanded", "false");
+  }
+
   sortBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    const open = sortMenu.classList.toggle("open");
-    sortMenu.style.display = open ? "flex" : "none";
-    sortBtn.style.borderColor = open ? "var(--accent)" : "var(--border)";
-    sortBtn.style.color = open ? "var(--ink)" : "var(--muted)";
+    if (sortMenu.classList.contains("open")) { closeSortMenu(); return; }
+    sortMenu.classList.add("open");
+    sortBackdrop.classList.add("open");
+    sortBtn.classList.add("open");
+    sortBtn.setAttribute("aria-expanded", "true");
+    placeSortMenu();
   });
-  document.addEventListener("click", () => {
-    sortMenu.classList.remove("open");
-    sortMenu.style.display = "none";
-    sortBtn.style.borderColor = "var(--border)";
-    sortBtn.style.color = "var(--muted)";
-  });
-  document.querySelectorAll(".sort-option").forEach(btn => {
+
+  sortBackdrop.addEventListener("click", closeSortMenu);
+  window.addEventListener("resize", () => { if (sortMenu.classList.contains("open")) placeSortMenu(); });
+  window.addEventListener("scroll", () => { if (sortMenu.classList.contains("open")) placeSortMenu(); }, { passive: true });
+
+  sortMenu.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
       activeSort = btn.dataset.val;
       sortLabel.textContent = sortLabels[activeSort] || "ORDENAR";
-      sortBtn.style.borderColor = activeSort !== "default" ? "var(--accent)" : "var(--border)";
-      sortBtn.style.color = activeSort !== "default" ? "var(--accent)" : "var(--muted)";
+      sortBtn.classList.toggle("on", activeSort !== "default");
+      sortMenu.querySelectorAll("button").forEach(b => b.classList.toggle("sel", b === btn));
+      closeSortMenu();
       render();
     });
   });
