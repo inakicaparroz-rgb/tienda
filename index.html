@@ -795,6 +795,7 @@
         w1: words[0] || "",
         w2: words[1] || words[0] || "",
         created_at: p.created_at || "",
+        _idx: 0,
       };
     });
   }
@@ -823,10 +824,11 @@ const WA_NUMBER = "541134435571";
       const okQ = !q || p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q);
       return okCat && okSt && okQ;
     });
+    const dateVal = (p) => p.created_at ? new Date(p.created_at).getTime() : p._idx;
     if (activeSort === "price-asc") filtered.sort((a, b) => a.priceUSD - b.priceUSD);
     else if (activeSort === "price-desc") filtered.sort((a, b) => b.priceUSD - a.priceUSD);
-    else if (activeSort === "date-asc") filtered.sort((a, b) => new Date(a.created_at||0) - new Date(b.created_at||0));
-    else if (activeSort === "date-desc") filtered.sort((a, b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+    else if (activeSort === "date-asc") filtered.sort((a, b) => dateVal(a) - dateVal(b));
+    else if (activeSort === "date-desc") filtered.sort((a, b) => dateVal(b) - dateVal(a));
     resultsCount.textContent = `MOSTRANDO ${filtered.length} / ${PRODUCTS.length} PRODUCTOS`;
     clearBtn.classList.toggle("hidden", activeCat==="todas" && activeStatus==="todos" && !searchQuery);
     if (filtered.length === 0) {
@@ -1002,7 +1004,7 @@ const WA_NUMBER = "541134435571";
     .catch(() => {})
     .finally(() => {
       cargarProductosDesdeSupabase()
-        .then(productos => { PRODUCTS = productos; })
+        .then(productos => { PRODUCTS = productos.map((p, i) => ({ ...p, _idx: i })); })
         .catch(err => console.error(err))
         .finally(() => {
           document.getElementById("drop-count").textContent = `${PRODUCTS.length} / DROP ACTUAL`;
