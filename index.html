@@ -749,7 +749,7 @@
   let PRODUCTS = [];
 
   async function cargarProductosDesdeSupabase() {
-    const { data: productos, error } = await supabase.from("productos_publicos").select("*, created_at");
+    const { data: productos, error } = await supabase.from("productos_publicos").select("*");
     if (error || !productos) { console.error(error); return []; }
     if (productos.length === 0) return [];
 
