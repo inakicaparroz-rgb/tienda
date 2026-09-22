@@ -573,6 +573,8 @@
               <th class="p-2">Costo total</th>
               <th class="p-2">Venta proyectada</th>
               <th class="p-2">Pago</th>
+              <th class="p-2">Kg</th>
+              <th class="p-2"></th>
             </tr>
           </thead>
           <tbody id="compras-tbody"></tbody>
@@ -1597,6 +1599,30 @@
     <div class="flex flex-col sm:flex-row gap-2">
       <button id="sim-exportar" class="flex-1 bg-surface-elevated border border-border font-mono uppercase text-xs tracking-wide py-2.5">Exportar</button>
       <button id="sim-cerrar-2" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: cargar el kg real de una compra -->
+<div id="modal-kg-real" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-surface border border-border p-4 sm:p-6">
+    <h3 class="font-bold mb-1">Cargar kg real</h3>
+    <p id="kr-contexto" class="text-muted text-xs mb-3"></p>
+    <p class="text-muted text-xs mb-4">
+      El kg cobrado de verdad se reparte entre las prendas en la misma proporción
+      que tenían en el estimado. Cambia el costo de cada unidad y el saldo de Adriana kg.
+    </p>
+    <p id="kr-aviso-repetido" class="hidden border border-yellow-500/50 bg-yellow-500/10 text-yellow-500 text-xs p-3 mb-4"></p>
+    <div id="kr-estimado" class="bg-surface-elevated border border-border p-3 font-mono text-xs space-y-1 mb-3"></div>
+    <div>
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Kg real total</label>
+      <input id="kr-monto" type="number" step="0.001" placeholder="0.000" class="w-full px-3 py-2 text-sm" />
+    </div>
+    <div id="kr-preview" class="font-mono text-xs space-y-1 mt-3"></div>
+    <p id="kr-error" class="hidden text-red-400 text-xs mt-2"></p>
+    <div class="flex gap-2 mt-5">
+      <button id="kr-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Aplicar</button>
+      <button id="kr-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
     </div>
   </div>
 </div>
@@ -5957,7 +5983,7 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
 async function cargarCompras() {
   const { data, error } = await consultarConReintento(() => supabase
     .from('compras')
-    .select('*, productos(id, nombre, precio_venta_usd, unidades(costo_usd))')
+    .select('*, productos(id, nombre, precio_venta_usd, unidades(id, estado, costo_usd, costo_envio_usd, peso_kg, peso_kg_original))')
     .order('fecha', { ascending: false }));
   if (error) {
     reportarErrorCarga('las compras', error);
@@ -5982,10 +6008,14 @@ function renderCompras() {
 
   COMPRAS.forEach(c => {
     const productos = c.productos || [];
-    let costo = 0, venta = 0, unidades = 0;
+    let costo = 0, venta = 0, unidades = 0, peso = 0;
     productos.forEach(p => {
-      (p.unidades || []).forEach(u => { costo += Number(u.costo_usd || 0); unidades++; venta += Number(p.precio_venta_usd || 0); });
+      (p.unidades || []).forEach(u => {
+        costo += Number(u.costo_usd || 0); unidades++; peso += Number(u.peso_kg || 0);
+        venta += Number(p.precio_venta_usd || 0);
+      });
     });
+    const ajustada = Number(c.kg_real_veces || 0) > 0;
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-surface-elevated';
     tr.innerHTML = `
@@ -5995,10 +6025,168 @@ function renderCompras() {
       <td class="p-2">USD ${costo.toFixed(2)}</td>
       <td class="p-2 text-accent">USD ${venta.toFixed(2)}</td>
       <td class="p-2 text-muted">${c.medio_pago === 'tarjeta' ? 'Tarjeta' : 'Cash'}</td>
+      <td class="p-2 font-mono text-xs ${ajustada ? 'text-accent' : 'text-muted'}">
+        ${peso.toFixed(2)} kg
+        ${ajustada ? '<span class="block text-[10px]">real</span>' : '<span class="block text-[10px]">estimado</span>'}
+      </td>
+      <td class="p-2 text-right">
+        <button class="btn-kg-real bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-1.5 whitespace-nowrap" data-id="${c.id}">
+          Cargar kg real
+        </button>
+      </td>
     `;
+    tr.querySelector('.btn-kg-real').addEventListener('click', () => abrirModalKgReal(c));
     tbody.appendChild(tr);
   });
 }
+
+// ── Kg real de una compra ─────────────────────────────────────────────────
+// El peso con el que se arma la compra es un supuesto. Cuando llega se sabe
+// el kg que cobraron, y se reparte entre las unidades manteniendo la
+// proporción del estimado: repartir proporcionalmente es lo mismo que
+// multiplicar cada peso por un único factor (real ÷ estimado).
+let COMPRA_KG_REAL = null;
+
+// El peso a repartir es siempre el original, no el ya corregido: si no, un
+// segundo ajuste se calcularía sobre el primero y se iría acumulando mal.
+function pesoOriginalDeUnidad(u) {
+  return Number(u.peso_kg_original ?? u.peso_kg ?? 0);
+}
+
+function unidadesDeCompra(compra) {
+  return (compra.productos || []).flatMap(p => p.unidades || []);
+}
+
+// La tarifa sale de los propios datos de la compra en vez de fijarse: así
+// respeta el costo por kg con el que se cargó, sea el que sea.
+function tarifaPorKgDeCompra(unidades) {
+  const peso = unidades.reduce((s, u) => s + Number(u.peso_kg || 0), 0);
+  const envio = unidades.reduce((s, u) => s + Number(u.costo_envio_usd || 0), 0);
+  return peso > 0 ? envio / peso : 0;
+}
+
+function abrirModalKgReal(compra) {
+  COMPRA_KG_REAL = compra;
+  const unidades = unidadesDeCompra(compra);
+  const estimado = unidades.reduce((s, u) => s + pesoOriginalDeUnidad(u), 0);
+  const tarifa = tarifaPorKgDeCompra(unidades);
+
+  document.getElementById('kr-contexto').textContent =
+    `${compra.es_reseller ? (compra.reseller_nombre || 'Reseller') : (compra.marca || 'Compra')} — ${new Date(compra.fecha + 'T00:00:00').toLocaleDateString('es-AR')}`;
+
+  const veces = Number(compra.kg_real_veces || 0);
+  const avisoRepetido = document.getElementById('kr-aviso-repetido');
+  avisoRepetido.classList.toggle('hidden', veces === 0);
+  if (veces > 0) {
+    avisoRepetido.textContent =
+      `Esta compra ya tuvo ${veces} carga${veces === 1 ? '' : 's'} de kg real. La última fue de ${Number(compra.kg_real || 0).toFixed(3)} kg. `
+      + 'El nuevo valor se calcula sobre el estimado original, así que reemplaza al anterior en vez de sumarse.';
+  }
+
+  document.getElementById('kr-estimado').innerHTML = `
+    <div class="flex justify-between"><span class="text-muted">Kg estimado</span><span>${estimado.toFixed(3)} kg</span></div>
+    <div class="flex justify-between"><span class="text-muted">Unidades</span><span>${unidades.length}</span></div>
+    <div class="flex justify-between"><span class="text-muted">Costo por kg</span><span>USD ${tarifa.toFixed(2)}</span></div>`;
+
+  document.getElementById('kr-monto').value = compra.kg_real ?? '';
+  document.getElementById('kr-preview').innerHTML = '';
+  const error = document.getElementById('kr-error');
+  error.classList.add('hidden');
+
+  const boton = document.getElementById('kr-guardar');
+  boton.disabled = false;
+  if (estimado <= 0) {
+    error.textContent = 'Esta compra no tiene peso cargado, así que no hay nada que repartir.';
+    error.classList.remove('hidden');
+    boton.disabled = true;
+  }
+
+  document.getElementById('modal-kg-real').classList.remove('hidden');
+  actualizarPreviewKgReal();
+}
+
+function actualizarPreviewKgReal() {
+  if (!COMPRA_KG_REAL) return;
+  const unidades = unidadesDeCompra(COMPRA_KG_REAL);
+  const estimado = unidades.reduce((s, u) => s + pesoOriginalDeUnidad(u), 0);
+  const real = parseFloat(document.getElementById('kr-monto').value) || 0;
+  const preview = document.getElementById('kr-preview');
+  if (estimado <= 0 || real <= 0) { preview.innerHTML = ''; return; }
+
+  const factor = real / estimado;
+  const tarifa = tarifaPorKgDeCompra(unidades);
+  const envioAntes = unidades.reduce((s, u) => s + Number(u.costo_envio_usd || 0), 0);
+  const envioDespues = real * tarifa;
+  const diferencia = envioDespues - envioAntes;
+
+  preview.innerHTML = `
+    <div class="flex justify-between"><span class="text-muted">Factor</span><span>× ${factor.toFixed(4)}</span></div>
+    <div class="flex justify-between"><span class="text-muted">Costo de envío</span><span>USD ${envioAntes.toFixed(2)} → USD ${envioDespues.toFixed(2)}</span></div>
+    <div class="flex justify-between font-bold"><span>Cambio en el costo</span><span class="${diferencia <= 0 ? 'text-accent' : 'text-red-400'}">${diferencia >= 0 ? '+' : '−'}USD ${Math.abs(diferencia).toFixed(2)}</span></div>
+    <p class="text-muted text-[10px] pt-1">Ej: una unidad de ${(1).toFixed(0)} kg estimado pasa a ${factor.toFixed(3)} kg.</p>`;
+}
+
+document.getElementById('kr-monto').addEventListener('input', actualizarPreviewKgReal);
+document.getElementById('kr-cancelar').addEventListener('click', () => {
+  document.getElementById('modal-kg-real').classList.add('hidden');
+  COMPRA_KG_REAL = null;
+});
+
+document.getElementById('kr-guardar').addEventListener('click', async () => {
+  if (!COMPRA_KG_REAL) return;
+  const compra = COMPRA_KG_REAL;
+  const unidades = unidadesDeCompra(compra);
+  const estimado = unidades.reduce((s, u) => s + pesoOriginalDeUnidad(u), 0);
+  const real = parseFloat(document.getElementById('kr-monto').value) || 0;
+
+  if (estimado <= 0) { alert('Esta compra no tiene peso cargado.'); return; }
+  if (real <= 0) { alert('Ingresá el kg real total.'); return; }
+
+  const vendidas = unidades.filter(u => u.estado === 'vendido').length;
+  const veces = Number(compra.kg_real_veces || 0);
+  const confirmacion = [
+    `Se va a repartir ${real} kg entre ${unidades.length} unidades (estimado: ${estimado.toFixed(3)} kg).`,
+    veces > 0 ? `Es la carga número ${veces + 1} para esta compra.` : '',
+    vendidas > 0
+      ? `Ojo: ${vendidas === 1 ? 'una unidad ya se vendió' : vendidas + ' unidades ya se vendieron'}. Se ${vendidas === 1 ? 'le' : 'les'} actualiza el costo, pero la ganancia ya registrada en ${vendidas === 1 ? 'esa venta' : 'esas ventas'} no cambia.`
+      : '',
+    '¿Aplicar?',
+  ].filter(Boolean).join('\n\n');
+  if (!confirm(confirmacion)) return;
+
+  const boton = document.getElementById('kr-guardar');
+  boton.disabled = true;
+
+  const factor = real / estimado;
+  const tarifa = tarifaPorKgDeCompra(unidades);
+  let fallidas = 0;
+
+  for (const u of unidades) {
+    const original = pesoOriginalDeUnidad(u);
+    const nuevoPeso = Number((original * factor).toFixed(3));
+    const { error } = await supabase.from('unidades').update({
+      peso_kg_original: original,
+      peso_kg: nuevoPeso,
+      costo_envio_usd: Number((nuevoPeso * tarifa).toFixed(2)),
+    }).eq('id', u.id);
+    if (error) { console.error(error); fallidas++; }
+  }
+
+  const { error: errorCompra } = await supabase.from('compras')
+    .update({ kg_real: real, kg_real_veces: veces + 1 })
+    .eq('id', compra.id);
+  if (errorCompra) console.error(errorCompra);
+
+  boton.disabled = false;
+  document.getElementById('modal-kg-real').classList.add('hidden');
+  COMPRA_KG_REAL = null;
+
+  await cargarProductos();
+  await cargarCompras();
+  alert(fallidas === 0
+    ? `Kg real aplicado. Se repartieron ${real} kg entre ${unidades.length} unidades.`
+    : `Se aplicó con problemas: ${fallidas} de ${unidades.length} unidades no se pudieron actualizar.`);
+});
 
 // ── Próximos ingresos ──
 function abrirPendientes() {
