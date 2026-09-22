@@ -942,3 +942,15 @@ alter table caja_movimientos add constraint caja_movimientos_categoria_check
 
 alter table caja_movimientos add column if not exists trade_id uuid;
 create index if not exists idx_caja_trade on caja_movimientos(trade_id);
+
+-- ─── Kg real de una compra ─────────────────────────────────────────────────
+-- Al armar la compra el peso de cada prenda es un supuesto. Cuando la
+-- mercadería llega se sabe el kg que cobraron de verdad, y ese total se
+-- reparte entre las unidades en la misma proporción que tenían en el estimado.
+alter table compras add column if not exists kg_real numeric(10,3);
+alter table compras add column if not exists kg_real_veces integer not null default 0;
+
+-- El peso con el que se cargó la compra. Se guarda la primera vez que se
+-- ajusta, para que un segundo ajuste se calcule siempre contra el estimado
+-- original y no se vaya acumulando sobre el ya corregido.
+alter table unidades add column if not exists peso_kg_original numeric(10,3);
