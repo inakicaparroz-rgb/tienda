@@ -1620,7 +1620,11 @@
     </div>
     <div id="kr-preview" class="font-mono text-xs space-y-1 mt-3"></div>
     <p id="kr-error" class="hidden text-red-400 text-xs mt-2"></p>
-    <div class="flex gap-2 mt-5">
+    <button id="kr-confirmar-estimado" class="w-full bg-surface-elevated border border-border font-mono uppercase text-xs tracking-wide py-2.5 mt-4">
+      Confirmar el estimado
+    </button>
+    <p class="text-muted text-[10px] mt-1">Si el kg cobrado coincidió con lo previsto: deja los costos como están y marca la compra como verificada.</p>
+    <div class="flex gap-2 mt-4">
       <button id="kr-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Aplicar</button>
       <button id="kr-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
     </div>
@@ -6130,6 +6134,32 @@ document.getElementById('kr-monto').addEventListener('input', actualizarPreviewK
 document.getElementById('kr-cancelar').addEventListener('click', () => {
   document.getElementById('modal-kg-real').classList.add('hidden');
   COMPRA_KG_REAL = null;
+});
+
+// Confirmar el estimado: el kg cobrado coincidió con lo previsto, así que no
+// hay nada que recalcular. Solo se deja registrado que la compra se verificó,
+// para distinguirla de las que todavía están con el supuesto.
+document.getElementById('kr-confirmar-estimado').addEventListener('click', async () => {
+  if (!COMPRA_KG_REAL) return;
+  const compra = COMPRA_KG_REAL;
+  const unidades = unidadesDeCompra(compra);
+  const estimado = unidades.reduce((s, u) => s + pesoOriginalDeUnidad(u), 0);
+  if (estimado <= 0) { alert('Esta compra no tiene peso cargado.'); return; }
+
+  if (!confirm(`Se marca la compra como verificada con sus ${estimado.toFixed(3)} kg estimados.\n\n`
+    + 'Los costos quedan como están. ¿Confirmar?')) return;
+
+  const boton = document.getElementById('kr-confirmar-estimado');
+  boton.disabled = true;
+  const { error } = await supabase.from('compras')
+    .update({ kg_real: Number(estimado.toFixed(3)), kg_real_veces: Number(compra.kg_real_veces || 0) + 1 })
+    .eq('id', compra.id);
+  boton.disabled = false;
+  if (error) { alert('No se pudo confirmar.'); console.error(error); return; }
+
+  document.getElementById('modal-kg-real').classList.add('hidden');
+  COMPRA_KG_REAL = null;
+  await cargarCompras();
 });
 
 document.getElementById('kr-guardar').addEventListener('click', async () => {
