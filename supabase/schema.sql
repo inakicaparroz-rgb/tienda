@@ -954,3 +954,57 @@ alter table compras add column if not exists kg_real_veces integer not null defa
 -- ajusta, para que un segundo ajuste se calcule siempre contra el estimado
 -- original y no se vaya acumulando sobre el ya corregido.
 alter table unidades add column if not exists peso_kg_original numeric(10,3);
+
+-- ═══ CALENDARIO DE CONTENIDO ═══════════════════════════════════════════════
+-- Planificación de redes. No tiene ninguna relación con la parte contable:
+-- ninguna consulta de stock, ventas, caja o reportes toca estas tablas.
+
+-- Ideas de video, con su guion y su parte visual. El nombre es lo único
+-- obligatorio: una idea puede anotarse al vuelo y completarse después.
+create table if not exists video_ideas (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null,
+  guion_gancho text,
+  guion_desarrollo text,
+  guion_final text,
+  visual_gancho text,
+  visual_desarrollo text,
+  visual_final text,
+  -- pendiente: sin usar · asignado: puesta en un día del calendario
+  -- hecho: ya publicada (se marca a mano)
+  estado text not null default 'pendiente'
+    check (estado in ('pendiente', 'asignado', 'hecho')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_video_ideas_estado on video_ideas(estado);
+
+alter table video_ideas enable row level security;
+drop policy if exists "video_ideas_authenticated_all" on video_ideas;
+create policy "video_ideas_authenticated_all" on video_ideas
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on video_ideas to authenticated;
+
+-- Lo planificado para un día y un tipo de contenido. El patrón semanal y los
+-- formatos viven en el código: acá solo queda lo que se eligió cada día.
+create table if not exists contenido_dias (
+  id uuid primary key default gen_random_uuid(),
+  fecha date not null,
+  tipo text not null check (tipo in ('historias', 'publicaciones', 'videos', 'comunidad')),
+
+  formato_id text,   -- historias y comunidad
+  texto text,        -- publicaciones y comunidad
+  idea_id uuid references video_ideas(id) on delete set null,  -- videos
+
+  created_at timestamptz not null default now(),
+  -- Un solo contenido por día y por tipo.
+  unique (fecha, tipo)
+);
+
+create index if not exists idx_contenido_fecha on contenido_dias(fecha);
+
+alter table contenido_dias enable row level security;
+drop policy if exists "contenido_dias_authenticated_all" on contenido_dias;
+create policy "contenido_dias_authenticated_all" on contenido_dias
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+grant select, insert, update, delete on contenido_dias to authenticated;
