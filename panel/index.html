@@ -255,6 +255,12 @@
         <span>Trades</span>
       </button>
 
+      <p class="sidebar-label" style="margin-top:.5rem">Contenido</p>
+      <button data-tab="contenido" class="tab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+        <span>Calendario</span>
+      </button>
+
       <p class="sidebar-label" style="margin-top:.5rem">Control</p>
       <button data-tab="deudas" class="tab-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M18 20a6 6 0 0 0-2.5-4.9"/></svg>
@@ -868,6 +874,40 @@
         </table>
         <p id="trades-empty" class="p-6 text-center text-muted text-sm hidden">Todavía no cargaste ningún trade.</p>
       </div>
+    </section>
+
+    <!-- CALENDARIO DE CONTENIDO -->
+    <section id="tab-contenido" class="tab-section hidden">
+      <div class="flex flex-wrap items-center gap-2 mb-4">
+        <div id="cal-tipos" class="flex flex-wrap gap-1"></div>
+        <div class="flex-1"></div>
+        <button id="btn-ideas-video" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2 whitespace-nowrap">
+          Ideas de video
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-2">
+          <button id="cal-mes-anterior" class="hidden bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-2">&#9664;</button>
+          <h3 id="cal-mes-label" class="font-bold font-mono text-sm uppercase tracking-wide"></h3>
+          <button id="cal-mes-siguiente" class="hidden bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-2">&#9654;</button>
+        </div>
+        <button id="btn-meses-anteriores" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-2 whitespace-nowrap">
+          Meses anteriores
+        </button>
+      </div>
+      <p id="cal-resumen" class="text-muted font-mono text-xs mb-3"></p>
+
+      <div class="grid grid-cols-7 gap-1 mb-1">
+        <div class="text-muted font-mono text-[10px] uppercase text-center py-1">Lun</div>
+        <div class="text-muted font-mono text-[10px] uppercase text-center py-1">Mar</div>
+        <div class="text-muted font-mono text-[10px] uppercase text-center py-1">Mié</div>
+        <div class="text-muted font-mono text-[10px] uppercase text-center py-1">Jue</div>
+        <div class="text-muted font-mono text-[10px] uppercase text-center py-1">Vie</div>
+        <div class="text-muted font-mono text-[10px] uppercase text-center py-1">Sáb</div>
+        <div class="text-muted font-mono text-[10px] uppercase text-center py-1">Dom</div>
+      </div>
+      <div id="cal-grilla" class="grid grid-cols-7 gap-1"></div>
     </section>
 
     <!-- DEUDAS Y DEUDORES -->
@@ -1603,6 +1643,89 @@
   </div>
 </div>
 
+<!-- Modal: detalle de un día del calendario -->
+<div id="modal-dia" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-surface border border-border p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+    <h3 id="dia-titulo" class="font-bold mb-1"></h3>
+    <p id="dia-subtitulo" class="text-muted text-xs mb-4"></p>
+    <div id="dia-contenido"></div>
+    <div class="flex gap-2 mt-5">
+      <button id="dia-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="dia-limpiar" class="hidden border border-border font-mono uppercase text-xs tracking-wide py-2.5 px-4 text-red-400">Vaciar</button>
+      <button id="dia-cerrar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: lista de ideas de video -->
+<div id="modal-ideas" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-2xl bg-surface border border-border p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h3 class="font-bold">Ideas de video</h3>
+      <button id="ideas-cerrar" class="text-muted text-xs font-mono uppercase hover:text-white">Cerrar</button>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+      <div id="ideas-filtros" class="flex gap-1"></div>
+      <div class="flex-1"></div>
+      <button id="btn-nueva-idea" class="bg-accent text-black font-mono uppercase text-xs tracking-wide px-4 py-2 font-bold whitespace-nowrap">
+        + Nueva idea
+      </button>
+    </div>
+    <div id="ideas-lista" class="space-y-2"></div>
+  </div>
+</div>
+
+<!-- Modal: crear o editar una idea de video -->
+<div id="modal-idea" class="hidden fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-surface border border-border p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+    <h3 id="idea-titulo" class="font-bold mb-4">Nueva idea</h3>
+    <div class="space-y-3 text-sm">
+      <div>
+        <label class="block text-muted font-mono text-xs uppercase mb-1">Nombre</label>
+        <input id="idea-nombre" type="text" placeholder="Cómo se llama la idea" class="w-full px-3 py-2 text-sm" />
+      </div>
+      <div class="border border-border p-3">
+        <p class="font-mono text-xs uppercase mb-2">Guion</p>
+        <div class="space-y-2">
+          <div>
+            <label class="block text-muted font-mono text-[10px] uppercase mb-1">Gancho</label>
+            <textarea id="idea-guion-gancho" rows="2" class="w-full px-3 py-2 text-sm"></textarea>
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-[10px] uppercase mb-1">Desarrollo</label>
+            <textarea id="idea-guion-desarrollo" rows="2" class="w-full px-3 py-2 text-sm"></textarea>
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-[10px] uppercase mb-1">Final</label>
+            <textarea id="idea-guion-final" rows="2" class="w-full px-3 py-2 text-sm"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="border border-border p-3">
+        <p class="font-mono text-xs uppercase mb-2">Visual</p>
+        <div class="space-y-2">
+          <div>
+            <label class="block text-muted font-mono text-[10px] uppercase mb-1">Gancho</label>
+            <textarea id="idea-visual-gancho" rows="2" class="w-full px-3 py-2 text-sm"></textarea>
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-[10px] uppercase mb-1">Desarrollo</label>
+            <textarea id="idea-visual-desarrollo" rows="2" class="w-full px-3 py-2 text-sm"></textarea>
+          </div>
+          <div>
+            <label class="block text-muted font-mono text-[10px] uppercase mb-1">Final</label>
+            <textarea id="idea-visual-final" rows="2" class="w-full px-3 py-2 text-sm"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="idea-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Guardar</button>
+      <button id="idea-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: cargar el kg real de una compra -->
 <div id="modal-kg-real" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-sm bg-surface border border-border p-4 sm:p-6">
@@ -2176,6 +2299,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'encargos') { cargarClientes(); cargarConfiguracion(); cargarEncargos(); }
     if (btn.dataset.tab === 'compras') { cargarConfiguracion(); cargarProductos(); cargarCompras(); }
     if (btn.dataset.tab === 'trades') { cargarClientes(); cargarConfiguracion(); cargarTrades(); }
+    if (btn.dataset.tab === 'contenido') { try { cargarContenido(); } catch (e) { console.error(e); } }
     if (btn.dataset.tab === 'caja') { cargarCaja(); cargarConfiguracion(); cargarInversores(); }
     if (btn.dataset.tab === 'deudas') { cargarClientes(); cargarInversores(); cargarDeudas(); renderTarjetaEnDeudas(); renderAdrianaKgEnDeudas(); }
     if (btn.dataset.tab === 'reportes') { cargarConfiguracion(); cargarReportes(); }
@@ -5365,6 +5489,649 @@ document.getElementById('t-confirmar').addEventListener('click', async () => {
   await cargarTrades();
   alert(`Trade cargado. "${nombreEntra}" quedó en Próximos ingresos esperando la foto.`);
 });
+
+// ── CALENDARIO DE CONTENIDO ───────────────────────────────────────────────
+// Planificación de redes. No comparte datos con la parte contable: ninguna
+// pestaña de plata consulta estas tablas, ni este módulo consulta las de ellas.
+//
+// Todo el panel corre en un único script, así que un error suelto acá voltearía
+// también lo contable. Por eso los botones se enganchan de forma tolerante y el
+// arranque va aislado: lo peor que puede pasar es que quede sin andar la
+// pestaña Contenido.
+function alTocar(id, manejador) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', manejador);
+  else console.error('Falta en el HTML el elemento', id);
+}
+
+// El patrón de la semana es fijo. Los días van por getDay(): 0 domingo … 6 sábado.
+const HISTORIAS_POR_DIA = {
+  1: { objetivo: 'Interacción', formatos: [
+    { id: 'lun-real-fake', nombre: 'Real vs fake', pasos: [
+      'Aviso sistema autenticación, pero queremos probarlos a ustedes (premio)',
+      'Fotos Google',
+      'Resultados'] },
+    { id: 'lun-adivinanza', nombre: 'Adivinanza', pasos: [
+      'Puede ser colorways / significado / precio',
+      'Fotos',
+      'Resultados'] },
+    { id: 'lun-caja-pregunta', nombre: 'Caja de pregunta con foto', pasos: [
+      '¿Con qué "xx" arrancaste la semana?',
+      'Respuestas'] },
+    { id: 'lun-completa-fit', nombre: 'Completá el fit', pasos: [
+      'Video o foto del fit',
+      'Opciones',
+      'Resultados'] },
+    { id: 'lun-elegi-entre', nombre: 'Elegí entre', pasos: [
+      'Puede ser famosos (fit) / marcas / estilos / lanzamientos',
+      'Fotos',
+      'Resultados'] },
+  ]},
+  2: { objetivo: 'Autoridad', formatos: [
+    { id: 'mar-tip-auth', nombre: 'Tip de autenticación', pasos: [
+      'Les vamos a dejar algunos tips de autenticación',
+      'Tip',
+      'Video local: para no dudar pasate por Cop or Drop, que todas las prendas son originales'] },
+    { id: 'mar-terminos', nombre: 'Enseñar términos hype', pasos: [
+      'Nos vienen preguntando por algunos términos',
+      'Explicaciones',
+      'En nuestra web están todas las prendas diferenciadas'] },
+    { id: 'mar-tips-estilos', nombre: 'Tips de estilos', pasos: [
+      'También puede ser colorways / marcas / fits. No hagas esto…',
+      'Hacé esto'] },
+    { id: 'mar-talle-marca', nombre: 'Asesoramiento de talle por marca', pasos: [
+      'Hoy vamos a ayudarte con los fits de…',
+      'Explicación',
+      'Podés conseguir estas prendas en…'] },
+  ]},
+  3: { objetivo: 'Outfit', formatos: [
+    { id: 'mie-3-fits', nombre: '3 fits con una prenda', pasos: [
+      'Fits',
+      'Elegir cuál',
+      'Resultados'] },
+    { id: 'mie-presupuesto', nombre: 'Armamos fit con presupuesto', pasos: [
+      'Elegí precio (opcional)',
+      'Armando el fit',
+      'Fit total'] },
+    { id: 'mie-ocasion', nombre: 'Outfit por ocasión', pasos: [
+      'Vamos a armar un fit para cada ocasión',
+      'Fits',
+      '¿Cuál usarías más vos?'] },
+    { id: 'mie-guerra-fit', nombre: 'Guerra de fits', pasos: [
+      'Entre nosotros: presentamos el juego',
+      'La elección de cada uno',
+      '¿Cuál es mejor?'] },
+  ]},
+  4: { objetivo: 'Página web', formatos: [
+    { id: 'jue-recorrido', nombre: 'Recorrido de compra', pasos: [
+      '¿Querés comprar buena ropa? Con 3 cuotas y envío gratis',
+      'Recorrido de compra',
+      'Link'] },
+    { id: 'jue-sin-inter', nombre: 'Sin intermediarios', pasos: [
+      'Del local hasta la puerta de tu casa, sin intermediarios',
+      'En nuestra web tenemos todo el stock cargado y envío gratis',
+      '¿Qué excusa tenés ahora? Link'] },
+    { id: 'jue-urgencia', nombre: 'Urgencia', pasos: [
+      'Estas prendas no tienen restock',
+      'Fotos con link',
+      '¿Cuál te gusta más?'] },
+    { id: 'jue-cupon', nombre: 'Cupón', pasos: [
+      'Nuevo cupón web: si lo querés, contestá la historia',
+      'Vas a poder canjearlo por cualquier prenda',
+      'Cómo usarlo'] },
+  ]},
+  5: { objetivo: 'Visitas al local', formatos: [
+    { id: 'vie-probarse', nombre: 'Probarse', pasos: [
+      '¿Tenés miedo de cómo puede quedarte la prenda?',
+      'En Cop no es problema',
+      'Te esperamos, coordiná tu cita'] },
+    { id: 'vie-salis-finde', nombre: '¿Salís este finde?', pasos: [
+      '¿Salís este finde? En el local tenemos las mejores opciones',
+      'Opciones',
+      '¿Cuál te gustó más?'] },
+    { id: 'vie-visita-sabado', nombre: 'Visita el sábado', pasos: [
+      'Mañana es sábado y sé que no trabajás',
+      'Aprovechá tu día libre y coordiná una visita al local',
+      'Historia del local, horario y ubicación'] },
+    { id: 'vie-falta-categoria', nombre: 'Te falta X categoría', pasos: [
+      'Te falta X categoría',
+      'Muestra de stock',
+      'Historia del local: te esperamos'] },
+    { id: 'vie-caba', nombre: '¿Estás por CABA este finde?', pasos: [
+      '¿Estás por CABA?',
+      'Tenemos tu plan de finde',
+      'Vení a chusmear y probarte las prendas que tenemos en el local'] },
+  ]},
+  6: { objetivo: 'Noticias / stock', formatos: [
+    { id: 'sab-video-local', nombre: 'Video natural del local', pasos: [
+      'Video natural',
+      'Stock'] },
+    { id: 'sab-tu-talle', nombre: 'Mandame tu talle y te mando stock', pasos: [
+      'Talle y muestro stock',
+      'Ejemplos de clientes'] },
+    { id: 'sab-mejor-semana', nombre: 'Lo mejor de la semana', pasos: [
+      'Esta semana…',
+      'Muestro',
+      '¿Cuál te gustó más?'] },
+    { id: 'sab-noticia-hype', nombre: 'Noticia hype', pasos: [
+      'Noticia',
+      'Stock relacionado',
+      'En Cop siempre primeros'] },
+  ]},
+  0: { objetivo: 'Comunidad', formatos: [
+    { id: 'dom-encargos', nombre: 'Encargos', pasos: [
+      'Mostramos los encargos de la semana en la comunidad',
+      '¿Todavía no estás en la comunidad?',
+      'Unite, que el lunes mandamos más (como todas las semanas)'] },
+    { id: 'dom-ingresos', nombre: 'Ingresos', pasos: [
+      'Esta semana va a haber nuevos ingresos',
+      'Unite para verlos antes',
+      '¿Qué marca piensan que es?'] },
+    { id: 'dom-descuentos', nombre: 'Descuentos', pasos: [
+      'Algunos de nuestros clientes tienen privilegios y se llevan prendas más baratas',
+      'Solo por estar atentos a la comunidad',
+      '¿Todavía no estás? No pierdas tiempo, que el lunes estamos mandando cosas nuevas'] },
+    { id: 'dom-general', nombre: 'General', pasos: [
+      '¿Querés ver adelantos, descuentos y encargos todos los días en un solo canal?',
+      'La comunidad es tu mejor opción',
+      'No duermas, que el lunes arrancamos con cosas nuevas'] },
+  ]},
+};
+
+const PUBLICACIONES_POR_DIA = { 1: 'Producto', 3: 'Noticia', 5: 'Producto', 6: 'Producto' };
+const VIDEOS_POR_DIA = { 1: 'TikTok', 2: 'Reel', 3: 'TikTok', 4: 'Reel', 5: 'TikTok', 6: 'TikTok', 0: 'Reel' };
+
+const COMUNIDAD_FORMATOS = [
+  { id: 'express', nombre: 'Encargos express' },
+  { id: 'afuera', nombre: 'Encargos afuera' },
+  { id: 'lanzamientos', nombre: 'Lanzamientos' },
+  { id: 'descuento', nombre: 'Descuento' },
+];
+// Lunes a viernes tienen contenido; sábado y domingo no.
+const COMUNIDAD_DIAS = [1, 2, 3, 4, 5];
+
+const TIPOS_CONTENIDO = [
+  { id: 'historias', nombre: 'Historias' },
+  { id: 'publicaciones', nombre: 'Publicaciones' },
+  { id: 'videos', nombre: 'Videos' },
+  { id: 'comunidad', nombre: 'Comunidad' },
+];
+
+let CAL_TIPO = 'historias';
+let CAL_MES = null;               // primer día del mes que se muestra
+let CAL_NAVEGABLE = false;        // los meses anteriores se destapan a pedido
+let CONTENIDO_DIAS = [];
+let VIDEO_IDEAS = [];
+let DIA_ABIERTO = null;
+let IDEA_EDITANDO = null;
+let FILTRO_IDEAS = 'pendiente';
+
+// Qué le toca a un día según el tipo. Null = ese día no lleva ese contenido.
+function planDelDia(fecha, tipo) {
+  const dia = fecha.getDay();
+  if (tipo === 'historias') {
+    const h = HISTORIAS_POR_DIA[dia];
+    return h ? { etiqueta: h.objetivo, formatos: h.formatos } : null;
+  }
+  if (tipo === 'publicaciones') {
+    return PUBLICACIONES_POR_DIA[dia] ? { etiqueta: PUBLICACIONES_POR_DIA[dia] } : null;
+  }
+  if (tipo === 'videos') {
+    return VIDEOS_POR_DIA[dia] ? { etiqueta: VIDEOS_POR_DIA[dia] } : null;
+  }
+  if (tipo === 'comunidad') {
+    return COMUNIDAD_DIAS.includes(dia) ? { etiqueta: 'Contenido', formatos: COMUNIDAD_FORMATOS } : null;
+  }
+  return null;
+}
+
+function formatoDeHistoria(fechaIso, formatoId) {
+  const dia = new Date(fechaIso + 'T00:00:00').getDay();
+  return (HISTORIAS_POR_DIA[dia]?.formatos || []).find(f => f.id === formatoId) || null;
+}
+
+function contenidoDe(fechaIso, tipo) {
+  return CONTENIDO_DIAS.find(c => c.fecha === fechaIso && c.tipo === tipo) || null;
+}
+
+async function cargarContenido() {
+  const desde = new Date(CAL_MES.getFullYear(), CAL_MES.getMonth() - 2, 1);
+  const { data, error } = await consultarConReintento(() => supabase
+    .from('contenido_dias')
+    .select('*')
+    .gte('fecha', isoDeFecha(desde)));
+  if (error) { reportarErrorCarga('el calendario', error); return; }
+  marcarCargaOk('el calendario');
+  CONTENIDO_DIAS = data || [];
+
+  const { data: ideas } = await consultarConReintento(() => supabase
+    .from('video_ideas').select('*').order('created_at', { ascending: false }));
+  VIDEO_IDEAS = ideas || [];
+  renderCalendario();
+}
+
+function isoDeFecha(d) {
+  const dd = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${dd(d.getMonth() + 1)}-${dd(d.getDate())}`;
+}
+
+function renderSelectorTipos() {
+  document.getElementById('cal-tipos').innerHTML = TIPOS_CONTENIDO.map(t => `
+    <button class="cal-tipo font-mono text-xs uppercase tracking-wide px-3 py-2 border ${
+      t.id === CAL_TIPO ? 'bg-accent text-black border-accent font-bold' : 'bg-surface-elevated border-border text-muted'
+    }" data-tipo="${t.id}">${t.nombre}</button>`).join('');
+  document.querySelectorAll('.cal-tipo').forEach(b => {
+    b.addEventListener('click', () => { CAL_TIPO = b.dataset.tipo; renderCalendario(); });
+  });
+}
+
+// Cuántas veces se usó un formato en las últimas semanas, para avisar cuando
+// se está por repetir algo reciente.
+function ultimoUsoDeFormato(formatoId, fechaIso) {
+  const usos = CONTENIDO_DIAS
+    .filter(c => c.formato_id === formatoId && c.fecha < fechaIso)
+    .map(c => c.fecha)
+    .sort();
+  if (usos.length === 0) return null;
+  const ultimo = usos[usos.length - 1];
+  const dias = Math.round((new Date(fechaIso + 'T00:00:00') - new Date(ultimo + 'T00:00:00')) / 86400000);
+  return { fecha: ultimo, dias };
+}
+
+function renderCalendario() {
+  renderSelectorTipos();
+  const grilla = document.getElementById('cal-grilla');
+  const primero = new Date(CAL_MES.getFullYear(), CAL_MES.getMonth(), 1);
+  const ultimoDia = new Date(CAL_MES.getFullYear(), CAL_MES.getMonth() + 1, 0).getDate();
+
+  document.getElementById('cal-mes-label').textContent =
+    primero.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).toUpperCase();
+  document.getElementById('cal-mes-anterior').classList.toggle('hidden', !CAL_NAVEGABLE);
+  document.getElementById('cal-mes-siguiente').classList.toggle('hidden', !CAL_NAVEGABLE);
+
+  // La grilla arranca en lunes: getDay() da 0 para domingo, así que se corre.
+  const offset = (primero.getDay() + 6) % 7;
+  let html = '';
+  for (let i = 0; i < offset; i++) html += '<div></div>';
+
+  let conPlan = 0, completos = 0;
+  const hoy = isoDeFecha(new Date());
+
+  for (let d = 1; d <= ultimoDia; d++) {
+    const fecha = new Date(CAL_MES.getFullYear(), CAL_MES.getMonth(), d);
+    const iso = isoDeFecha(fecha);
+    const plan = planDelDia(fecha, CAL_TIPO);
+    const esHoy = iso === hoy;
+
+    if (!plan) {
+      html += `<div class="border border-border/40 min-h-[4.5rem] p-1 opacity-40">
+        <span class="font-mono text-[10px] text-muted">${d}</span>
+      </div>`;
+      continue;
+    }
+
+    conPlan++;
+    const guardado = contenidoDe(iso, CAL_TIPO);
+    const completo = !!guardado && (guardado.formato_id || guardado.texto || guardado.idea_id);
+    if (completo) completos++;
+
+    let detalle = '';
+    if (completo) {
+      if (CAL_TIPO === 'historias') detalle = formatoDeHistoria(iso, guardado.formato_id)?.nombre || '✓';
+      else if (CAL_TIPO === 'videos') detalle = VIDEO_IDEAS.find(i => i.id === guardado.idea_id)?.nombre || '✓';
+      else if (CAL_TIPO === 'comunidad') detalle = COMUNIDAD_FORMATOS.find(f => f.id === guardado.formato_id)?.nombre || '✓';
+      else detalle = guardado.texto || '✓';
+    }
+
+    html += `
+      <button class="cal-dia border min-h-[4.5rem] p-1 text-left flex flex-col gap-0.5 ${
+        completo ? 'border-accent/60 bg-accent/10' : 'border-border hover:bg-surface-elevated'
+      } ${esHoy ? 'ring-1 ring-white/40' : ''}" data-fecha="${iso}">
+        <span class="font-mono text-[10px] ${esHoy ? 'text-white font-bold' : 'text-muted'}">${d}</span>
+        <span class="font-mono text-[9px] uppercase tracking-wide ${completo ? 'text-accent' : 'text-muted'} leading-tight">${plan.etiqueta}</span>
+        ${completo ? `<span class="text-[9px] leading-tight line-clamp-2">${detalle}</span>` : ''}
+      </button>`;
+  }
+
+  grilla.innerHTML = html;
+  document.getElementById('cal-resumen').textContent =
+    `${completos}/${conPlan} días completados en el mes`;
+
+  grilla.querySelectorAll('.cal-dia').forEach(b => {
+    b.addEventListener('click', () => abrirDia(b.dataset.fecha));
+  });
+}
+
+// ── Detalle de un día ──
+function abrirDia(fechaIso) {
+  DIA_ABIERTO = fechaIso;
+  const fecha = new Date(fechaIso + 'T00:00:00');
+  const plan = planDelDia(fecha, CAL_TIPO);
+  if (!plan) return;
+
+  const tipo = TIPOS_CONTENIDO.find(t => t.id === CAL_TIPO);
+  document.getElementById('dia-titulo').textContent =
+    fecha.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('dia-subtitulo').textContent = `${tipo.nombre} · ${plan.etiqueta}`;
+
+  const guardado = contenidoDe(fechaIso, CAL_TIPO);
+  document.getElementById('dia-limpiar').classList.toggle('hidden', !guardado);
+  document.getElementById('dia-contenido').innerHTML = cuerpoDelDia(fechaIso, plan, guardado);
+  conectarCuerpoDelDia(fechaIso, plan, guardado);
+  document.getElementById('modal-dia').classList.remove('hidden');
+}
+
+function cuerpoDelDia(fechaIso, plan, guardado) {
+  if (CAL_TIPO === 'publicaciones') {
+    return `
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Qué se publica</label>
+      <textarea id="dia-texto" rows="4" class="w-full px-3 py-2 text-sm" placeholder="Detalle de la publicación">${guardado?.texto || ''}</textarea>`;
+  }
+
+  if (CAL_TIPO === 'videos') {
+    const asignada = guardado?.idea_id ? VIDEO_IDEAS.find(i => i.id === guardado.idea_id) : null;
+    const disponibles = VIDEO_IDEAS.filter(i =>
+      i.estado === 'pendiente' || i.id === guardado?.idea_id);
+    if (disponibles.length === 0) {
+      return '<p class="text-muted text-sm">No hay ideas pendientes. Cargá una desde "Ideas de video".</p>';
+    }
+    return `
+      <label class="block text-muted font-mono text-xs uppercase mb-1">Idea</label>
+      <select id="dia-idea" class="w-full px-3 py-2 text-sm mb-3">
+        <option value="">— elegir —</option>
+        ${disponibles.map(i => `<option value="${i.id}" ${i.id === guardado?.idea_id ? 'selected' : ''}>${i.nombre}</option>`).join('')}
+      </select>
+      <div id="dia-idea-detalle">${asignada ? detalleDeIdea(asignada) : ''}</div>`;
+  }
+
+  // Historias y comunidad: se elige un formato de una lista
+  const seleccionado = guardado?.formato_id || '';
+  const opciones = plan.formatos.map(f => {
+    const uso = CAL_TIPO === 'historias' ? ultimoUsoDeFormato(f.id, fechaIso) : null;
+    const aviso = uso && uso.dias <= 21
+      ? `<span class="text-yellow-500 text-[10px] font-mono block">usado hace ${uso.dias} día${uso.dias === 1 ? '' : 's'}</span>`
+      : '';
+    return `
+      <button type="button" class="dia-formato w-full text-left border p-2 ${
+        f.id === seleccionado ? 'border-accent bg-accent/10' : 'border-border hover:bg-surface-elevated'
+      }" data-formato="${f.id}">
+        <span class="text-sm">${f.nombre}</span>
+        ${aviso}
+      </button>`;
+  }).join('');
+
+  const extra = CAL_TIPO === 'comunidad'
+    ? `<div class="mt-3">
+         <label class="block text-muted font-mono text-xs uppercase mb-1">Detalle (opcional)</label>
+         <textarea id="dia-texto" rows="3" class="w-full px-3 py-2 text-sm" placeholder="Qué va exactamente">${guardado?.texto || ''}</textarea>
+       </div>`
+    : '<div id="dia-pasos" class="mt-3"></div>';
+
+  return `<div class="space-y-2">${opciones}</div>${extra}`;
+}
+
+function detalleDeIdea(idea) {
+  const linea = (etiqueta, valor) => valor
+    ? `<div class="mb-1"><span class="text-muted font-mono text-[10px] uppercase">${etiqueta}</span><p class="text-sm">${valor}</p></div>`
+    : '';
+  return `
+    <div class="bg-surface-elevated border border-border p-3 text-sm">
+      <p class="font-bold mb-2">${idea.nombre}</p>
+      <p class="text-muted font-mono text-[10px] uppercase mb-1">Guion</p>
+      ${linea('Gancho', idea.guion_gancho)}${linea('Desarrollo', idea.guion_desarrollo)}${linea('Final', idea.guion_final)}
+      <p class="text-muted font-mono text-[10px] uppercase mt-3 mb-1">Visual</p>
+      ${linea('Gancho', idea.visual_gancho)}${linea('Desarrollo', idea.visual_desarrollo)}${linea('Final', idea.visual_final)}
+    </div>`;
+}
+
+function renderPasosDelFormato(fechaIso, formatoId) {
+  const cont = document.getElementById('dia-pasos');
+  if (!cont) return;
+  const formato = formatoDeHistoria(fechaIso, formatoId);
+  if (!formato) { cont.innerHTML = ''; return; }
+  cont.innerHTML = `
+    <div class="bg-surface-elevated border border-border p-3">
+      <p class="text-muted font-mono text-[10px] uppercase mb-2">${formato.nombre}</p>
+      ${formato.pasos.map((p, i) => `
+        <div class="flex gap-2 mb-2">
+          <span class="font-mono text-accent text-xs flex-shrink-0">H${i + 1}</span>
+          <span class="text-sm">${p}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function conectarCuerpoDelDia(fechaIso, plan, guardado) {
+  if (CAL_TIPO === 'historias' && guardado?.formato_id) {
+    renderPasosDelFormato(fechaIso, guardado.formato_id);
+  }
+
+  document.querySelectorAll('.dia-formato').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.dia-formato').forEach(o => {
+        o.classList.remove('border-accent', 'bg-accent/10');
+        o.classList.add('border-border');
+      });
+      b.classList.add('border-accent', 'bg-accent/10');
+      b.classList.remove('border-border');
+      b.dataset.elegido = 'si';
+      document.querySelectorAll('.dia-formato').forEach(o => { if (o !== b) delete o.dataset.elegido; });
+      if (CAL_TIPO === 'historias') renderPasosDelFormato(fechaIso, b.dataset.formato);
+    });
+  });
+
+  const selectIdea = document.getElementById('dia-idea');
+  if (selectIdea) {
+    selectIdea.addEventListener('change', () => {
+      const idea = VIDEO_IDEAS.find(i => i.id === selectIdea.value);
+      document.getElementById('dia-idea-detalle').innerHTML = idea ? detalleDeIdea(idea) : '';
+    });
+  }
+}
+
+function formatoElegidoEnElDia(guardado) {
+  const marcado = document.querySelector('.dia-formato[data-elegido="si"]');
+  if (marcado) return marcado.dataset.formato;
+  return guardado?.formato_id || null;
+}
+
+alTocar('dia-cerrar', () => {
+  document.getElementById('modal-dia').classList.add('hidden');
+  DIA_ABIERTO = null;
+});
+
+alTocar('dia-guardar', async () => {
+  if (!DIA_ABIERTO) return;
+  const guardado = contenidoDe(DIA_ABIERTO, CAL_TIPO);
+  const fila = { fecha: DIA_ABIERTO, tipo: CAL_TIPO, formato_id: null, texto: null, idea_id: null };
+
+  if (CAL_TIPO === 'publicaciones') {
+    fila.texto = document.getElementById('dia-texto').value.trim() || null;
+    if (!fila.texto) { alert('Completá qué se publica.'); return; }
+  } else if (CAL_TIPO === 'videos') {
+    const select = document.getElementById('dia-idea');
+    fila.idea_id = select?.value || null;
+    if (!fila.idea_id) { alert('Elegí una idea.'); return; }
+  } else {
+    fila.formato_id = formatoElegidoEnElDia(guardado);
+    if (!fila.formato_id) { alert('Elegí un formato.'); return; }
+    if (CAL_TIPO === 'comunidad') {
+      fila.texto = document.getElementById('dia-texto').value.trim() || null;
+    }
+  }
+
+  const boton = document.getElementById('dia-guardar');
+  boton.disabled = true;
+
+  // Una idea que deja de estar asignada vuelve a pendiente, salvo que ya se
+  // haya marcado como hecha.
+  const ideaAnterior = guardado?.idea_id;
+  const { error } = guardado
+    ? await supabase.from('contenido_dias').update(fila).eq('id', guardado.id)
+    : await supabase.from('contenido_dias').insert(fila);
+  if (error) { boton.disabled = false; alert('No se pudo guardar.'); console.error(error); return; }
+
+  if (CAL_TIPO === 'videos') {
+    if (ideaAnterior && ideaAnterior !== fila.idea_id) await liberarIdea(ideaAnterior);
+    if (fila.idea_id) await marcarIdea(fila.idea_id, 'asignado');
+  }
+
+  boton.disabled = false;
+  document.getElementById('modal-dia').classList.add('hidden');
+  DIA_ABIERTO = null;
+  await cargarContenido();
+});
+
+alTocar('dia-limpiar', async () => {
+  if (!DIA_ABIERTO) return;
+  const guardado = contenidoDe(DIA_ABIERTO, CAL_TIPO);
+  if (!guardado) return;
+  if (!confirm('¿Vaciar lo planificado para este día?')) return;
+
+  const { error } = await supabase.from('contenido_dias').delete().eq('id', guardado.id);
+  if (error) { alert('No se pudo vaciar.'); console.error(error); return; }
+  if (guardado.idea_id) await liberarIdea(guardado.idea_id);
+
+  document.getElementById('modal-dia').classList.add('hidden');
+  DIA_ABIERTO = null;
+  await cargarContenido();
+});
+
+async function marcarIdea(id, estado) {
+  const { error } = await supabase.from('video_ideas').update({ estado }).eq('id', id);
+  if (error) console.error(error);
+}
+
+// Al sacarla de un día vuelve a pendiente, salvo que ya esté hecha.
+async function liberarIdea(id) {
+  const idea = VIDEO_IDEAS.find(i => i.id === id);
+  if (idea && idea.estado === 'hecho') return;
+  await marcarIdea(id, 'pendiente');
+}
+
+// ── Meses ──
+alTocar('btn-meses-anteriores', () => {
+  CAL_NAVEGABLE = !CAL_NAVEGABLE;
+  document.getElementById('btn-meses-anteriores').textContent =
+    CAL_NAVEGABLE ? 'Volver al mes actual' : 'Meses anteriores';
+  if (!CAL_NAVEGABLE) CAL_MES = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  renderCalendario();
+});
+alTocar('cal-mes-anterior', async () => {
+  CAL_MES = new Date(CAL_MES.getFullYear(), CAL_MES.getMonth() - 1, 1);
+  await cargarContenido();
+});
+alTocar('cal-mes-siguiente', async () => {
+  CAL_MES = new Date(CAL_MES.getFullYear(), CAL_MES.getMonth() + 1, 1);
+  await cargarContenido();
+});
+
+// ── Ideas de video ──
+const ESTADOS_IDEA = [
+  { id: 'pendiente', nombre: 'Pendientes' },
+  { id: 'asignado', nombre: 'Asignadas' },
+  { id: 'hecho', nombre: 'Hechas' },
+];
+
+function renderIdeas() {
+  document.getElementById('ideas-filtros').innerHTML = ESTADOS_IDEA.map(e => {
+    const cuantas = VIDEO_IDEAS.filter(i => i.estado === e.id).length;
+    return `<button class="idea-filtro font-mono text-xs uppercase px-3 py-2 border ${
+      e.id === FILTRO_IDEAS ? 'bg-accent text-black border-accent font-bold' : 'bg-surface-elevated border-border text-muted'
+    }" data-estado="${e.id}">${e.nombre} ${cuantas}</button>`;
+  }).join('');
+  document.querySelectorAll('.idea-filtro').forEach(b => {
+    b.addEventListener('click', () => { FILTRO_IDEAS = b.dataset.estado; renderIdeas(); });
+  });
+
+  const lista = VIDEO_IDEAS.filter(i => i.estado === FILTRO_IDEAS);
+  const cont = document.getElementById('ideas-lista');
+  if (lista.length === 0) {
+    cont.innerHTML = '<p class="text-muted text-sm p-4 text-center">No hay ideas en este estado.</p>';
+    return;
+  }
+  cont.innerHTML = lista.map(i => `
+    <div class="border border-border p-3">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-bold text-sm">${i.nombre}</p>
+          <p class="text-muted text-xs mt-0.5 line-clamp-2">${i.guion_gancho || 'Sin guion cargado'}</p>
+        </div>
+        <div class="flex gap-1 flex-shrink-0">
+          <button class="idea-abrir bg-surface-elevated border border-border text-[10px] font-mono uppercase px-2 py-1" data-id="${i.id}">Ver</button>
+          ${i.estado !== 'hecho'
+            ? `<button class="idea-hecho bg-accent text-black text-[10px] font-mono uppercase px-2 py-1 font-bold" data-id="${i.id}">Hecho</button>`
+            : `<button class="idea-reabrir bg-surface-elevated border border-border text-[10px] font-mono uppercase px-2 py-1" data-id="${i.id}">Reabrir</button>`}
+        </div>
+      </div>
+    </div>`).join('');
+
+  cont.querySelectorAll('.idea-abrir').forEach(b =>
+    b.addEventListener('click', () => abrirModalIdea(VIDEO_IDEAS.find(i => i.id === b.dataset.id))));
+  cont.querySelectorAll('.idea-hecho').forEach(b =>
+    b.addEventListener('click', async () => { await marcarIdea(b.dataset.id, 'hecho'); await cargarContenido(); renderIdeas(); }));
+  cont.querySelectorAll('.idea-reabrir').forEach(b =>
+    b.addEventListener('click', async () => { await marcarIdea(b.dataset.id, 'pendiente'); await cargarContenido(); renderIdeas(); }));
+}
+
+alTocar('btn-ideas-video', () => {
+  renderIdeas();
+  document.getElementById('modal-ideas').classList.remove('hidden');
+});
+alTocar('ideas-cerrar', () =>
+  document.getElementById('modal-ideas').classList.add('hidden'));
+
+const CAMPOS_IDEA = ['nombre', 'guion-gancho', 'guion-desarrollo', 'guion-final',
+                     'visual-gancho', 'visual-desarrollo', 'visual-final'];
+
+function abrirModalIdea(idea) {
+  IDEA_EDITANDO = idea || null;
+  document.getElementById('idea-titulo').textContent = idea ? 'Editar idea' : 'Nueva idea';
+  CAMPOS_IDEA.forEach(c => {
+    document.getElementById(`idea-${c}`).value = idea ? (idea[c.replace(/-/g, '_')] || '') : '';
+  });
+  document.getElementById('modal-idea').classList.remove('hidden');
+}
+
+alTocar('btn-nueva-idea', () => abrirModalIdea(null));
+alTocar('idea-cancelar', () => {
+  document.getElementById('modal-idea').classList.add('hidden');
+  IDEA_EDITANDO = null;
+});
+
+alTocar('idea-guardar', async () => {
+  const nombre = document.getElementById('idea-nombre').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+
+  const fila = { nombre };
+  CAMPOS_IDEA.slice(1).forEach(c => {
+    fila[c.replace(/-/g, '_')] = document.getElementById(`idea-${c}`).value.trim() || null;
+  });
+
+  const boton = document.getElementById('idea-guardar');
+  boton.disabled = true;
+  const { error } = IDEA_EDITANDO
+    ? await supabase.from('video_ideas').update(fila).eq('id', IDEA_EDITANDO.id)
+    : await supabase.from('video_ideas').insert(fila);
+  boton.disabled = false;
+  if (error) { alert('No se pudo guardar la idea.'); console.error(error); return; }
+
+  document.getElementById('modal-idea').classList.add('hidden');
+  IDEA_EDITANDO = null;
+  await cargarContenido();
+  renderIdeas();
+});
+
+try {
+  CAL_MES = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  renderSelectorTipos();
+} catch (e) {
+  console.error('El calendario de contenido no pudo arrancar:', e);
+  const seccionCalendario = document.getElementById('tab-contenido');
+  if (seccionCalendario) {
+    seccionCalendario.innerHTML = '<p class="text-red-400 text-sm p-6">El calendario no pudo cargarse. '
+      + 'El resto del panel funciona normalmente.</p>';
+  }
+}
 
 // ── COMPRAS ───────────────────────────────────────────────────────────────
 // Simulador y carga de compras. Cada prenda tiene un costo y un peso; el envío
