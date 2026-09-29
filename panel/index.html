@@ -1643,6 +1643,37 @@
   </div>
 </div>
 
+<!-- Modal: corregir la prenda de una venta ya cargada -->
+<div id="modal-corregir-prenda" class="hidden fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-surface border border-border p-4 sm:p-6">
+    <h3 class="font-bold mb-1">Error de prenda</h3>
+    <p class="text-muted text-xs mb-4">
+      Para cuando se cargó la prenda equivocada. La que estaba <strong>vuelve al stock</strong>
+      y la correcta <strong>se da de baja</strong>. El precio de la venta no cambia.
+    </p>
+
+    <div class="bg-surface-elevated border border-border p-3 mb-3">
+      <p class="text-muted font-mono text-[10px] uppercase mb-1">Está cargada</p>
+      <p id="cp-actual" class="text-sm"></p>
+    </div>
+
+    <label class="block text-muted font-mono text-xs uppercase mb-1">La correcta</label>
+    <div class="relative mb-2">
+      <input id="cp-buscar" type="text" placeholder="Buscar por nombre o marca…" class="w-full px-3 py-2 text-sm" autocomplete="off" />
+      <div id="cp-sugerencias" class="hidden absolute z-20 left-0 right-0 bg-surface-elevated border border-border text-sm max-h-52 overflow-y-auto"></div>
+    </div>
+    <input id="cp-codigo" type="text" placeholder="Escanear o tipear el código" class="w-full px-3 py-2 text-sm font-mono" autocomplete="off" />
+    <p id="cp-info" class="text-xs text-muted mt-1"></p>
+
+    <div id="cp-preview" class="font-mono text-xs space-y-1 mt-3"></div>
+
+    <div class="flex gap-2 mt-5">
+      <button id="cp-guardar" class="flex-1 bg-accent text-black font-mono uppercase text-xs tracking-wide py-2.5 font-bold">Corregir</button>
+      <button id="cp-cancelar" class="flex-1 border border-border font-mono uppercase text-xs tracking-wide py-2.5">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: detalle de un día del calendario -->
 <div id="modal-dia" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-md bg-surface border border-border p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
@@ -3438,6 +3469,9 @@ function agregarItemVenta(existente) {
       <label class="block text-muted font-mono text-xs uppercase mb-1">Código</label>
       <input class="v-item-codigo w-full px-3 py-2 text-sm font-mono" placeholder="Escanear o tipear" />
       <p class="v-item-info text-xs text-muted mt-1">Sin escanear.</p>
+      <button type="button" class="v-item-corregir hidden text-[10px] font-mono uppercase tracking-wide border border-border px-2 py-1 mt-2 text-muted hover:text-white">
+        Error de prenda
+      </button>
     </div>
     <div>
       <label class="block text-muted font-mono text-xs uppercase mb-1">Precio venta</label>
@@ -3504,6 +3538,18 @@ function agregarItemVenta(existente) {
     // puede cambiar: el buscador sobra y solo confunde.
     inputBuscar.closest('.relative').classList.add('hidden');
     div.querySelector('label').classList.add('hidden');
+    // La prenda no se puede cambiar editando el código —eso dejaría la unidad
+    // vieja vendida y la nueva en stock— pero sí corregirse, que es otra cosa.
+    const botonCorregir = div.querySelector('.v-item-corregir');
+    botonCorregir.classList.remove('hidden');
+    botonCorregir.addEventListener('click', () => abrirCorreccionDePrenda({
+      ventaItemId: existente.id,
+      unidad: existente.unidades,
+      unidadId: existente.unidad_id,
+      nombre: existente.unidades?.productos?.nombre || 'la prenda cargada',
+      talle: existente.unidades?.talle || null,
+      codigo: existente.unidades?.codigo_barra || '',
+    }));
     info.textContent = `${existente.unidades?.productos?.nombre || ''}${existente.unidades?.talle ? ' — talle ' + existente.unidades.talle : ''}`;
     info.className = 'v-item-info text-xs text-accent mt-1';
     inputPrecio.value = existente.precio_venta;
@@ -3757,6 +3803,137 @@ async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales, cotizacion, f
     });
   }
 }
+
+// ── Corregir la prenda de una venta ───────────────────────────────────────
+// Pasa cuando se carga la prenda equivocada: la que se vendió de verdad queda
+// figurando en stock y la que no, vendida. No alcanza con cambiar el código en
+// el formulario —eso dejaría las dos unidades en el estado errado— así que la
+// corrección hace el intercambio completo: la vieja vuelve al stock, la nueva
+// se da de baja, y el ítem de la venta pasa a apuntar a la correcta con su
+// costo, para que la ganancia de esa venta deje de estar calculada con el
+// costo de la prenda que no era.
+let CORRECCION_PRENDA = null;
+let CORRECCION_UNIDAD_NUEVA = null;
+
+function abrirCorreccionDePrenda(datos) {
+  CORRECCION_PRENDA = datos;
+  CORRECCION_UNIDAD_NUEVA = null;
+  document.getElementById('cp-actual').innerHTML =
+    `${datos.nombre}${datos.talle ? ' · talle ' + datos.talle : ''}`
+    + `<span class="block text-muted font-mono text-[10px]">${datos.codigo}</span>`;
+  document.getElementById('cp-buscar').value = '';
+  document.getElementById('cp-codigo').value = '';
+  document.getElementById('cp-info').textContent = '';
+  document.getElementById('cp-preview').innerHTML = '';
+  document.getElementById('cp-sugerencias').classList.add('hidden');
+  document.getElementById('modal-corregir-prenda').classList.remove('hidden');
+}
+
+async function buscarUnidadCorreccion() {
+  const codigo = document.getElementById('cp-codigo').value.trim();
+  const info = document.getElementById('cp-info');
+  const preview = document.getElementById('cp-preview');
+  CORRECCION_UNIDAD_NUEVA = null;
+  preview.innerHTML = '';
+  if (!codigo) { info.textContent = ''; return; }
+
+  const { data, error } = await supabase
+    .from('unidades')
+    .select('*, productos(nombre, marca, precio_venta_usd)')
+    .eq('codigo_barra', codigo)
+    .maybeSingle();
+
+  if (error || !data) {
+    info.textContent = 'Código no encontrado.';
+    info.className = 'text-xs text-red-400 mt-1';
+    return;
+  }
+  if (data.id === CORRECCION_PRENDA?.unidadId) {
+    info.textContent = 'Es la misma prenda que ya está cargada.';
+    info.className = 'text-xs text-red-400 mt-1';
+    return;
+  }
+  if (data.estado === 'vendido') {
+    info.textContent = 'Esa prenda ya figura vendida en otra venta.';
+    info.className = 'text-xs text-red-400 mt-1';
+    return;
+  }
+
+  CORRECCION_UNIDAD_NUEVA = data;
+  info.textContent = `${data.productos.nombre}${data.talle ? ' · talle ' + data.talle : ''}`;
+  info.className = 'text-xs text-accent mt-1';
+
+  preview.innerHTML = `
+    <div class="flex justify-between gap-3"><span class="text-muted">Vuelve al stock</span><span>${CORRECCION_PRENDA.nombre}</span></div>
+    <div class="flex justify-between gap-3"><span class="text-muted">Se da de baja</span><span>${data.productos.nombre}</span></div>
+    <div class="flex justify-between gap-3 border-t border-border pt-1"><span class="text-muted">Costo de la venta</span><span>USD ${Number(data.costo_usd || 0).toFixed(2)}</span></div>
+    <p class="text-muted text-[10px] pt-1">La ganancia de esta venta pasa a calcularse con el costo de la prenda correcta.</p>`;
+}
+
+document.getElementById('cp-codigo').addEventListener('blur', buscarUnidadCorreccion);
+document.getElementById('cp-codigo').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); buscarUnidadCorreccion(); }
+});
+
+montarBuscadorDePrenda(
+  document.getElementById('cp-buscar'),
+  document.getElementById('cp-sugerencias'),
+  (codigo) => {
+    document.getElementById('cp-codigo').value = codigo;
+    buscarUnidadCorreccion();
+  });
+
+document.getElementById('cp-cancelar').addEventListener('click', () => {
+  document.getElementById('modal-corregir-prenda').classList.add('hidden');
+  CORRECCION_PRENDA = null;
+  CORRECCION_UNIDAD_NUEVA = null;
+});
+
+document.getElementById('cp-guardar').addEventListener('click', async () => {
+  if (!CORRECCION_PRENDA) return;
+  if (!CORRECCION_UNIDAD_NUEVA) { alert('Elegí la prenda correcta.'); return; }
+
+  const nueva = CORRECCION_UNIDAD_NUEVA;
+  if (!confirm(
+    `"${CORRECCION_PRENDA.nombre}" vuelve al stock y "${nueva.productos.nombre}" se da de baja.\n\n`
+    + 'El precio de la venta no cambia, pero su ganancia se recalcula con el costo de la prenda correcta.\n\n¿Corregir?')) return;
+
+  const boton = document.getElementById('cp-guardar');
+  boton.disabled = true;
+
+  // Primero se mueve el ítem de la venta, así la unidad vieja deja de estar
+  // referenciada antes de devolverla al stock.
+  const { error: errorItem } = await supabase.from('venta_items').update({
+    unidad_id: nueva.id,
+    costo_usd_snapshot: Number(nueva.costo_usd || 0),
+    precio_lista_usd_snapshot: Number(nueva.productos?.precio_venta_usd || 0),
+  }).eq('id', CORRECCION_PRENDA.ventaItemId);
+  if (errorItem) { boton.disabled = false; alert('No se pudo corregir la venta.'); console.error(errorItem); return; }
+
+  const fechaVenta = EDITANDO_VENTA?.fecha || hoyIso();
+  const { error: errorVieja } = await supabase.from('unidades')
+    .update({ estado: 'disponible', vendido_at: null })
+    .eq('id', CORRECCION_PRENDA.unidadId);
+  if (errorVieja) console.error(errorVieja);
+
+  const { error: errorNueva } = await supabase.from('unidades')
+    .update({ estado: 'vendido', vendido_at: fechaVenta + 'T00:00:00' })
+    .eq('id', nueva.id);
+  if (errorNueva) console.error(errorNueva);
+
+  boton.disabled = false;
+  document.getElementById('modal-corregir-prenda').classList.add('hidden');
+  document.getElementById('modal-venta').classList.add('hidden');
+  CORRECCION_PRENDA = null;
+  CORRECCION_UNIDAD_NUEVA = null;
+  EDITANDO_VENTA = null;
+
+  await cargarProductos();
+  await cargarVentas();
+  alert(errorVieja || errorNueva
+    ? 'La venta se corrigió, pero alguna unidad no cambió de estado. Revisá el stock.'
+    : 'Corregido. La prenda equivocada volvió al stock y la correcta quedó vendida.');
+});
 
 // Venta con cuenta corriente: en vez de un ingreso por moneda por el total,
 // un único ingreso en USD por lo que se abonó hoy (el resto queda en deudas_movimientos).
