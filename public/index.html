@@ -164,6 +164,9 @@
     #cupon-msg.err{color:#ff6b6b}
     #cupon-msg.ok{color:var(--accent)}
     #cupon-active{display:flex;justify-content:space-between;align-items:center;gap:.5rem;border:1px solid var(--accent);padding:.5rem .7rem}
+    /* Las reglas de arriba usan #id y le ganan en especificidad a .hidden de
+       Tailwind, así que cada contenedor ocultable necesita su propio override. */
+    #cupon-active.hidden,#cupon-input-row.hidden,#cupon-msg.hidden,#cart-subtotal-row.hidden{display:none}
     #cupon-active-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent)}
     #cupon-remove{background:transparent;border:0;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:0 .2rem;touch-action:manipulation}
     #cupon-remove:hover{color:var(--ink)}
