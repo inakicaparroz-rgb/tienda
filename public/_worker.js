@@ -1,7 +1,7 @@
 const SUPABASE_URL = "https://anaonrcaxhwxvuqcsyfg.supabase.co";
-const BLUE = 1530;
+const BLUE_FALLBACK = 1530;
 const MARGIN = 1.225;
-const effectiveARS = (p) => Math.round(p * BLUE * MARGIN / 1000) * 1000;
+const effectiveARS = (p, blue) => Math.round(p * blue * MARGIN / 1000) * 1000;
 
 function supabase(env) {
   return async (path, opts = {}) => {
@@ -18,6 +18,29 @@ function supabase(env) {
     const data = await res.json().catch(() => null);
     return { ok: res.ok, status: res.status, data };
   };
+}
+
+async function cotizacion(sb) {
+  const { data } = await sb("/rest/v1/configuracion?select=cotizacion_usd_ars&limit=1");
+  const v = Array.isArray(data) ? Number(data[0]?.cotizacion_usd_ars) : NaN;
+  return v > 0 ? v : BLUE_FALLBACK;
+}
+
+// Valida el cupón contra la base. El cliente solo manda el código: el
+// porcentaje y la vigencia salen siempre de acá, nunca del navegador.
+async function validarCupon(sb, codigo, email) {
+  const code = String(codigo).trim().toUpperCase();
+  const { data } = await sb(`/rest/v1/cupones?codigo=eq.${encodeURIComponent(code)}&activo=eq.true&select=id,codigo,descuento_pct,valido_hasta`);
+  const cupon = Array.isArray(data) ? data[0] : null;
+  if (!cupon) return { error: "cupon_invalido" };
+  if (new Date(cupon.valido_hasta) <= new Date()) return { error: "cupon_invalido" };
+
+  const mail = String(email || "").trim().toLowerCase();
+  if (!mail) return { error: "cupon_invalido" };
+  const { data: usos } = await sb(`/rest/v1/cupon_usos?cupon_id=eq.${cupon.id}&email=eq.${encodeURIComponent(mail)}&select=id&limit=1`);
+  if (Array.isArray(usos) && usos.length) return { error: "cupon_ya_usado" };
+
+  return { cupon };
 }
 
 async function handleCreatePreference(request, env) {
@@ -39,9 +62,19 @@ async function handleCreatePreference(request, env) {
   try { payload = await request.json(); }
   catch { return new Response("Invalid JSON", { status: 400 }); }
 
-  const { items, payer, customer_phone, back_urls, delivery_method, delivery_details } = payload;
+  const { items, payer, customer_phone, back_urls, delivery_method, delivery_details, cupon } = payload;
   if (!Array.isArray(items) || !items.length) return new Response("Missing items", { status: 400 });
 
+  const json = (body, status) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+  let cuponOk = null;
+  if (cupon) {
+    const { cupon: c, error } = await validarCupon(sb, cupon, payer?.email);
+    if (error) return json({ error }, 409);
+    cuponOk = c;
+  }
+
+  const blue = await cotizacion(sb);
   const reservados = [];
   for (const item of items) {
     const { data: producto } = await sb(`/rest/v1/productos?id=eq.${item.producto_id}&select=id,nombre,nombre_web,precio_venta_usd`);
@@ -55,19 +88,23 @@ async function handleCreatePreference(request, env) {
       for (const r of reservados) await liberarUnidad(r.unidad.id);
       return new Response(JSON.stringify({ error: "sin_stock", producto_id: item.producto_id, talle: item.talle || null, nombre: p.nombre_web || p.nombre }), { status: 409, headers: { "Content-Type": "application/json" } });
     }
-    reservados.push({ producto: p, unidad, talle: item.talle || null, precioArs: effectiveARS(Number(p.precio_venta_usd) || 0) });
+    reservados.push({ producto: p, unidad, talle: item.talle || null, precioArs: effectiveARS(Number(p.precio_venta_usd) || 0, blue) });
   }
+
+  const descuento = cuponOk ? cuponOk.descuento_pct / 100 : 0;
+  const conDescuento = (v) => descuento ? Math.round(v * (1 - descuento) / 1000) * 1000 : v;
 
   const mpItems = reservados.map(r => ({
     title: `${r.producto.nombre_web || r.producto.nombre}${r.talle ? ` (Talle ${r.talle})` : ""}`,
-    quantity: 1, unit_price: r.precioArs, currency_id: "ARS",
+    quantity: 1, unit_price: conDescuento(r.precioArs), currency_id: "ARS",
   }));
   const itemsMeta = reservados.map(r => ({
-    unidad_id: r.unidad.id, precio_venta: r.precioArs,
+    unidad_id: r.unidad.id, precio_venta: conDescuento(r.precioArs),
     costo_usd_snapshot: Number(r.unidad.costo_usd) || 0,
     precio_lista_usd_snapshot: Number(r.producto.precio_venta_usd) || 0,
   }));
   const orderSummary = mpItems.map(it => `• ${it.title} — ARS ${it.unit_price}`).join("\n")
+    + (cuponOk ? `\n\nCupón ${cuponOk.codigo}: -${cuponOk.descuento_pct}%` : "")
     + `\n\nTOTAL: ARS ${mpItems.reduce((s, it) => s + it.unit_price, 0)}`;
 
   try {
@@ -83,7 +120,8 @@ async function handleCreatePreference(request, env) {
           customer_name: payer?.name || "", customer_phone: customer_phone || "",
           customer_email: payer?.email || "", delivery_method: delivery_method || "",
           delivery_details: delivery_details || "", order_summary: orderSummary,
-          cotizacion_usada: BLUE, items_json: JSON.stringify(itemsMeta),
+          cotizacion_usada: blue, items_json: JSON.stringify(itemsMeta),
+          cupon_id: cuponOk ? cuponOk.id : "", cupon_codigo: cuponOk ? cuponOk.codigo : "",
         },
       }),
     });
@@ -156,6 +194,15 @@ async function handleMpWebhook(request, env) {
       method: "POST",
       body: JSON.stringify({ tipo: "ingreso", categoria: "venta", motivo: metadata.customer_name || "Cliente web", monto: payment.transaction_amount, moneda: "ARS", cotizacion_usada: cotizacion, venta_id: venta.id }),
     });
+
+    // Quema el cupón recién con el pago aprobado. El UNIQUE (cupon_id, email)
+    // hace que un reintento del webhook no duplique el uso.
+    if (metadata.cupon_id && metadata.customer_email) {
+      await sb("/rest/v1/cupon_usos", {
+        method: "POST",
+        body: JSON.stringify({ cupon_id: metadata.cupon_id, email: String(metadata.customer_email).trim().toLowerCase(), venta_id: venta.id }),
+      });
+    }
 
     // Emails
     const html = `<div style="font-family:monospace;max-width:560px;margin:0 auto;background:#000;color:#fff;padding:2rem"><h2 style="color:#57BEA1">Cop or Drop</h2><p>Hola <strong>${metadata.customer_name || "Cliente"}</strong>,</p><p>Tu pedido fue confirmado.</p><div style="border:1px solid #333;padding:1rem;margin:1.5rem 0;white-space:pre-line">${metadata.order_summary || ""}<br><br><strong>TOTAL: ${payment.currency_id} ${payment.transaction_amount}</strong></div><p><strong>Entrega:</strong> ${metadata.delivery_method || "-"}</p><div style="border:1px solid #333;padding:1rem;margin:1rem 0;white-space:pre-line">${metadata.delivery_details || "-"}</div></div>`;

@@ -153,6 +153,20 @@
     .cart-item-remove:hover{color:var(--ink)}
     #cart-footer{padding:1.25rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:.75rem}
     .cart-total-row{display:flex;justify-content:space-between;align-items:baseline}
+    #cupon-box{display:flex;flex-direction:column;gap:.5rem}
+    #cupon-input-row{display:flex;gap:.5rem}
+    #cupon-input{flex:1;min-width:0;background:transparent;border:1px solid var(--border);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:.55rem .7rem;outline:none;transition:border-color .2s}
+    #cupon-input:focus{border-color:var(--accent)}
+    #cupon-apply{border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.14em;padding:.55rem .9rem;cursor:pointer;white-space:nowrap;transition:border-color .2s,color .2s;touch-action:manipulation}
+    #cupon-apply:hover{border-color:var(--accent);color:var(--accent)}
+    #cupon-apply:disabled{opacity:.5;cursor:default}
+    #cupon-msg{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;line-height:1.5}
+    #cupon-msg.err{color:#ff6b6b}
+    #cupon-msg.ok{color:var(--accent)}
+    #cupon-active{display:flex;justify-content:space-between;align-items:center;gap:.5rem;border:1px solid var(--accent);padding:.5rem .7rem}
+    #cupon-active-label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent)}
+    #cupon-remove{background:transparent;border:0;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:0 .2rem;touch-action:manipulation}
+    #cupon-remove:hover{color:var(--ink)}
     .btn-cart-wsp{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.7rem;background:#25D366;color:#000;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;text-decoration:none;border:none;cursor:pointer;transition:opacity .2s}
     .btn-cart-wsp:hover{opacity:.88}
     .btn-cart-mp{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.7rem;background:#009EE3;color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;border:none;cursor:pointer;transition:opacity .2s}
@@ -726,6 +740,21 @@
   </div>
   <div id="cart-items"></div>
   <div id="cart-footer" class="hidden">
+    <div id="cupon-box">
+      <div id="cupon-input-row">
+        <input id="cupon-input" type="text" placeholder="CÓDIGO DE DESCUENTO" autocomplete="off" spellcheck="false">
+        <button id="cupon-apply" type="button">Aplicar</button>
+      </div>
+      <p id="cupon-msg" class="hidden"></p>
+      <div id="cupon-active" class="hidden">
+        <span id="cupon-active-label"></span>
+        <button id="cupon-remove" type="button" aria-label="Quitar cupón">×</button>
+      </div>
+    </div>
+    <div id="cart-subtotal-row" class="cart-total-row hidden">
+      <span class="font-mono text-[10px] uppercase tracking-[.14em] text-muted">Subtotal</span>
+      <span id="cart-subtotal" class="font-mono text-xs text-muted" style="text-decoration:line-through"></span>
+    </div>
     <div class="cart-total-row">
       <span class="font-mono text-xs uppercase tracking-[.14em] text-muted">TOTAL</span>
       <span id="cart-total" class="font-mono text-sm font-semibold text-accent"></span>
@@ -816,6 +845,8 @@
   const BRANDS = ["HELLSTAR","SUPREME","CORTEIZ","DENIM TEARS","CASABLANCA","BAPE","ADIDAS","VALE FOREVER","STÜSSY","OFF-WHITE","MIXED EMOTION","ESSENTIALS","KITH","JORDAN","NIKE","SYNA","ERIC EMANUEL","BROKEN PLANET","ALL SAINTS","NOCTA","PRADA","SP5DER","NORTH FACE","SPRAYGROUND","DIESEL"];
 
   let BLUE = 1530;
+  let CUPON = null;
+  const aplicarCupon = (monto) => CUPON ? Math.round(monto * (1 - CUPON.descuento_pct / 100) / 1000) * 1000 : monto;
   const MARGIN = 1.225; // USD × blue × 22.5%
   const effectiveARS = (p) => Math.round(p.priceUSD * BLUE * MARGIN / 1000) * 1000;
   const transferARS = (p) => Math.round(p.priceUSD * BLUE / 1000) * 1000;
@@ -1072,6 +1103,70 @@ const WA_NUMBER = "541134435571";
   const cartTotalEl = document.getElementById("cart-total");
   const btnWsp = document.getElementById("btn-wsp");
   const btnMp = document.getElementById("btn-mp");
+  const cartSubtotalRow = document.getElementById("cart-subtotal-row");
+  const cartSubtotalEl = document.getElementById("cart-subtotal");
+  const cuponInput = document.getElementById("cupon-input");
+  const cuponApply = document.getElementById("cupon-apply");
+  const cuponMsg = document.getElementById("cupon-msg");
+  const cuponActive = document.getElementById("cupon-active");
+  const cuponActiveLabel = document.getElementById("cupon-active-label");
+  const cuponRemove = document.getElementById("cupon-remove");
+  const cuponInputRow = document.getElementById("cupon-input-row");
+
+  function showCuponMsg(text, kind) {
+    cuponMsg.textContent = text;
+    cuponMsg.className = kind;
+    cuponMsg.classList.toggle("hidden", !text);
+  }
+
+  function pintarCupon() {
+    const on = !!CUPON;
+    cuponInputRow.classList.toggle("hidden", on);
+    cuponActive.classList.toggle("hidden", !on);
+    if (on) cuponActiveLabel.textContent = `${CUPON.codigo} · -${CUPON.descuento_pct}%`;
+  }
+
+  async function validarCupon(codigo) {
+    const { data, error } = await supabase
+      .from("cupones_publicos")
+      .select("codigo,descuento_pct,valido_hasta")
+      .eq("codigo", codigo)
+      .maybeSingle();
+    if (error) return { error: "No se pudo validar. Probá de nuevo." };
+    if (!data) return { error: "Cupón inválido o vencido." };
+    return { cupon: data };
+  }
+
+  cuponApply.addEventListener("click", async () => {
+    const codigo = cuponInput.value.trim().toUpperCase();
+    if (!codigo) return;
+    cuponApply.disabled = true;
+    showCuponMsg("Validando…", "");
+    const { cupon, error } = await validarCupon(codigo);
+    cuponApply.disabled = false;
+    if (error) { showCuponMsg(error, "err"); return; }
+    CUPON = cupon;
+    try { sessionStorage.setItem("cupon", JSON.stringify(cupon)); } catch {}
+    cuponInput.value = "";
+    showCuponMsg(`Cupón aplicado: -${cupon.descuento_pct}%`, "ok");
+    pintarCupon();
+    updateCart();
+  });
+
+  cuponInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); cuponApply.click(); } });
+
+  cuponRemove.addEventListener("click", () => {
+    CUPON = null;
+    try { sessionStorage.removeItem("cupon"); } catch {}
+    showCuponMsg("", "");
+    pintarCupon();
+    updateCart();
+  });
+
+  try {
+    const saved = sessionStorage.getItem("cupon");
+    if (saved) { CUPON = JSON.parse(saved); pintarCupon(); }
+  } catch {}
 
   function openCart() {
     cartOverlay.classList.add("open");
@@ -1118,7 +1213,11 @@ const WA_NUMBER = "541134435571";
     } else {
       cartEmptyEl.style.display = "none";
       cartFooter.classList.remove("hidden");
-      const total = cart.reduce((s, p) => s + effectiveARS(p), 0);
+
+      const subtotal = cart.reduce((s, p) => s + effectiveARS(p), 0);
+      const total = aplicarCupon(subtotal);
+      cartSubtotalRow.classList.toggle("hidden", !CUPON);
+      if (CUPON) cartSubtotalEl.textContent = formatARS(subtotal);
       cartTotalEl.textContent = formatARS(total);
 
       cartItemsEl.innerHTML = cart.map(p => `
@@ -1133,8 +1232,10 @@ const WA_NUMBER = "541134435571";
 
       // WhatsApp: mensaje pre-cargado con el carrito
       const lines = cart.map(p => `• ${p.name}${p.talle ? ` (Talle ${p.talle})` : ""} — ${formatARS(transferARS(p))}`).join("\n");
-      const total_transf = cart.reduce((s, p) => s + transferARS(p), 0);
-      const total_line = `\nTOTAL: ${formatARS(total_transf)} ARS (precio transferencia)`;
+      const subtotalTransf = cart.reduce((s, p) => s + transferARS(p), 0);
+      const totalTransf = aplicarCupon(subtotalTransf);
+      let total_line = `\nTOTAL: ${formatARS(totalTransf)} ARS (precio transferencia)`;
+      if (CUPON) total_line = `\nSubtotal: ${formatARS(subtotalTransf)}\nCupón ${CUPON.codigo} (-${CUPON.descuento_pct}%)` + total_line;
       const msg = encodeURIComponent(`Hola! Quiero comprar:\n${lines}${total_line}`);
       btnWsp.href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
       window._cartWspMsg = msg;
@@ -1552,6 +1653,7 @@ const WA_NUMBER = "541134435571";
         back_urls: { success: successUrl, failure: location.href, pending: location.href },
         delivery_method: methodLabels[checkoutDelivery],
         delivery_details: `Teléfono: ${tel}\n${deliveryLines}`,
+        cupon: CUPON ? CUPON.codigo : null,
       }),
     })
     .then(async r => {
@@ -1563,8 +1665,12 @@ const WA_NUMBER = "541134435571";
       }
       if (r.status === 409 && data.error === "sin_stock") {
         alert(`"${data.nombre}"${data.talle ? ` talle ${data.talle}` : ""} se acaba de agotar. Sacalo del carrito para poder pagar el resto.`);
+      } else if (data.error === "cupon_invalido") {
+        alert("El cupón es inválido o está vencido. Quitalo del carrito para continuar.");
+      } else if (data.error === "cupon_ya_usado") {
+        alert("Ya usaste este cupón con ese email. Quitalo del carrito para continuar.");
       } else {
-        alert("Error al generar el link de pago.\n\nDetalle: " + JSON.stringify(data) + "\nStatus: " + r.status);
+        alert("Error al generar el link de pago. Probá de nuevo en un momento.");
       }
       console.error(data);
     })
