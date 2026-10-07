@@ -910,7 +910,7 @@ const WA_NUMBER = "541134435571";
         <div class="flex flex-col gap-0.5">
           <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
           <h3>${p.name}</h3>
-          <span class="pcard-cuotas">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
+          <span class="pcard-cuotas">3 cuotas sin interés de ${formatARS(effectiveARS(p) / 3)}</span>
         </div>
         ${p.status === "encargo"
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
@@ -1424,7 +1424,7 @@ const WA_NUMBER = "541134435571";
       </div>
       <div class="flex flex-col gap-1">
         <span class="font-mono text-xl font-semibold text-accent">USD ${p.priceUSD}</span>
-        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés de ${formatARS(effectiveARS(p) / 3)}</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
       ${p.status !== "encargo" && p.talles && p.talles.length > 0 ? `
@@ -1792,7 +1792,7 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
       </div>
       <div class="flex flex-col gap-1">
         <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
-        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés · ${formatARS(effectiveARS(p))} ARS</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés de ${formatARS(effectiveARS(p) / 3)}</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
       ${p.status !== "encargo" && p.status !== "sin-stock" && p.talles && p.talles.length > 0 ? `
