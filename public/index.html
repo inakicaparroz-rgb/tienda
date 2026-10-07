@@ -853,6 +853,7 @@
   const MARGIN = 1.225; // USD × blue × 22.5%
   const effectiveARS = (p) => Math.round(p.priceUSD * BLUE * MARGIN / 1000) * 1000;
   const transferARS = (p) => Math.round(p.priceUSD * BLUE / 1000) * 1000;
+  const cuotaARS = (p) => Math.round(effectiveARS(p) / 3 / 1000) * 1000;
   const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
@@ -910,7 +911,7 @@ const WA_NUMBER = "541134435571";
         <div class="flex flex-col gap-0.5">
           <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
           <h3>${p.name}</h3>
-          <span class="pcard-cuotas">3 cuotas sin interés de ${formatARS(effectiveARS(p) / 3)}</span>
+          <span class="pcard-cuotas">3 cuotas de ${formatARS(cuotaARS(p))}</span>
         </div>
         ${p.status === "encargo"
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
@@ -1424,7 +1425,7 @@ const WA_NUMBER = "541134435571";
       </div>
       <div class="flex flex-col gap-1">
         <span class="font-mono text-xl font-semibold text-accent">USD ${p.priceUSD}</span>
-        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés de ${formatARS(effectiveARS(p) / 3)}</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas de ${formatARS(cuotaARS(p))}</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
       ${p.status !== "encargo" && p.talles && p.talles.length > 0 ? `
@@ -1792,7 +1793,7 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
       </div>
       <div class="flex flex-col gap-1">
         <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
-        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas sin interés de ${formatARS(effectiveARS(p) / 3)}</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas de ${formatARS(cuotaARS(p))}</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
       ${p.status !== "encargo" && p.status !== "sin-stock" && p.talles && p.talles.length > 0 ? `
