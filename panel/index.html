@@ -3796,12 +3796,25 @@ async function regenerarCajaDeVenta(ventaId, motivo, itemsFinales, cotizacion, f
     totalesPorMoneda[moneda] = (totalesPorMoneda[moneda] || 0) + monto;
   });
   for (const [moneda, monto] of Object.entries(totalesPorMoneda)) {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
       cotizacion_usada: moneda === 'ARS' ? (cotizacion || null) : null,
       fondo_pendiente: fondoPendiente,
-    });
+    }, 'ingreso de venta');
   }
+}
+
+// Escribir en Caja es lo más delicado del sistema. Estas inserciones fallaban
+// en silencio: si una no entraba, el movimiento simplemente no existía y nadie
+// se enteraba hasta que el saldo no cuadraba semanas después. Ahora avisan.
+async function insertarEnCaja(fila, contexto) {
+  const { error } = await supabase.from('caja_movimientos').insert(fila);
+  if (!error) return true;
+  console.error(`No se pudo escribir en Caja (${contexto}):`, error, fila);
+  alert(`No se pudo registrar el movimiento en Flujo de caja (${contexto}).\n\n`
+    + `${error.message || 'sin detalle'}\n\n`
+    + 'El resto se guardó. Cargá ese movimiento a mano o volvé a guardar para reintentarlo.');
+  return false;
 }
 
 // ── Corregir la prenda de una venta ───────────────────────────────────────
@@ -3943,11 +3956,11 @@ document.getElementById('cp-guardar').addEventListener('click', async () => {
 async function regenerarCajaDeVentaCuentaCorriente(ventaId, motivo, monto, moneda, cotizacion, fondoPendiente = false) {
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
   if (monto > 0) {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: 'ingreso', motivo, categoria: 'venta', monto, moneda, venta_id: ventaId,
       cotizacion_usada: moneda === 'ARS' ? (cotizacion || null) : null,
       fondo_pendiente: fondoPendiente,
-    });
+    }, 'ingreso de venta');
   }
 }
 
@@ -3959,22 +3972,22 @@ async function regenerarCajaDeVentaConVuelto(ventaId, motivo, pago, vuelto, coti
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
 
   if (pago.monto > 0) {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: 'ingreso', motivo, categoria: 'venta',
       monto: pago.monto, moneda: pago.moneda, venta_id: ventaId,
       cotizacion_usada: pago.moneda === 'ARS' ? (cotizacion || null) : null,
       fondo_pendiente: fondoPendiente,
-    });
+    }, 'ingreso de venta');
   }
 
   // El vuelto sale con categoría propia para que se distinga de un gasto y
   // para poder descontarlo de la facturación, que si no contaría de más.
   if (vuelto.monto > 0) {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: 'gasto', motivo: `${motivo} — vuelto`, categoria: 'vuelto',
       monto: vuelto.monto, moneda: vuelto.moneda, venta_id: ventaId,
       cotizacion_usada: vuelto.moneda === 'ARS' ? (cotizacion || null) : null,
-    });
+    }, 'vuelto');
   }
 }
 
@@ -3984,18 +3997,18 @@ async function regenerarCajaDeVentaConVuelto(ventaId, motivo, pago, vuelto, coti
 async function regenerarCajaDeVentaMixta(ventaId, motivo, montoUsd, montoArs, cotizacion, fondoPendiente = false) {
   await supabase.from('caja_movimientos').delete().eq('venta_id', ventaId);
   if (montoUsd > 0) {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: 'ingreso', motivo, categoria: 'venta', monto: montoUsd, moneda: 'USD', venta_id: ventaId,
       cotizacion_usada: null,
       fondo_pendiente: fondoPendiente,
-    });
+    }, 'ingreso de venta');
   }
   if (montoArs > 0) {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: 'ingreso', motivo, categoria: 'venta', monto: montoArs, moneda: 'ARS', venta_id: ventaId,
       cotizacion_usada: cotizacion || null,
       fondo_pendiente: fondoPendiente,
-    });
+    }, 'ingreso de venta');
   }
 }
 
@@ -4617,7 +4630,7 @@ document.getElementById('importar-ventas-confirmar').addEventListener('click', a
       // El trigger marca la unidad vendida "ahora" — la corregimos a la fecha real
       await supabase.from('unidades').update({ vendido_at: fechaVenta + 'T00:00:00' }).eq('id', unidad.id);
 
-      await supabase.from('caja_movimientos').insert({
+      await insertarEnCaja({
         tipo: 'ingreso',
         fecha: fechaVenta,
         motivo: 'XXX',
@@ -4625,7 +4638,7 @@ document.getElementById('importar-ventas-confirmar').addEventListener('click', a
         monto: precioVenta,
         moneda: 'USD',
         venta_id: venta.id,
-      });
+      }, 'ingreso de venta');
 
       ventasCreadas++;
     } catch (e) {
@@ -5072,21 +5085,21 @@ async function regenerarCajaDeEncargo(encargoId, motivo, datos) {
     .eq('encargo_id', encargoId).is('encargo_pago_id', null);
 
   if (Number(datos.senia) > 0) {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: 'ingreso', categoria: 'venta', motivo, encargo_id: encargoId,
       monto: Number(datos.senia), moneda: datos.senia_moneda, fecha: datos.fecha,
       cotizacion_usada: datos.senia_moneda === 'ARS' ? (datos.cotizacion || null) : null,
-    });
+    }, 'seña del encargo');
   }
 
   // Con tarjeta el costo no sale de Caja todavía: queda en el saldo Tarjeta
   // hasta que se pague el resumen (ahí se carga un "Pago tarjeta" a mano).
   if (Number(datos.costo) > 0 && datos.costo_medio_pago === 'cash') {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: 'gasto', categoria: 'costo_encargo', motivo, encargo_id: encargoId,
       monto: Number(datos.costo), moneda: datos.costo_moneda, fecha: datos.fecha,
       cotizacion_usada: datos.costo_moneda === 'ARS' ? (datos.cotizacion || null) : null,
-    });
+    }, 'costo del encargo');
   }
 }
 
@@ -5201,13 +5214,13 @@ document.getElementById('ep-guardar').addEventListener('click', async () => {
   if (error) { alert('Error al registrar el pago.'); console.error(error); return; }
 
   // El pago entra a Caja como ingreso de venta, igual que la seña.
-  await supabase.from('caja_movimientos').insert({
+  await insertarEnCaja({
     tipo: 'ingreso', categoria: 'venta', fecha, monto, moneda,
     motivo: PAGO_ENCARGO_DESTINO.clientes?.nombre || 'Cliente',
     encargo_id: PAGO_ENCARGO_DESTINO.id,
     cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
     encargo_pago_id: pago.id,
-  });
+  }, 'pago del encargo');
 
   document.getElementById('modal-encargo-pago').classList.add('hidden');
   PAGO_ENCARGO_DESTINO = null;
@@ -5647,7 +5660,7 @@ document.getElementById('t-confirmar').addEventListener('click', async () => {
   // La plata, si la hubo, sí se movió de verdad: va a Caja con categoría
   // propia, que no cuenta ni en facturación ni en gastos operativos.
   if (direccion !== 'ninguna' && montoRaw > 0) {
-    await supabase.from('caja_movimientos').insert({
+    await insertarEnCaja({
       tipo: direccion === 'recibimos' ? 'ingreso' : 'gasto',
       categoria: 'trade',
       fecha,
@@ -5656,7 +5669,7 @@ document.getElementById('t-confirmar').addEventListener('click', async () => {
       moneda: monedaDif,
       cotizacion_usada: monedaDif === 'ARS' ? cotizacion : null,
       trade_id: trade.id,
-    });
+    }, 'diferencia del trade');
   }
 
   boton.disabled = false;
@@ -6895,13 +6908,13 @@ document.getElementById('cc-confirmar').addEventListener('click', async () => {
 
     for (const salida of salidas) {
       if (salida.monto <= 0) continue;
-      await supabase.from('caja_movimientos').insert({
+      await insertarEnCaja({
         tipo: 'gasto', categoria: 'compra_stock', fecha,
         motivo: motivoCaja,
         monto: salida.monto, moneda: salida.moneda,
         cotizacion_usada: salida.moneda === 'ARS' ? cotizacion : null,
         compra_id: compra.id,
-      });
+      }, 'compra de stock');
     }
   }
 
@@ -7869,14 +7882,14 @@ document.getElementById('importar-caja-confirmar').addEventListener('click', asy
       const tipo = montoConSigno < 0 ? 'gasto' : 'ingreso';
       const categoria = mapearCategoriaCaja(fila.categoria, tipo);
 
-      const { error } = await supabase.from('caja_movimientos').insert({
+      const { error } = await insertarEnCaja({
         tipo,
         fecha,
         motivo: fila.motivo.trim() || '(sin motivo)',
         categoria,
         monto: Math.abs(montoConSigno),
         moneda,
-      });
+      }, 'movimiento de venta');
       if (error) { logImportarCaja(`✗ Error al guardar "${fila.motivo || '?'}": ${error.message}`); errores++; continue; }
 
       creados++;
