@@ -1673,6 +1673,8 @@ const WA_NUMBER = "541134435571";
         alert("El cupón es inválido o está vencido. Quitalo del carrito para continuar.");
       } else if (data.error === "cupon_ya_usado") {
         alert("Ya usaste este cupón con ese email. Quitalo del carrito para continuar.");
+      } else if (data.error === "cupon_agotado") {
+        alert("Este cupón ya fue canjeado. Quitalo del carrito para continuar.");
       } else {
         alert("Error al generar el link de pago. Probá de nuevo en un momento.");
       }

@@ -30,7 +30,7 @@ async function cotizacion(sb) {
 // porcentaje y la vigencia salen siempre de acá, nunca del navegador.
 async function validarCupon(sb, codigo, email) {
   const code = String(codigo).trim().toUpperCase();
-  const { data } = await sb(`/rest/v1/cupones?codigo=eq.${encodeURIComponent(code)}&activo=eq.true&select=id,codigo,descuento_pct,valido_hasta`);
+  const { data } = await sb(`/rest/v1/cupones?codigo=eq.${encodeURIComponent(code)}&activo=eq.true&select=id,codigo,descuento_pct,valido_hasta,max_usos`);
   const cupon = Array.isArray(data) ? data[0] : null;
   if (!cupon) return { error: "cupon_invalido" };
   if (new Date(cupon.valido_hasta) <= new Date()) return { error: "cupon_invalido" };
@@ -39,6 +39,12 @@ async function validarCupon(sb, codigo, email) {
   if (!mail) return { error: "cupon_invalido" };
   const { data: usos } = await sb(`/rest/v1/cupon_usos?cupon_id=eq.${cupon.id}&email=eq.${encodeURIComponent(mail)}&select=id&limit=1`);
   if (Array.isArray(usos) && usos.length) return { error: "cupon_ya_usado" };
+
+  // max_usos null = sin tope. Con tope, cuenta los canjes de todos los clientes.
+  if (cupon.max_usos != null) {
+    const { data: total } = await sb(`/rest/v1/cupon_usos?cupon_id=eq.${cupon.id}&select=id`);
+    if (Array.isArray(total) && total.length >= cupon.max_usos) return { error: "cupon_agotado" };
+  }
 
   return { cupon };
 }
