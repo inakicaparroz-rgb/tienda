@@ -1167,10 +1167,25 @@ const WA_NUMBER = "541134435571";
     updateCart();
   });
 
-  try {
-    const saved = sessionStorage.getItem("cupon");
-    if (saved) { CUPON = JSON.parse(saved); pintarCupon(); }
-  } catch {}
+  // El cupón guardado puede haber vencido con la pestaña abierta, así que se
+  // revalida contra el servidor en vez de confiar en lo que quedó en sesión.
+  (async () => {
+    let saved = null;
+    try { saved = sessionStorage.getItem("cupon"); } catch {}
+    if (!saved) return;
+    let guardado = null;
+    try { guardado = JSON.parse(saved); } catch {}
+    if (!guardado?.codigo) return;
+    const { cupon } = await validarCupon(guardado.codigo);
+    if (cupon) {
+      CUPON = cupon;
+    } else {
+      CUPON = null;
+      try { sessionStorage.removeItem("cupon"); } catch {}
+    }
+    pintarCupon();
+    updateCart();
+  })();
 
   function openCart() {
     cartOverlay.classList.add("open");
