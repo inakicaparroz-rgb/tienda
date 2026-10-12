@@ -30,8 +30,12 @@ async function cotizacion(sb) {
 // porcentaje y la vigencia salen siempre de acá, nunca del navegador.
 async function validarCupon(sb, codigo, email) {
   const code = String(codigo).trim().toUpperCase();
-  const { data } = await sb(`/rest/v1/cupones?codigo=eq.${encodeURIComponent(code)}&activo=eq.true&select=id,codigo,descuento_pct,valido_hasta,max_usos`);
-  const cupon = Array.isArray(data) ? data[0] : null;
+  // Un fallo de la consulta no es lo mismo que un cupón que no existe: avisar
+  // "inválido" ante un error de base manda al cliente a sacar un cupón que
+  // estaba bien.
+  const { ok, data } = await sb(`/rest/v1/cupones?codigo=eq.${encodeURIComponent(code)}&activo=eq.true&select=id,codigo,descuento_pct,valido_hasta,max_usos`);
+  if (!ok || !Array.isArray(data)) return { error: "cupon_error" };
+  const cupon = data[0];
   if (!cupon) return { error: "cupon_invalido" };
   if (new Date(cupon.valido_hasta) <= new Date()) return { error: "cupon_invalido" };
 

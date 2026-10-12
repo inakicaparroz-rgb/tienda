@@ -1675,6 +1675,8 @@ const WA_NUMBER = "541134435571";
         alert("Ya usaste este cupón con ese email. Quitalo del carrito para continuar.");
       } else if (data.error === "cupon_agotado") {
         alert("Este cupón ya fue canjeado. Quitalo del carrito para continuar.");
+      } else if (data.error === "cupon_error") {
+        alert("No pudimos validar el cupón en este momento. Esperá unos segundos y probá de nuevo.");
       } else {
         alert("Error al generar el link de pago. Probá de nuevo en un momento.");
       }
