@@ -1008,3 +1008,16 @@ drop policy if exists "contenido_dias_authenticated_all" on contenido_dias;
 create policy "contenido_dias_authenticated_all" on contenido_dias
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 grant select, insert, update, delete on contenido_dias to authenticated;
+
+-- ═══ COMISIÓN DE MERCADO PAGO ══════════════════════════════════════════════
+-- Lo que paga el cliente no es lo que se deposita: Mercado Pago se queda con
+-- su comisión y, si fue en cuotas, con el costo de financiarlas. Se carga
+-- como un gasto atado a la misma venta (y pendiente igual que el cobro, porque
+-- se descuenta el mismo día), así el porcentaje sale de la diferencia entre
+-- lo cobrado y lo que llega, sin calcularlo a mano.
+alter table caja_movimientos drop constraint if exists caja_movimientos_categoria_check;
+alter table caja_movimientos add constraint caja_movimientos_categoria_check
+  check (categoria in ('venta', 'inversion', 'retiro', 'gasto_operativo', 'gasto_comercial',
+                       'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
+                       'pago_tarjeta', 'compra_stock', 'pago_kg', 'vuelto', 'trade',
+                       'comision_mp'));
