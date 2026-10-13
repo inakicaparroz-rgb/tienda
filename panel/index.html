@@ -2326,7 +2326,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     window.scrollTo({ top: 0 });
     document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
-    if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); }
+    // La caja hace falta acá para mostrar el % que se quedó Mercado Pago en
+    // cada venta web: ese dato vive en los movimientos, no en la venta.
+    if (btn.dataset.tab === 'ventas') { cargarClientes(); cargarVentas(); cargarDeudas(); cargarCaja(); }
     if (btn.dataset.tab === 'encargos') { cargarClientes(); cargarConfiguracion(); cargarEncargos(); }
     if (btn.dataset.tab === 'compras') { cargarConfiguracion(); cargarProductos(); cargarCompras(); }
     if (btn.dataset.tab === 'trades') { cargarClientes(); cargarConfiguracion(); cargarTrades(); }
@@ -4287,12 +4289,17 @@ function renderVentas(lista) {
     tr.className = 'cursor-pointer hover:bg-surface-elevated';
     tr.dataset.id = v.id;
     const deuda = deudaVenta(v);
+    // En una venta web lo cobrado no es lo que entra: al lado del canal se
+    // muestra qué porcentaje se quedó Mercado Pago, cuando ya está cargado.
+    const comision = v.canal === 'web' ? comisionDeVenta(v.id) : null;
     tr.innerHTML = `
       <td class="p-2">${v.clientes?.nombre || '-'}${deuda > 0 ? ' <span class="text-red-400 text-xs font-mono uppercase">● Cta. cte.</span>' : ''}</td>
       <td class="p-2 text-muted">${new Date(v.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
       <td class="p-2">${(v.venta_items || []).length}</td>
       <td class="p-2">USD ${totalUsdVenta(v).toFixed(2)}</td>
-      <td class="p-2 ${v.canal === 'web' ? 'text-accent' : 'text-muted'}">${v.canal === 'web' ? 'Web' : 'Local'}</td>
+      <td class="p-2 ${v.canal === 'web' ? 'text-accent' : 'text-muted'}">${v.canal === 'web' ? 'Web' : 'Local'}${
+        comision?.cargada ? ` <span class="block font-mono text-[10px] text-red-400">MP −${comision.pct.toFixed(2)}%</span>` : ''
+      }</td>
       <td class="p-2 text-right"><button class="btn-acciones text-muted hover:text-white px-2 text-base">⋮</button></td>
     `;
     tr.addEventListener('click', () => {
@@ -7231,7 +7238,7 @@ const CATEGORIA_LABEL = {
   gasto_operativo: 'Gasto operativo', gasto_comercial: 'Gasto comercial', pago_inversor: 'Pago a inversor',
   pago_deuda: 'Pago deuda', cambio_moneda: 'Cambio de moneda',
   costo_encargo: 'Costo encargo', pago_tarjeta: 'Pago tarjeta', compra_stock: 'Compra de stock',
-  pago_kg: 'Pago kg', vuelto: 'Vuelto', trade: 'Trade',
+  pago_kg: 'Pago kg', vuelto: 'Vuelto', trade: 'Trade', comision_mp: 'Comisión Mercado Pago',
 };
 
 const RETIRO_SOCIO_LABEL = { emi: 'Emi', ina: 'Iña', ambos: 'Emi y Iña' };
@@ -7282,6 +7289,9 @@ async function cargarCaja() {
   CAJA = data || [];
   renderResumenCaja();
   filtrarCaja();
+  // La lista de ventas muestra el % de Mercado Pago, que sale de estos
+  // movimientos: si la caja llega después, hay que volver a dibujarla.
+  if (VENTAS.length > 0) filtrarVentas();
 }
 
 // ── Fondos pendientes ──────────────────────────────────────────────────
@@ -7333,6 +7343,112 @@ function totalFondosPendientes(lista = CAJA) {
   return total;
 }
 
+// ── Lo que se queda Mercado Pago ───────────────────────────────────────
+// Mercado Pago no deposita lo que paga el cliente: se queda con su comisión
+// y, si la venta fue en cuotas, con el costo de financiarlas. Eso se carga
+// como un gasto 'comision_mp' atado a la misma venta, así el porcentaje no
+// hay que calcularlo a mano: es la diferencia entre lo que se le cobró al
+// cliente y lo que llega a la cuenta.
+function comisionDeVenta(ventaId, lista = CAJA) {
+  if (!ventaId) return null;
+  const movs = lista.filter(m => m.venta_id === ventaId);
+  const bruto = movs.filter(m => m.tipo === 'ingreso' && m.categoria === 'venta')
+    .reduce((s, m) => s + Number(m.monto), 0);
+  if (bruto <= 0) return null;
+  const comision = movs.filter(m => m.categoria === 'comision_mp')
+    .reduce((s, m) => s + Number(m.monto), 0);
+  return {
+    bruto, comision, neto: bruto - comision,
+    pct: comision / bruto * 100,
+    cargada: comision > 0.009,
+    moneda: (movs.find(m => m.tipo === 'ingreso' && m.categoria === 'venta') || {}).moneda || 'ARS',
+  };
+}
+
+// Promedio sobre las ventas que ya tienen la comisión cargada: con qué número
+// contar al poner precio, sin depender de una venta puntual.
+function promedioComisionMp(lista = CAJA) {
+  const porVenta = new Map();
+  lista.forEach(m => {
+    if (!m.venta_id) return;
+    if (!porVenta.has(m.venta_id)) porVenta.set(m.venta_id, { bruto: 0, comision: 0 });
+    const g = porVenta.get(m.venta_id);
+    if (m.categoria === 'comision_mp') g.comision += Number(m.monto);
+    else if (m.tipo === 'ingreso' && m.categoria === 'venta') g.bruto += Number(m.monto);
+  });
+  const cargadas = [...porVenta.values()].filter(g => g.comision > 0.009 && g.bruto > 0);
+  if (cargadas.length === 0) return null;
+  const bruto = cargadas.reduce((s, g) => s + g.bruto, 0);
+  const comision = cargadas.reduce((s, g) => s + g.comision, 0);
+  return { pct: comision / bruto * 100, ventas: cargadas.length };
+}
+
+// Acepta 132299.29, 132299,29 y 132.299,29 — como lo escribiría cualquiera.
+function montoDesdeTexto(texto) {
+  let t = String(texto || '').trim().replace(/\s/g, '');
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  return Number(t);
+}
+
+// Se pregunta por lo que llega a la cuenta, no por la comisión: ese es el
+// número que Mercado Pago muestra y el único que no hay que calcular.
+async function pedirComisionMp(ventaId) {
+  const movs = CAJA.filter(m => m.venta_id === ventaId);
+  const cobro = movs.find(m => m.tipo === 'ingreso' && m.categoria === 'venta');
+  if (!cobro) { alert('No encontré el cobro de esa venta en el flujo de caja.'); return; }
+  const bruto = movs.filter(m => m.tipo === 'ingreso' && m.categoria === 'venta')
+    .reduce((s, m) => s + Number(m.monto), 0);
+  const previos = movs.filter(m => m.categoria === 'comision_mp');
+  const yaCargado = previos.reduce((s, m) => s + Number(m.monto), 0);
+
+  const texto = prompt(
+    `Al cliente se le cobró ${cobro.moneda} ${bruto.toFixed(2)}.\n\n`
+    + '¿Cuánto te deposita Mercado Pago? Poné lo que llega a la cuenta, ya\n'
+    + 'descontada la comisión y el costo de las cuotas.',
+    yaCargado > 0.009 ? (bruto - yaCargado).toFixed(2) : '');
+  if (texto === null) return;
+
+  const neto = montoDesdeTexto(texto);
+  if (!isFinite(neto) || neto <= 0) { alert('Poné en números lo que te llega a la cuenta.'); return; }
+  if (neto > bruto + 0.009) {
+    alert(`Lo que te llega no puede ser más que lo cobrado (${cobro.moneda} ${bruto.toFixed(2)}).`);
+    return;
+  }
+  const comision = Number((bruto - neto).toFixed(2));
+
+  // Se reemplaza la comisión anterior en vez de sumarle otra: es un solo
+  // descuento por venta, y corregirlo tiene que dar el mismo resultado que
+  // cargarlo bien la primera vez.
+  if (previos.length > 0) {
+    const { error } = await supabase.from('caja_movimientos').delete().in('id', previos.map(m => m.id));
+    if (error) { alert('No se pudo borrar la comisión anterior.'); console.error(error); return; }
+  }
+
+  if (comision > 0.009) {
+    const ok = await insertarEnCaja({
+      tipo: 'gasto',
+      categoria: 'comision_mp',
+      motivo: `${cobro.motivo} — comisión Mercado Pago`,
+      monto: comision,
+      moneda: cobro.moneda,
+      fecha: cobro.fecha,
+      cotizacion_usada: cobro.cotizacion_usada || null,
+      venta_id: ventaId,
+      // Se va el mismo día que entra el cobro: si el cobro está pendiente,
+      // el descuento también, y si se adelantó uno se adelanta el otro.
+      fondo_pendiente: !!cobro.fondo_pendiente,
+      acreditado_at: (previos.find(m => m.acreditado_at) || {}).acreditado_at || cobro.acreditado_at || null,
+    }, 'comisión de Mercado Pago');
+    if (!ok) return;
+  }
+
+  await cargarCaja();
+  alert(comision > 0.009
+    ? `Mercado Pago se queda con ${cobro.moneda} ${comision.toFixed(2)} — ${(comision / bruto * 100).toFixed(2)}% de la venta.`
+    : 'Guardado: esa venta entra completa, sin comisión.');
+}
+
 function saldoNeto(lista, moneda) {
   return lista.filter(m => m.moneda === moneda && estaAcreditado(m))
     .reduce((s, m) => s + (m.tipo === 'ingreso' ? Number(m.monto) : -Number(m.monto)), 0);
@@ -7350,16 +7466,47 @@ function renderResumenCaja() {
 
 // La tarjeta muestra el total y, si hay algo, el panel de abajo lista cada
 // venta con su fecha de acreditación y el botón para adelantarla.
+// El cobro y lo que Mercado Pago descuenta son dos movimientos de la misma
+// operación: se leen juntos, en una sola fila, o el porcentaje no se ve.
+function agruparPendientesPorVenta(pendientes) {
+  const grupos = [];
+  const porVenta = new Map();
+  pendientes.forEach(m => {
+    if (!m.venta_id) {
+      grupos.push({ ventaId: null, cobro: m.tipo === 'ingreso' ? m : null, movs: [m] });
+      return;
+    }
+    if (!porVenta.has(m.venta_id)) {
+      const grupo = { ventaId: m.venta_id, cobro: null, movs: [] };
+      porVenta.set(m.venta_id, grupo);
+      grupos.push(grupo);
+    }
+    const grupo = porVenta.get(m.venta_id);
+    grupo.movs.push(m);
+    if (m.tipo === 'ingreso' && !grupo.cobro) grupo.cobro = m;
+  });
+  return grupos;
+}
+
+function lineaPromedioComision() {
+  const promedio = promedioComisionMp();
+  if (!promedio) {
+    return '<p class="text-muted text-xs font-mono mt-3">Cargá lo que te deposita Mercado Pago en cada venta y acá aparece el % que se queda.</p>';
+  }
+  return `<p class="text-muted text-xs font-mono mt-3">Mercado Pago se queda en promedio con ${promedio.pct.toFixed(2)}% por venta · ${promedio.ventas} venta${promedio.ventas === 1 ? '' : 's'} cargada${promedio.ventas === 1 ? '' : 's'}</p>`;
+}
+
 function renderFondosPendientes() {
   const pendientes = movimientosPendientes();
   const total = totalFondosPendientes();
+  const grupos = agruparPendientesPorVenta(pendientes);
   const partes = [];
   if (total.ARS > 0.009) partes.push(`ARS ${total.ARS.toFixed(2)}`);
   if (total.USD > 0.009) partes.push(`USD ${total.USD.toFixed(2)}`);
 
   document.getElementById('caja-fondos-total').textContent = partes.join(' · ') || 'ARS 0.00';
-  document.getElementById('caja-fondos-detalle').textContent = pendientes.length
-    ? `${pendientes.length} venta${pendientes.length === 1 ? '' : 's'} web · tocá para ver`
+  document.getElementById('caja-fondos-detalle').textContent = grupos.length
+    ? `${grupos.length} venta${grupos.length === 1 ? '' : 's'} web · tocá para ver`
     : 'sin ventas web esperando';
 
   const lista = document.getElementById('caja-fondos-lista');
@@ -7367,7 +7514,7 @@ function renderFondosPendientes() {
   botonTodo.classList.toggle('hidden', pendientes.length === 0);
 
   if (pendientes.length === 0) {
-    lista.innerHTML = '<p class="text-muted text-sm">No hay plata esperando acreditarse.</p>';
+    lista.innerHTML = `<p class="text-muted text-sm">No hay plata esperando acreditarse.</p>${lineaPromedioComision()}`;
     return;
   }
 
@@ -7375,24 +7522,42 @@ function renderFondosPendientes() {
   lista.innerHTML = `
     <table class="w-full text-sm">
       <thead><tr class="text-left text-muted font-mono text-xs uppercase">
-        <th class="p-2">Venta</th><th class="p-2">Fecha</th><th class="p-2">Monto</th>
+        <th class="p-2">Venta</th><th class="p-2">Fecha</th><th class="p-2">Se le cobró</th>
+        <th class="p-2">Mercado Pago</th><th class="p-2">Te llega</th>
         <th class="p-2">Se acredita</th><th class="p-2"></th>
       </tr></thead>
       <tbody>
-        ${pendientes.map(m => {
-          const acredita = fechaAcreditacion(m);
+        ${grupos.map(g => {
+          const ref = g.cobro || g.movs[0];
+          const moneda = ref.moneda;
+          const bruto = g.movs.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + Number(m.monto), 0);
+          const descuento = g.movs.filter(m => m.tipo === 'gasto').reduce((s, m) => s + Number(m.monto), 0);
+          const pct = bruto > 0 ? descuento / bruto * 100 : 0;
+          const acredita = fechaAcreditacion(ref);
           const faltan = Math.round((new Date(acredita + 'T00:00:00') - new Date(hoy + 'T00:00:00')) / 86400000);
+          const celdaMp = !g.ventaId
+            ? '<span class="text-muted">—</span>'
+            : descuento > 0.009
+              ? `<button class="fondo-comision text-left" data-venta="${g.ventaId}">
+                   <span class="text-red-400">−${moneda} ${descuento.toFixed(2)}</span>
+                   <span class="block font-mono text-[10px] text-muted">${pct.toFixed(2)}% · corregir</span>
+                 </button>`
+              : `<button class="fondo-comision bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-1.5 whitespace-nowrap" data-venta="${g.ventaId}">
+                   Cargar lo que llega
+                 </button>`;
           return `
             <tr>
-              <td class="p-2">${m.motivo}</td>
-              <td class="p-2 text-muted">${new Date(m.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
-              <td class="p-2 ${m.tipo === 'ingreso' ? 'text-accent' : 'text-red-400'}">${m.tipo === 'ingreso' ? '+' : '−'}${m.moneda} ${Number(m.monto).toFixed(2)}</td>
+              <td class="p-2">${ref.motivo}</td>
+              <td class="p-2 text-muted">${new Date(ref.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
+              <td class="p-2 text-accent">${moneda} ${bruto.toFixed(2)}</td>
+              <td class="p-2">${celdaMp}</td>
+              <td class="p-2 font-bold">${moneda} ${(bruto - descuento).toFixed(2)}</td>
               <td class="p-2 text-muted">
                 ${new Date(acredita + 'T00:00:00').toLocaleDateString('es-AR')}
                 <span class="font-mono text-[10px]">· faltan ${faltan} día${faltan === 1 ? '' : 's'}</span>
               </td>
               <td class="p-2 text-right">
-                <button class="fondo-ingresar bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-1.5 whitespace-nowrap" data-id="${m.id}">
+                <button class="fondo-ingresar bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-3 py-1.5 whitespace-nowrap" data-ids="${g.movs.map(m => m.id).join(',')}">
                   Ingresar a caja
                 </button>
               </td>
@@ -7400,10 +7565,14 @@ function renderFondosPendientes() {
         }).join('')}
       </tbody>
     </table>
+    ${lineaPromedioComision()}
   `;
 
   lista.querySelectorAll('.fondo-ingresar').forEach(btn => {
-    btn.addEventListener('click', () => acreditarFondos([btn.dataset.id]));
+    btn.addEventListener('click', () => acreditarFondos(btn.dataset.ids.split(',')));
+  });
+  lista.querySelectorAll('.fondo-comision').forEach(btn => {
+    btn.addEventListener('click', () => pedirComisionMp(btn.dataset.venta));
   });
 }
 
@@ -7450,6 +7619,12 @@ function renderCaja(lista) {
     const categoriaHTML = socio
       ? `Retiro <span class="text-white font-bold">— ${socio}</span>`
       : (CATEGORIA_LABEL[m.categoria] || m.categoria);
+    // En la comisión, el monto solo no dice nada: lo que importa es qué parte
+    // de la venta se llevó.
+    const comision = m.categoria === 'comision_mp' ? comisionDeVenta(m.venta_id) : null;
+    const chipComision = comision
+      ? `<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-red-400/60 text-red-400 whitespace-nowrap">${comision.pct.toFixed(2)}% de la venta</span>`
+      : '';
     tr.innerHTML = `
       <td class="p-2 text-muted">${new Date(m.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
       <td class="p-2">${m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}</td>
@@ -7458,6 +7633,7 @@ function renderCaja(lista) {
         <span class="inline-flex items-center gap-2">
           <span>${m.motivo}</span>
           ${m.encargo_id ? '<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-accent text-accent whitespace-nowrap">Encargo</span>' : ''}
+          ${chipComision}
           ${m.fondo_pendiente ? (estaAcreditado(m)
             ? '<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-border text-muted whitespace-nowrap">Web · acreditado</span>'
             : `<span class="font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 border border-yellow-500/60 text-yellow-500 whitespace-nowrap">Web · pendiente ${new Date(fechaAcreditacion(m) + 'T00:00:00').toLocaleDateString('es-AR')}</span>`) : ''}
@@ -7625,7 +7801,7 @@ const mRetiroInaSwitch = document.getElementById('m-retiro-ina-switch');
 
 const CATEGORIAS_POR_TIPO = {
   ingreso: [['inversion', 'Inversión'], ['venta', 'Venta'], ['pago_deuda', 'Pago deuda'], ['cambio_moneda', 'Cambio de moneda'], ['trade', 'Trade']],
-  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock'], ['pago_kg', 'Pago kg'], ['vuelto', 'Vuelto'], ['trade', 'Trade']],
+  gasto: [['gasto_operativo', 'Gasto operativo'], ['gasto_comercial', 'Gasto comercial'], ['pago_inversor', 'Pago a inversor'], ['retiro', 'Retiro'], ['cambio_moneda', 'Cambio de moneda'], ['pago_tarjeta', 'Pago tarjeta'], ['costo_encargo', 'Costo encargo'], ['compra_stock', 'Compra de stock'], ['pago_kg', 'Pago kg'], ['vuelto', 'Vuelto'], ['trade', 'Trade'], ['comision_mp', 'Comisión Mercado Pago']],
 };
 
 function actualizarCamposMovimiento() {

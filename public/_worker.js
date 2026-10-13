@@ -204,6 +204,21 @@ async function handleMpWebhook(request, env) {
     });
     if (!okCaja) fallos.push(`no se pudo registrar el movimiento de caja: ${JSON.stringify(dataCaja)}`);
 
+    // Lo que paga el cliente no es lo que se deposita: Mercado Pago se queda
+    // con su comisión y, si fue en cuotas, con el costo de financiarlas. El
+    // pago ya trae el neto, así que el descuento se carga solo —pendiente
+    // igual que el cobro, porque se va el mismo día— y el panel puede mostrar
+    // qué porcentaje se llevó cada venta sin que nadie lo cargue a mano.
+    const neto = Number(payment.transaction_details?.net_received_amount);
+    const comision = Number((payment.transaction_amount - neto).toFixed(2));
+    if (isFinite(neto) && neto > 0 && comision > 0.009) {
+      const { ok: okCom, data: dataCom } = await sb("/rest/v1/caja_movimientos", {
+        method: "POST",
+        body: JSON.stringify({ tipo: "gasto", categoria: "comision_mp", motivo: `${metadata.customer_name || "Cliente web"} — comisión Mercado Pago`, monto: comision, moneda: "ARS", cotizacion_usada: cotizacion, venta_id: venta.id, fondo_pendiente: true }),
+      });
+      if (!okCom) fallos.push(`no se pudo registrar la comisión de Mercado Pago: ${JSON.stringify(dataCom)}`);
+    }
+
     // Que algo falle no puede quedar sólo en la respuesta a Mercado Pago, que
     // nadie mira: se avisa por mail, que es donde sí se va a ver.
     if (fallos.length) {
