@@ -7321,11 +7321,14 @@ function movimientosPendientes(lista = CAJA) {
     .sort((a, b) => fechaAcreditacion(a).localeCompare(fechaAcreditacion(b)));
 }
 
+// Neto, no bruto: lo que Mercado Pago descuenta —su comisión y el costo de las
+// cuotas— también queda pendiente y se va a ir el mismo día. Mostrar el bruto
+// prometería plata que nunca va a entrar.
 function totalFondosPendientes(lista = CAJA) {
   const total = { USD: 0, ARS: 0 };
   movimientosPendientes(lista).forEach(m => {
-    if (m.tipo !== 'ingreso') return;
-    total[m.moneda === 'ARS' ? 'ARS' : 'USD'] += Number(m.monto);
+    const signo = m.tipo === 'ingreso' ? 1 : -1;
+    total[m.moneda === 'ARS' ? 'ARS' : 'USD'] += signo * Number(m.monto);
   });
   return total;
 }
@@ -7383,7 +7386,7 @@ function renderFondosPendientes() {
             <tr>
               <td class="p-2">${m.motivo}</td>
               <td class="p-2 text-muted">${new Date(m.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
-              <td class="p-2 text-accent">${m.moneda} ${Number(m.monto).toFixed(2)}</td>
+              <td class="p-2 ${m.tipo === 'ingreso' ? 'text-accent' : 'text-red-400'}">${m.tipo === 'ingreso' ? '+' : '−'}${m.moneda} ${Number(m.monto).toFixed(2)}</td>
               <td class="p-2 text-muted">
                 ${new Date(acredita + 'T00:00:00').toLocaleDateString('es-AR')}
                 <span class="font-mono text-[10px]">· faltan ${faltan} día${faltan === 1 ? '' : 's'}</span>
