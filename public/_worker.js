@@ -217,6 +217,18 @@ async function handleMpWebhook(request, env) {
       body: JSON.stringify({ cliente_id: clienteId, canal: "web", mp_payment_id: String(paymentId) }),
     });
     const venta = Array.isArray(ventaData) ? ventaData[0] : null;
+    // La fila puede haberse creado aunque la respuesta venga mal (un corte, un
+    // error de gateway que no es JSON). Sin este corte, el venta.id de abajo
+    // rompía el handler justo acá: la venta quedaba creada y vacía, sin ítems
+    // ni movimiento de caja, que es exactamente lo que pasó con el pago del
+    // 12/10. Ahora se avisa en vez de morir en silencio.
+    if (!venta || !venta.id) {
+      console.error("La venta se creó pero no se pudo leer de vuelta", { paymentId, ventaData });
+      await avisarProblemaVentaWeb(env, paymentId, metadata, [
+        "la venta se registró pero la respuesta de la base no se pudo leer, así que quedó sin ítems ni movimiento de caja",
+      ]);
+      return new Response("venta incompleta", { status: 200 });
+    }
     // Sin cotización el precio en USD del ítem queda nulo y la venta se ve en 0,
     // así que se cae a la del worker antes que guardar algo incalculable.
     const cotizacion = Number(metadata.cotizacion_usada) || BLUE;
