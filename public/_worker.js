@@ -96,6 +96,30 @@ async function handleCreatePreference(request, env) {
   }
 }
 
+// Un fallo al cargar una venta web no puede quedar sólo en la respuesta a
+// Mercado Pago, que nadie lee. Se avisa por mail al local, que es donde sí se
+// mira, con el id del pago para poder rastrearlo.
+async function avisarProblemaVentaWeb(env, paymentId, metadata, fallos) {
+  if (!env.RESEND_API_KEY || !env.STORE_EMAIL) return;
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.RESEND_API_KEY}` },
+      body: JSON.stringify({
+        from: "Cop or Drop <noreply@copordropstore.com>",
+        to: env.STORE_EMAIL,
+        subject: `[REVISAR] Venta web cargada con problemas — pago ${paymentId}`,
+        html: `<div style="font-family:monospace"><h3>La venta entró pero quedó incompleta en el sistema</h3>`
+          + `<p>Pago de Mercado Pago: <strong>${paymentId}</strong><br>Cliente: ${metadata.customer_name || "—"}</p>`
+          + `<ul>${fallos.map(f => `<li>${f}</li>`).join("")}</ul>`
+          + `<p>Revisala en el panel y completá a mano lo que falte.</p></div>`,
+      }),
+    });
+  } catch (e) {
+    console.error("No se pudo avisar del problema de la venta web:", e);
+  }
+}
+
 async function handleMpWebhook(request, env) {
   if (request.method !== "POST") return new Response("OK", { status: 200 });
   const sb = supabase(env);
@@ -145,17 +169,35 @@ async function handleMpWebhook(request, env) {
       body: JSON.stringify({ cliente_id: clienteId, canal: "web", mp_payment_id: String(paymentId) }),
     });
     const venta = Array.isArray(ventaData) ? ventaData[0] : null;
-    const cotizacion = Number(metadata.cotizacion_usada) || null;
+    // Sin cotización el precio en USD del ítem queda nulo y la venta se ve en 0,
+    // así que se cae a la del worker antes que guardar algo incalculable.
+    const cotizacion = Number(metadata.cotizacion_usada) || BLUE;
+    const fallos = [];
+
+    if (items.length === 0) fallos.push("la venta quedó sin ítems: no llegó items_json en la metadata del pago");
+
     for (const item of items) {
-      await sb("/rest/v1/venta_items", {
+      const { ok, data } = await sb("/rest/v1/venta_items", {
         method: "POST",
         body: JSON.stringify({ venta_id: venta.id, unidad_id: item.unidad_id, precio_venta: item.precio_venta, moneda: "ARS", cotizacion_usada: cotizacion, costo_usd_snapshot: item.costo_usd_snapshot || 0, precio_lista_usd_snapshot: item.precio_lista_usd_snapshot || 0 }),
       });
+      if (!ok) fallos.push(`no se pudo cargar el ítem ${item.unidad_id}: ${JSON.stringify(data)}`);
     }
-    await sb("/rest/v1/caja_movimientos", {
+
+    // Mercado Pago retiene la plata: entra a Fondos pendientes, no a Caja. El
+    // panel la acredita sola al vencer el plazo.
+    const { ok: okCaja, data: dataCaja } = await sb("/rest/v1/caja_movimientos", {
       method: "POST",
-      body: JSON.stringify({ tipo: "ingreso", categoria: "venta", motivo: metadata.customer_name || "Cliente web", monto: payment.transaction_amount, moneda: "ARS", cotizacion_usada: cotizacion, venta_id: venta.id }),
+      body: JSON.stringify({ tipo: "ingreso", categoria: "venta", motivo: metadata.customer_name || "Cliente web", monto: payment.transaction_amount, moneda: "ARS", cotizacion_usada: cotizacion, venta_id: venta.id, fondo_pendiente: true }),
     });
+    if (!okCaja) fallos.push(`no se pudo registrar el movimiento de caja: ${JSON.stringify(dataCaja)}`);
+
+    // Que algo falle no puede quedar sólo en la respuesta a Mercado Pago, que
+    // nadie mira: se avisa por mail, que es donde sí se va a ver.
+    if (fallos.length) {
+      console.error("Venta web cargada con problemas", { paymentId, fallos });
+      avisarProblemaVentaWeb(env, paymentId, metadata, fallos);
+    }
 
     // Emails
     const html = `<div style="font-family:monospace;max-width:560px;margin:0 auto;background:#000;color:#fff;padding:2rem"><h2 style="color:#57BEA1">Cop or Drop</h2><p>Hola <strong>${metadata.customer_name || "Cliente"}</strong>,</p><p>Tu pedido fue confirmado.</p><div style="border:1px solid #333;padding:1rem;margin:1.5rem 0;white-space:pre-line">${metadata.order_summary || ""}<br><br><strong>TOTAL: ${payment.currency_id} ${payment.transaction_amount}</strong></div><p><strong>Entrega:</strong> ${metadata.delivery_method || "-"}</p><div style="border:1px solid #333;padding:1rem;margin:1rem 0;white-space:pre-line">${metadata.delivery_details || "-"}</div></div>`;
