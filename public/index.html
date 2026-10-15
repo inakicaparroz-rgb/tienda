@@ -1445,7 +1445,7 @@ const WA_NUMBER = "541134435571";
         ${p.condition ? `<span class="badge-condition badge-condition--${p.condition}">${p.condition.toUpperCase()}<span class="cond-tip">${{new:"Sin uso, con tags y packaging original",vnds:"Very Near Deadstock · Probado una o dos veces",used:"Usado, en buen estado"}[p.condition]||""}</span></span>` : ""}
       </div>
       <div class="flex flex-col gap-1">
-        <span class="font-mono text-xl font-semibold text-accent">USD ${p.priceUSD} <span class="font-normal text-base text-ink">(${formatARS(transferARS(p))})</span></span>
+        <span class="font-mono text-xl font-semibold text-accent">USD ${p.priceUSD} (${formatARS(transferARS(p))})</span>
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas de ${formatARS(cuotaARS(p))}</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
@@ -1817,7 +1817,7 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
         ${p.condition ? `<span class="badge-condition badge-condition--${p.condition}">${p.condition.toUpperCase()}</span>` : ""}
       </div>
       <div class="flex flex-col gap-1">
-        <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD} <span class="font-normal text-lg text-ink">(${formatARS(transferARS(p))})</span></span>
+        <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD} (${formatARS(transferARS(p))})</span>
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas de ${formatARS(cuotaARS(p))}</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
