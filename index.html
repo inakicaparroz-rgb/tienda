@@ -719,7 +719,7 @@
       <div class="flex flex-col gap-3"><span class="spec-label">/01 NAVEGACIÓN</span><a href="#top" class="text-sm text-ink hover:text-accent transition-colors">Inicio</a><a href="#catalogo" class="text-sm text-ink hover:text-accent transition-colors">Catálogo</a><a href="#manifesto" class="text-sm text-ink hover:text-accent transition-colors">Manifiesto</a><a href="#faq" class="text-sm text-ink hover:text-accent transition-colors">FAQ</a></div>
       <div class="flex flex-col gap-3"><span class="spec-label">/02 COMUNIDAD</span><a href="https://wa.link/nvx9l1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">WhatsApp directo</a><a href="https://chat.whatsapp.com/F22e0TAjDM7GprnmnpytM1" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors" onclick="if(window.fbq)fbq('trackCustom','ClickComunidad');">Grupo WhatsApp</a><a href="https://instagram.com/copordrop_ar" target="_blank" rel="noreferrer noopener" class="text-sm text-ink hover:text-accent transition-colors">@copordrop_ar</a></div>
       <div class="flex flex-col gap-3"><span class="spec-label">/03 UBICACIÓN</span><p class="text-sm text-ink">CABA, Argentina</p><p class="text-xs text-muted">Operamos desde CABA y enviamos GRATIS a toda la Argentina. Coordinamos por WhatsApp e Instagram para confirmar dirección y tiempos (24-72 hs en AMBA, 2-7 días al interior).</p></div>
-      <div class="flex flex-col gap-3"><span class="spec-label">/04 PAGOS</span><p class="text-sm text-ink">Efectivo · Transferencia</p><p class="text-sm text-ink">3 cuotas sin interés</p><p class="text-xs text-muted">Coordiná por WhatsApp.</p></div>
+      <div class="flex flex-col gap-3"><span class="spec-label">/04 PAGOS</span><p class="text-sm text-ink">Efectivo · Transferencia</p><p class="text-sm text-ink">3 cuotas</p><p class="text-xs text-muted">Coordiná por WhatsApp.</p></div>
     </div>
     <div class="hairline mt-12"></div>
     <div class="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -762,13 +762,13 @@
       <span class="font-mono text-xs uppercase tracking-[.14em] text-muted">TOTAL</span>
       <span id="cart-total" class="font-mono text-sm font-semibold text-accent"></span>
     </div>
-    <p class="font-mono text-[9px] uppercase tracking-[.14em] text-muted">Precio en ARS · Dólar blue del día</p>
+    <p class="font-mono text-[9px] uppercase tracking-[.14em] text-muted">Total en efectivo o transferencia · El pago en 3 cuotas tiene recargo</p>
     <a id="btn-wsp" class="btn-cart-wsp" href="#" target="_blank" rel="noreferrer noopener">
-      Pagar en efectivo / transferencia
+      Efectivo / transferencia · <span id="btn-wsp-monto"></span>
     </a>
     <button id="btn-mp" class="btn-cart-mp">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.33c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.891z"/></svg>
-      Pagar en 3 cuotas (sin interés)
+      3 cuotas de <span id="btn-mp-monto"></span>
     </button>
   </div>
   <div id="cart-empty" style="flex:1;display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem;text-align:center">
@@ -850,7 +850,7 @@
   let BLUE = 1530;
   let CUPON = null;
   const aplicarCupon = (monto) => CUPON ? Math.round(monto * (1 - CUPON.descuento_pct / 100) / 1000) * 1000 : monto;
-  const MARGIN = 1.225; // USD × blue × 22.5%
+  const MARGIN = 1.15; // recargo que se aplica solo al pago en 3 cuotas
   const effectiveARS = (p) => Math.round(p.priceUSD * BLUE * MARGIN / 1000) * 1000;
   const transferARS = (p) => Math.round(p.priceUSD * BLUE / 1000) * 1000;
   const cuotaARS = (p) => Math.round(effectiveARS(p) / 3 / 1000) * 1000;
@@ -911,7 +911,7 @@ const WA_NUMBER = "541134435571";
         <div class="flex flex-col gap-0.5">
           <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
           <h3>${p.name}</h3>
-          <span class="pcard-cuotas">3 cuotas de ${formatARS(cuotaARS(p))}</span>
+          <span class="pcard-cuotas">${formatARS(transferARS(p))} · 3 cuotas de ${formatARS(cuotaARS(p))}</span>
         </div>
         ${p.status === "encargo"
           ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
@@ -1109,6 +1109,8 @@ const WA_NUMBER = "541134435571";
   const btnMp = document.getElementById("btn-mp");
   const cartSubtotalRow = document.getElementById("cart-subtotal-row");
   const cartSubtotalEl = document.getElementById("cart-subtotal");
+  const btnWspMonto = document.getElementById("btn-wsp-monto");
+  const btnMpMonto = document.getElementById("btn-mp-monto");
   const cuponInput = document.getElementById("cupon-input");
   const cuponApply = document.getElementById("cupon-apply");
   const cuponMsg = document.getElementById("cupon-msg");
@@ -1233,17 +1235,23 @@ const WA_NUMBER = "541134435571";
       cartEmptyEl.style.display = "none";
       cartFooter.classList.remove("hidden");
 
-      const subtotal = cart.reduce((s, p) => s + effectiveARS(p), 0);
-      const total = aplicarCupon(subtotal);
+      // El TOTAL del carrito es el precio de contado. El de cuotas lleva
+      // recargo y va solo en su botón, para que no se lean como el mismo precio.
+      const subtotalTransf = cart.reduce((s, p) => s + transferARS(p), 0);
+      const totalTransf = aplicarCupon(subtotalTransf);
       cartSubtotalRow.classList.toggle("hidden", !CUPON);
-      if (CUPON) cartSubtotalEl.textContent = formatARS(subtotal);
-      cartTotalEl.textContent = formatARS(total);
+      if (CUPON) cartSubtotalEl.textContent = formatARS(subtotalTransf);
+      cartTotalEl.textContent = formatARS(totalTransf);
+
+      const totalCuotas = aplicarCupon(cart.reduce((s, p) => s + effectiveARS(p), 0));
+      btnWspMonto.textContent = formatARS(totalTransf);
+      btnMpMonto.textContent = formatARS(Math.round(totalCuotas / 3 / 1000) * 1000);
 
       cartItemsEl.innerHTML = cart.map(p => `
         <div class="cart-item">
           <div class="cart-item-info">
             <div class="cart-item-name">${p.name}</div>
-            <div class="cart-item-price">${formatARS(effectiveARS(p))} · USD ${p.priceUSD}</div>
+            <div class="cart-item-price">USD ${p.priceUSD} · ${formatARS(transferARS(p))}</div>
           </div>
           <button class="cart-item-remove" onclick="cartRemove('${p.slug}')" aria-label="Quitar ${p.name}">×</button>
         </div>
@@ -1251,8 +1259,6 @@ const WA_NUMBER = "541134435571";
 
       // WhatsApp: mensaje pre-cargado con el carrito
       const lines = cart.map(p => `• ${p.name}${p.talle ? ` (Talle ${p.talle})` : ""} — ${formatARS(transferARS(p))}`).join("\n");
-      const subtotalTransf = cart.reduce((s, p) => s + transferARS(p), 0);
-      const totalTransf = aplicarCupon(subtotalTransf);
       let total_line = `\nTOTAL: ${formatARS(totalTransf)} ARS (precio transferencia)`;
       if (CUPON) total_line = `\nSubtotal: ${formatARS(subtotalTransf)}\nCupón ${CUPON.codigo} (-${CUPON.descuento_pct}%)` + total_line;
       const msg = encodeURIComponent(`Hola! Quiero comprar:\n${lines}${total_line}`);
@@ -1439,7 +1445,7 @@ const WA_NUMBER = "541134435571";
         ${p.condition ? `<span class="badge-condition badge-condition--${p.condition}">${p.condition.toUpperCase()}<span class="cond-tip">${{new:"Sin uso, con tags y packaging original",vnds:"Very Near Deadstock · Probado una o dos veces",used:"Usado, en buen estado"}[p.condition]||""}</span></span>` : ""}
       </div>
       <div class="flex flex-col gap-1">
-        <span class="font-mono text-xl font-semibold text-accent">USD ${p.priceUSD}</span>
+        <span class="font-mono text-xl font-semibold text-accent">USD ${p.priceUSD} <span class="font-normal text-base text-ink">(${formatARS(transferARS(p))})</span></span>
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas de ${formatARS(cuotaARS(p))}</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
@@ -1485,7 +1491,7 @@ const WA_NUMBER = "541134435571";
         <div style="display:flex;flex-direction:column;gap:6px">
           <span class="spec-label">/04 PAGOS</span>
           <span style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink)">Efectivo · Transferencia</span>
-          <span style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink)">3 cuotas sin interés</span>
+          <span style="font-family:'Archivo',sans-serif;font-size:14px;color:var(--ink)">3 cuotas</span>
           <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">Coordiná por WhatsApp.</span>
         </div>
       </div>
@@ -1811,7 +1817,7 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
         ${p.condition ? `<span class="badge-condition badge-condition--${p.condition}">${p.condition.toUpperCase()}</span>` : ""}
       </div>
       <div class="flex flex-col gap-1">
-        <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD}</span>
+        <span class="font-mono text-2xl font-semibold text-accent">USD ${p.priceUSD} <span class="font-normal text-lg text-ink">(${formatARS(transferARS(p))})</span></span>
         <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">3 cuotas de ${formatARS(cuotaARS(p))}</span>
         ${p.fit ? `<span class="font-mono text-[10px] uppercase tracking-[0.18em] mt-1" style="color:var(--accent)">${p.fit} fit</span>` : ""}
       </div>
@@ -1861,7 +1867,7 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
         <div style="display:flex;flex-direction:column;gap:6px">
           <span class="spec-label">/04 PAGOS</span>
           <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">Efectivo · Transferencia</span>
-          <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">3 cuotas sin interés</span>
+          <span style="font-family:'Archivo',sans-serif;font-size:12px;color:var(--ink)">3 cuotas</span>
           <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">Coordiná por WhatsApp.</span>
         </div>
       </div>

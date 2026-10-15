@@ -1,6 +1,6 @@
 const SUPABASE_URL = "https://anaonrcaxhwxvuqcsyfg.supabase.co";
 const BLUE_FALLBACK = 1530;
-const MARGIN = 1.225;
+const MARGIN = 1.15; // recargo que se aplica solo al pago en 3 cuotas
 const effectiveARS = (p, blue) => Math.round(p * blue * MARGIN / 1000) * 1000;
 
 function supabase(env) {
