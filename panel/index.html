@@ -1566,7 +1566,7 @@
 <!-- Modal: registrar pago de un encargo -->
 <div id="modal-encargo-pago" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
   <div class="w-full max-w-sm bg-surface border border-border p-4 sm:p-6">
-    <h3 class="font-bold mb-1">Registrar pago</h3>
+    <h3 id="ep-titulo" class="font-bold mb-1">Registrar pago</h3>
     <p id="ep-contexto" class="text-muted text-xs mb-4"></p>
     <div class="space-y-3 text-sm">
       <div>
@@ -2209,6 +2209,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const filaDetalleProducto = document.getElementById('fila-detalle-producto');
 const filaDetalleVenta = document.getElementById('fila-detalle-venta');
 
+// ...pero sobrevive sólo si antes de redibujar la lista vuelve a su propio
+// <tbody>: abrirla la mete adentro de la tabla, y el innerHTML = '' del
+// re-render se la llevaría puesta, dejando el detalle roto hasta recargar.
+function devolverFilaDetalle(fila, tbodyPropioId) {
+  const propio = document.getElementById(tbodyPropioId);
+  if (fila && propio && fila.parentElement !== propio) propio.appendChild(fila);
+}
+
 // ── LOGIN ──────────────────────────────────────────────────────────────
 const loginScreen = document.getElementById('login-screen');
 const appScreen = document.getElementById('app-screen');
@@ -2472,6 +2480,7 @@ function renderBotonPendientes() {
 function renderProductos(lista) {
   const tbody = document.getElementById('productos-tbody');
   const empty = document.getElementById('productos-empty');
+  devolverFilaDetalle(filaDetalleProducto, 'detalle-tbody');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', lista.length > 0);
   document.getElementById('stock-contador').textContent = `Mostrando ${lista.length}/${PRODUCTOS.length}`;
@@ -3005,6 +3014,9 @@ let MENU_CONTEXTO = null; // { tipo: 'producto' | 'unidad', obj }
 function abrirMenuAcciones(boton, tipo, obj) {
   MENU_CONTEXTO = { tipo, obj };
   document.getElementById('accion-quitar-vinculo').classList.toggle('hidden', !(tipo === 'producto' && obj.slug_web));
+  // La seña es un campo del encargo, no una fila que se pueda borrar sola:
+  // se edita desde el encargo y se saca poniéndola en cero.
+  document.getElementById('accion-eliminar').classList.toggle('hidden', tipo === 'senia_encargo');
   const rect = boton.getBoundingClientRect();
   accionMenu.style.top = `${rect.bottom + 4}px`;
   accionMenu.style.left = `${Math.max(8, rect.right - 192)}px`;
@@ -3017,7 +3029,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
-const TABLA_POR_TIPO = { producto: 'productos', unidad: 'unidades', venta: 'ventas', movimiento: 'caja_movimientos', encargo: 'encargos' };
+const TABLA_POR_TIPO = { producto: 'productos', unidad: 'unidades', venta: 'ventas', movimiento: 'caja_movimientos', encargo: 'encargos', pago_encargo: 'encargo_pagos', senia_encargo: 'encargos' };
 
 document.getElementById('accion-editar').addEventListener('click', () => {
   if (!MENU_CONTEXTO) return;
@@ -3026,6 +3038,8 @@ document.getElementById('accion-editar').addEventListener('click', () => {
   else if (MENU_CONTEXTO.tipo === 'unidad') abrirModalUnidad(MENU_CONTEXTO.obj);
   else if (MENU_CONTEXTO.tipo === 'venta') abrirModalVenta(MENU_CONTEXTO.obj);
   else if (MENU_CONTEXTO.tipo === 'encargo') abrirModalEncargo(MENU_CONTEXTO.obj);
+  else if (MENU_CONTEXTO.tipo === 'senia_encargo') abrirModalEncargo(MENU_CONTEXTO.obj);
+  else if (MENU_CONTEXTO.tipo === 'pago_encargo') abrirModalPagoEncargo(ENCARGO_ACTUAL, MENU_CONTEXTO.obj);
   else if (MENU_CONTEXTO.tipo === 'movimiento') abrirModalMovimiento(MENU_CONTEXTO.obj);
 });
 
@@ -3070,6 +3084,19 @@ document.getElementById('accion-eliminar').addEventListener('click', async () =>
     filaDetalleEncargo.classList.add('hidden');
     ENCARGO_ACTUAL = null;
     await cargarEncargos();
+    return;
+  }
+
+  if (tipo === 'pago_encargo') {
+    const fecha = new Date(obj.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+    if (!confirm(`¿Eliminar el pago de ${obj.moneda} ${Number(obj.monto || 0).toFixed(2)} del ${fecha}? Se borra también el ingreso que generó en Flujo de caja.`)) return;
+    await supabase.from('caja_movimientos').delete().eq('encargo_pago_id', obj.id);
+    const { error } = await supabase.from('encargo_pagos').delete().eq('id', obj.id);
+    if (error) { alert('Error al eliminar el pago.'); console.error(error); return; }
+    await cargarEncargos();
+    await cargarCaja();
+    const actualizado = ENCARGOS.find(e => e.id === (obj.encargo_id || ENCARGO_ACTUAL?.id));
+    if (actualizado) abrirDetalleEncargo(actualizado);
     return;
   }
 
@@ -4280,6 +4307,7 @@ function deudaVenta(venta) {
 function renderVentas(lista) {
   const tbody = document.getElementById('ventas-tbody');
   const empty = document.getElementById('ventas-empty');
+  devolverFilaDetalle(filaDetalleVenta, 'venta-detalle-tbody');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', lista.length > 0);
   document.getElementById('ventas-contador').textContent = `Mostrando ${lista.length}/${VENTAS.length}`;
@@ -4672,6 +4700,7 @@ let EDITANDO_ENCARGO = null;
 let ENCARGO_CLIENTE_SELECCIONADO = null;
 let ENCARGO_ACTUAL = null;
 let PAGO_ENCARGO_DESTINO = null;
+let PAGO_ENCARGO_EDITANDO = null; // el pago que se está corrigiendo, o null si es nuevo
 
 const modalEncargo = document.getElementById('modal-encargo');
 const filaDetalleEncargo = document.getElementById('fila-detalle-encargo');
@@ -4735,7 +4764,7 @@ function estadoEncargo(encargo) {
 async function cargarEncargos() {
   const { data, error } = await consultarConReintento(() => supabase
     .from('encargos')
-    .select('*, clientes(nombre, telefono, email), encargo_pagos(id, fecha, monto, moneda, monto_usd)')
+    .select('*, clientes(nombre, telefono, email), encargo_pagos(id, encargo_id, fecha, monto, moneda, monto_usd, cotizacion_usada)')
     .order('fecha', { ascending: false }));
   if (error) {
     reportarErrorCarga('los encargos', error);
@@ -4903,6 +4932,7 @@ function filtrarEncargos() {
 function renderEncargos(lista) {
   const tbody = document.getElementById('encargos-tbody');
   const empty = document.getElementById('encargos-empty');
+  devolverFilaDetalle(filaDetalleEncargo, 'encargo-detalle-tbody');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', lista.length > 0);
   document.getElementById('encargos-contador').textContent = `Mostrando ${lista.length}/${ENCARGOS.length}`;
@@ -4969,12 +4999,18 @@ function abrirDetalleEncargo(encargo, filaClickeada) {
     <div class="text-sm font-mono space-y-1 mb-4">
       <div class="flex justify-between gap-3 border-b border-border pb-1">
         <span>Seña · ${new Date(encargo.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</span>
-        <span class="text-muted">${encargo.senia_moneda} ${Number(encargo.senia || 0).toFixed(2)}</span>
+        <span class="flex items-center gap-2">
+          <span class="text-muted">${encargo.senia_moneda} ${Number(encargo.senia || 0).toFixed(2)}</span>
+          <button class="pago-acciones text-muted hover:text-white px-1 text-base leading-none" data-tipo="senia">⋮</button>
+        </span>
       </div>
       ${pagos.map(p => `
         <div class="flex justify-between gap-3 border-b border-border pb-1">
           <span>Pago · ${new Date(p.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</span>
-          <span class="text-muted">${p.moneda} ${Number(p.monto || 0).toFixed(2)}</span>
+          <span class="flex items-center gap-2">
+            <span class="text-muted">${p.moneda} ${Number(p.monto || 0).toFixed(2)}</span>
+            <button class="pago-acciones text-muted hover:text-white px-1 text-base leading-none" data-tipo="pago" data-id="${p.id}">⋮</button>
+          </span>
         </div>
       `).join('')}
     </div>
@@ -4986,6 +5022,17 @@ function abrirDetalleEncargo(encargo, filaClickeada) {
 
   const btnPago = document.getElementById('encargo-agregar-pago');
   if (btnPago) btnPago.addEventListener('click', () => abrirModalPagoEncargo(encargo));
+
+  // Un pago mal cargado (la moneda equivocada, el monto, la fecha) se arregla
+  // desde acá, con el mismo ⋮ que el resto del sistema. La seña no es un pago
+  // aparte sino un campo del encargo, así que su ⋮ lleva a editar el encargo.
+  document.getElementById('encargo-detalle-contenido').querySelectorAll('.pago-acciones').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (btn.dataset.tipo === 'senia') abrirMenuAcciones(btn, 'senia_encargo', encargo);
+      else abrirMenuAcciones(btn, 'pago_encargo', pagos.find(p => p.id === btn.dataset.id));
+    });
+  });
 }
 
 document.getElementById('encargo-cerrar-detalle').addEventListener('click', () => {
@@ -5189,20 +5236,26 @@ document.getElementById('e-confirmar').addEventListener('click', async () => {
 });
 
 // ── Encargos: registrar un pago posterior a la seña ──
-function abrirModalPagoEncargo(encargo) {
+function abrirModalPagoEncargo(encargo, pago = null) {
+  if (!encargo) { alert('Abrí el encargo antes de editar el pago.'); return; }
   PAGO_ENCARGO_DESTINO = encargo;
+  PAGO_ENCARGO_EDITANDO = pago;
   const debe = debeEncargo(encargo);
-  document.getElementById('ep-contexto').textContent =
-    `${encargo.clientes?.nombre || 'Cliente'} — debe USD ${debe.toFixed(2)}`;
-  document.getElementById('ep-monto').value = '';
-  document.getElementById('ep-moneda').value = 'USD';
-  document.getElementById('ep-fecha').value = new Date().toISOString().slice(0, 10);
-  document.getElementById('ep-cotizacion').value = COTIZACION_ACTUAL || '';
+  document.getElementById('ep-titulo').textContent = pago ? 'Editar pago' : 'Registrar pago';
+  document.getElementById('ep-contexto').textContent = pago
+    ? `${encargo.clientes?.nombre || 'Cliente'} — pago del ${new Date(pago.fecha + 'T00:00:00').toLocaleDateString('es-AR')}`
+    : `${encargo.clientes?.nombre || 'Cliente'} — debe USD ${debe.toFixed(2)}`;
+  document.getElementById('ep-monto').value = pago ? (pago.monto ?? '') : '';
+  document.getElementById('ep-moneda').value = pago?.moneda || 'USD';
+  document.getElementById('ep-fecha').value = pago?.fecha || new Date().toISOString().slice(0, 10);
+  document.getElementById('ep-cotizacion').value = pago?.cotizacion_usada || COTIZACION_ACTUAL || '';
   document.getElementById('modal-encargo-pago').classList.remove('hidden');
 }
 
-document.getElementById('ep-cancelar').addEventListener('click', () =>
-  document.getElementById('modal-encargo-pago').classList.add('hidden'));
+document.getElementById('ep-cancelar').addEventListener('click', () => {
+  document.getElementById('modal-encargo-pago').classList.add('hidden');
+  PAGO_ENCARGO_EDITANDO = null;
+});
 
 document.getElementById('ep-guardar').addEventListener('click', async () => {
   if (!PAGO_ENCARGO_DESTINO) return;
@@ -5213,26 +5266,55 @@ document.getElementById('ep-guardar').addEventListener('click', async () => {
   if (moneda === 'ARS' && cotizacion <= 0) { alert('Falta la cotización para un pago en ARS.'); return; }
   const fecha = document.getElementById('ep-fecha').value || new Date().toISOString().slice(0, 10);
 
-  const { data: pago, error } = await supabase.from('encargo_pagos').insert({
-    encargo_id: PAGO_ENCARGO_DESTINO.id,
+  const datos = {
     fecha, monto, moneda,
     cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
-  }).select().single();
-  if (error) { alert('Error al registrar el pago.'); console.error(error); return; }
-
-  // El pago entra a Caja como ingreso de venta, igual que la seña.
-  await insertarEnCaja({
+  };
+  // El movimiento de caja es el mismo pago visto desde el otro lado, así que
+  // se arma igual se esté creando o corrigiendo.
+  const movimiento = {
     tipo: 'ingreso', categoria: 'venta', fecha, monto, moneda,
     motivo: PAGO_ENCARGO_DESTINO.clientes?.nombre || 'Cliente',
     encargo_id: PAGO_ENCARGO_DESTINO.id,
     cotizacion_usada: moneda === 'ARS' ? cotizacion : null,
-    encargo_pago_id: pago.id,
-  }, 'pago del encargo');
+  };
+
+  if (PAGO_ENCARGO_EDITANDO) {
+    const pagoId = PAGO_ENCARGO_EDITANDO.id;
+    const { error } = await supabase.from('encargo_pagos').update(datos).eq('id', pagoId);
+    if (error) { alert('Error al guardar el pago.'); console.error(error); return; }
+
+    // Si el pago quedó sin movimiento (uno viejo, o una escritura que falló),
+    // corregirlo es la oportunidad de crearlo: actualizar cero filas dejaría
+    // el flujo sin esa plata para siempre.
+    const { data: movs } = await supabase.from('caja_movimientos').select('id').eq('encargo_pago_id', pagoId);
+    if (movs && movs.length > 0) {
+      const { error: errorCaja } = await supabase.from('caja_movimientos')
+        .update(movimiento).eq('encargo_pago_id', pagoId);
+      if (errorCaja) {
+        console.error(errorCaja);
+        alert('El pago se guardó, pero no se pudo actualizar su movimiento en Flujo de caja.');
+      }
+    } else {
+      await insertarEnCaja({ ...movimiento, encargo_pago_id: pagoId }, 'pago del encargo');
+    }
+  } else {
+    const { data: pago, error } = await supabase.from('encargo_pagos')
+      .insert({ encargo_id: PAGO_ENCARGO_DESTINO.id, ...datos })
+      .select().single();
+    if (error) { alert('Error al registrar el pago.'); console.error(error); return; }
+
+    // El pago entra a Caja como ingreso de venta, igual que la seña.
+    await insertarEnCaja({ ...movimiento, encargo_pago_id: pago.id }, 'pago del encargo');
+  }
 
   document.getElementById('modal-encargo-pago').classList.add('hidden');
+  const encargoId = PAGO_ENCARGO_DESTINO.id;
   PAGO_ENCARGO_DESTINO = null;
+  PAGO_ENCARGO_EDITANDO = null;
   await cargarEncargos();
-  const actualizado = ENCARGOS.find(e => e.id === ENCARGO_ACTUAL?.id);
+  await cargarCaja();
+  const actualizado = ENCARGOS.find(e => e.id === (ENCARGO_ACTUAL?.id || encargoId));
   if (actualizado) abrirDetalleEncargo(actualizado);
 });
 
@@ -5342,6 +5424,7 @@ function filtrarTrades() {
 function renderTrades(lista) {
   const tbody = document.getElementById('trades-tbody');
   const empty = document.getElementById('trades-empty');
+  devolverFilaDetalle(filaDetalleTrade, 'trades-detalle-tbody');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', lista.length > 0);
   document.getElementById('trades-contador').textContent = `Mostrando ${lista.length}/${TRADES.length}`;
@@ -8134,6 +8217,7 @@ let DEUDA_CLIENTE_ACTUAL = null;
 function renderDeudasClientes() {
   const tbody = document.getElementById('deudas-clientes-tbody');
   const empty = document.getElementById('deudas-clientes-empty');
+  devolverFilaDetalle(filaDetalleDeudaCliente, 'deudas-clientes-detalle-tbody');
   tbody.innerHTML = '';
 
   const idsConMovimiento = [...new Set(DEUDAS.filter(d => d.entidad_tipo === 'cliente').map(d => d.entidad_id))];
@@ -8181,6 +8265,7 @@ let DEUDA_INVERSOR_ACTUAL = null;
 function renderDeudasInversores() {
   const tbody = document.getElementById('deudas-inversores-tbody');
   const empty = document.getElementById('deudas-inversores-empty');
+  devolverFilaDetalle(filaDetalleDeudaInversor, 'deudas-inversores-detalle-tbody');
   tbody.innerHTML = '';
   empty.classList.toggle('hidden', INVERSORES.length > 0);
 
