@@ -4757,8 +4757,12 @@ function totalAbonadoEncargo(encargo) {
 function debeEncargo(encargo) {
   return Math.max(0, Number(encargo.precio_venta_usd || 0) - totalAbonadoEncargo(encargo));
 }
+// Diferencias de centavos (redondeos de cotización, un billete que no da
+// justo) no son una deuda: un encargo que debe menos de USD 2 está cerrado.
+const TOLERANCIA_ENCARGO_SALDADO = 2;
+
 function estadoEncargo(encargo) {
-  return debeEncargo(encargo) <= 0.009 ? 'completado' : 'en_proceso';
+  return debeEncargo(encargo) < TOLERANCIA_ENCARGO_SALDADO ? 'completado' : 'en_proceso';
 }
 
 async function cargarEncargos() {
@@ -4948,7 +4952,7 @@ function renderEncargos(lista) {
       <td class="p-2 text-muted">${new Date(e.fecha + 'T00:00:00').toLocaleDateString('es-AR')}</td>
       <td class="p-2">${e.item || '-'}${e.talle ? ' <span class="text-muted">· ' + e.talle + '</span>' : ''}</td>
       <td class="p-2">USD ${Number(e.precio_venta_usd || 0).toFixed(2)}</td>
-      <td class="p-2 ${debe > 0 ? 'text-red-400' : 'text-muted'}">USD ${debe.toFixed(2)}</td>
+      <td class="p-2 ${completado ? 'text-muted' : 'text-red-400'}">USD ${debe.toFixed(2)}</td>
       <td class="p-2">
         <span class="font-mono text-[10px] uppercase px-2 py-1 border ${completado ? 'border-accent text-accent' : 'border-border text-muted'}">
           ${completado ? 'Completado' : 'En proceso'}
@@ -4993,7 +4997,7 @@ function abrirDetalleEncargo(encargo, filaClickeada) {
           <p class="text-muted text-[10px]">${Number(encargo.peso_kg || 0)} kg × USD ${Number(encargo.costo_kg_usd || 0).toFixed(2)}</p>
         </div>` : ''}
       <div><p class="text-muted text-xs uppercase mb-1">Ganancia</p><p class="${ganancia >= 0 ? 'text-accent' : 'text-red-400'}">USD ${ganancia.toFixed(2)}</p></div>
-      <div><p class="text-muted text-xs uppercase mb-1">Debe</p><p class="${debe > 0 ? 'text-red-400' : 'text-muted'}">USD ${debe.toFixed(2)}</p></div>
+      <div><p class="text-muted text-xs uppercase mb-1">Debe</p><p class="${estadoEncargo(encargo) === 'completado' ? 'text-muted' : 'text-red-400'}">USD ${debe.toFixed(2)}</p></div>
     </div>
     <p class="text-muted font-mono text-xs uppercase mb-2">Pagos</p>
     <div class="text-sm font-mono space-y-1 mb-4">
@@ -5014,10 +5018,15 @@ function abrirDetalleEncargo(encargo, filaClickeada) {
         </div>
       `).join('')}
     </div>
-    ${debe > 0.009 ? `
-      <button id="encargo-agregar-pago" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
-        + Registrar pago
-      </button>` : '<p class="text-accent font-mono text-xs uppercase">Encargo saldado</p>'}
+    ${debe <= 0.009 ? '<p class="text-accent font-mono text-xs uppercase">Encargo saldado</p>' : `
+      <div class="flex items-center gap-3 flex-wrap">
+        <button id="encargo-agregar-pago" class="bg-surface-elevated border border-border text-xs font-mono uppercase tracking-wide px-4 py-2">
+          + Registrar pago
+        </button>
+        ${estadoEncargo(encargo) === 'completado'
+          ? `<span class="text-accent font-mono text-xs uppercase">Saldado · diferencia de USD ${debe.toFixed(2)}</span>`
+          : ''}
+      </div>`}
   `;
 
   const btnPago = document.getElementById('encargo-agregar-pago');
