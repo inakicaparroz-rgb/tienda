@@ -1021,3 +1021,9 @@ alter table caja_movimientos add constraint caja_movimientos_categoria_check
                        'pago_inversor', 'pago_deuda', 'cambio_moneda', 'costo_encargo',
                        'pago_tarjeta', 'compra_stock', 'pago_kg', 'vuelto', 'trade',
                        'comision_mp'));
+
+-- La comisión deja de ser un movimiento aparte: el cobro guarda la plata que
+-- de verdad entra (monto) y, al lado, lo que pagó el cliente y lo que se
+-- descontó. Una sola fila en el flujo, con el desglose adentro.
+alter table caja_movimientos add column if not exists monto_bruto numeric(12,2);
+alter table caja_movimientos add column if not exists comision_mp numeric(12,2);
