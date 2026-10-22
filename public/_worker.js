@@ -199,6 +199,37 @@ async function handleMpWebhook(request, env) {
     if (Array.isArray(yaExiste) && yaExiste.length) return new Response("ya procesado", { status: 200 });
     if (payment.transaction_amount <= 0) return new Response("skipped", { status: 200 });
 
+    const fallos = [];
+
+    // El aviso de venta sale del pago, no de lo que se grabó, así que va antes
+    // de tocar la base: si se deja para el final, cualquier corte posterior se
+    // lleva puesto el aviso y la venta entra sin que nadie se entere. Peor aún,
+    // el reintento de Mercado Pago encuentra la venta ya creada, corta en "ya
+    // procesado" y el mail no sale nunca.
+    const html = `<div style="font-family:monospace;max-width:560px;margin:0 auto;background:#000;color:#fff;padding:2rem"><h2 style="color:#57BEA1">Cop or Drop</h2><p>Hola <strong>${metadata.customer_name || "Cliente"}</strong>,</p><p>Tu pedido fue confirmado.</p><div style="border:1px solid #333;padding:1rem;margin:1.5rem 0;white-space:pre-line">${metadata.order_summary || ""}<br><br><strong>TOTAL: ${payment.currency_id} ${payment.transaction_amount}</strong></div><p><strong>Entrega:</strong> ${metadata.delivery_method || "-"}</p><div style="border:1px solid #333;padding:1rem;margin:1rem 0;white-space:pre-line">${metadata.delivery_details || "-"}</div></div>`;
+    const sendEmail = async (to, subject) => {
+      try {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.RESEND_API_KEY}` },
+          body: JSON.stringify({ from: "Cop or Drop <noreply@copordropstore.com>", to, subject, html }),
+        });
+        if (res.ok) return true;
+        const detalle = await res.text().catch(() => "");
+        fallos.push(`no se pudo enviar el mail a ${to}: ${res.status} ${detalle}`);
+        console.error("Resend rechazó el envío", { to, status: res.status, detalle });
+      } catch (e) {
+        fallos.push(`no se pudo enviar el mail a ${to}: ${e.message}`);
+        console.error("Error enviando mail", e);
+      }
+      return false;
+    };
+    await sendEmail(env.STORE_EMAIL, `[NUEVO PEDIDO] ${metadata.customer_name || "Cliente"} — ${payment.currency_id} ${payment.transaction_amount}`);
+    const customerEmail = payment.payer?.email || "";
+    if (customerEmail && customerEmail !== env.STORE_EMAIL) {
+      await sendEmail(customerEmail, "Cop or Drop — Confirmación de pedido");
+    }
+
     // Registrar venta
     let clienteId;
     if (metadata.customer_phone) {
@@ -231,8 +262,7 @@ async function handleMpWebhook(request, env) {
     }
     // Sin cotización el precio en USD del ítem queda nulo y la venta se ve en 0,
     // así que se cae a la del worker antes que guardar algo incalculable.
-    const cotizacion = Number(metadata.cotizacion_usada) || BLUE;
-    const fallos = [];
+    const cotizacion = Number(metadata.cotizacion_usada) || BLUE_FALLBACK;
 
     if (items.length === 0) fallos.push("la venta quedó sin ítems: no llegó items_json en la metadata del pago");
 
@@ -283,18 +313,6 @@ async function handleMpWebhook(request, env) {
       });
     }
 
-    // Emails
-    const html = `<div style="font-family:monospace;max-width:560px;margin:0 auto;background:#000;color:#fff;padding:2rem"><h2 style="color:#57BEA1">Cop or Drop</h2><p>Hola <strong>${metadata.customer_name || "Cliente"}</strong>,</p><p>Tu pedido fue confirmado.</p><div style="border:1px solid #333;padding:1rem;margin:1.5rem 0;white-space:pre-line">${metadata.order_summary || ""}<br><br><strong>TOTAL: ${payment.currency_id} ${payment.transaction_amount}</strong></div><p><strong>Entrega:</strong> ${metadata.delivery_method || "-"}</p><div style="border:1px solid #333;padding:1rem;margin:1rem 0;white-space:pre-line">${metadata.delivery_details || "-"}</div></div>`;
-    const sendEmail = (to, subject) => fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.RESEND_API_KEY}` },
-      body: JSON.stringify({ from: "Cop or Drop <noreply@copordropstore.com>", to, subject, html }),
-    });
-    await sendEmail(env.STORE_EMAIL, `[NUEVO PEDIDO] ${metadata.customer_name || "Cliente"} — ${payment.currency_id} ${payment.transaction_amount}`);
-    const customerEmail = payment.payer?.email || "";
-    if (customerEmail && customerEmail !== env.STORE_EMAIL) {
-      await sendEmail(customerEmail, "Cop or Drop — Confirmación de pedido");
-    }
     return new Response("ok", { status: 200 });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
