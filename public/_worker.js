@@ -154,7 +154,7 @@ async function avisarProblemaVentaWeb(env, paymentId, metadata, fallos) {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.RESEND_API_KEY}` },
       body: JSON.stringify({
-        from: "Cop or Drop <noreply@copordropstore.com>",
+        from: "COPTIME <noreply@copordropstore.com>",
         to: env.STORE_EMAIL,
         subject: `[REVISAR] Venta web cargada con problemas — pago ${paymentId}`,
         html: `<div style="font-family:monospace"><h3>La venta entró pero quedó incompleta en el sistema</h3>`
@@ -206,13 +206,13 @@ async function handleMpWebhook(request, env) {
     // lleva puesto el aviso y la venta entra sin que nadie se entere. Peor aún,
     // el reintento de Mercado Pago encuentra la venta ya creada, corta en "ya
     // procesado" y el mail no sale nunca.
-    const html = `<div style="font-family:monospace;max-width:560px;margin:0 auto;background:#000;color:#fff;padding:2rem"><h2 style="color:#57BEA1">Cop or Drop</h2><p>Hola <strong>${metadata.customer_name || "Cliente"}</strong>,</p><p>Tu pedido fue confirmado.</p><div style="border:1px solid #333;padding:1rem;margin:1.5rem 0;white-space:pre-line">${metadata.order_summary || ""}<br><br><strong>TOTAL: ${payment.currency_id} ${payment.transaction_amount}</strong></div><p><strong>Entrega:</strong> ${metadata.delivery_method || "-"}</p><div style="border:1px solid #333;padding:1rem;margin:1rem 0;white-space:pre-line">${metadata.delivery_details || "-"}</div></div>`;
+    const html = `<div style="font-family:monospace;max-width:560px;margin:0 auto;background:#FFFFFF;color:#0B0D12;padding:2rem"><h2 style="color:#13297C">COPTIME</h2><p>Hola <strong>${metadata.customer_name || "Cliente"}</strong>,</p><p>Tu pedido fue confirmado.</p><div style="border:1px solid #E2E5EB;padding:1rem;margin:1.5rem 0;white-space:pre-line">${metadata.order_summary || ""}<br><br><strong>TOTAL: ${payment.currency_id} ${payment.transaction_amount}</strong></div><p><strong>Entrega:</strong> ${metadata.delivery_method || "-"}</p><div style="border:1px solid #E2E5EB;padding:1rem;margin:1rem 0;white-space:pre-line">${metadata.delivery_details || "-"}</div></div>`;
     const sendEmail = async (to, subject) => {
       try {
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.RESEND_API_KEY}` },
-          body: JSON.stringify({ from: "Cop or Drop <noreply@copordropstore.com>", to, subject, html }),
+          body: JSON.stringify({ from: "COPTIME <noreply@copordropstore.com>", to, subject, html }),
         });
         if (res.ok) return true;
         const detalle = await res.text().catch(() => "");
@@ -227,7 +227,7 @@ async function handleMpWebhook(request, env) {
     await sendEmail(env.STORE_EMAIL, `[NUEVO PEDIDO] ${metadata.customer_name || "Cliente"} — ${payment.currency_id} ${payment.transaction_amount}`);
     const customerEmail = payment.payer?.email || "";
     if (customerEmail && customerEmail !== env.STORE_EMAIL) {
-      await sendEmail(customerEmail, "Cop or Drop — Confirmación de pedido");
+      await sendEmail(customerEmail, "COPTIME — Confirmación de pedido");
     }
 
     // Registrar venta
