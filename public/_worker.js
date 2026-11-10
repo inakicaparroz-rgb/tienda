@@ -316,16 +316,74 @@ async function handleMpWebhook(request, env) {
   }
 }
 
+// Mantenimiento: poner en false para volver a abrir la tienda.
+const MANTENIMIENTO = true;
+// Entrar con ?pase=<esto> deja ver el sitio real y guarda una cookie por 24 h.
+const PASE = "coptime";
+
+function tienePase(request, url) {
+  if (url.searchParams.get("pase") === PASE) return "query";
+  return (request.headers.get("Cookie") || "").includes(`pase=${PASE}`) ? "cookie" : null;
+}
+
+function paginaMantenimiento() {
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COPTIME — Volvemos pronto</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<style>
+  :root{--navy:#13297C;--ink:#0B0D12;--muted:#646B7A}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100svh;display:flex;align-items:center;justify-content:center;
+    padding:2rem;background:#fff;color:var(--ink);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center}
+  img{width:min(280px,70vw);height:auto;margin-bottom:2.5rem}
+  h1{font-size:clamp(1.5rem,6vw,2.25rem);letter-spacing:-.01em;margin:0 0 1rem}
+  p{color:var(--muted);font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+    line-height:1.9;margin:0 0 2.5rem}
+  a{display:inline-block;padding:.9rem 1.8rem;background:var(--navy);color:#fff;
+    text-decoration:none;font-size:12px;letter-spacing:.18em;text-transform:uppercase}
+</style></head><body><main>
+  <img src="/img/logo.png" alt="COPTIME">
+  <h1>Estamos renovando la tienda</h1>
+  <p>Volvemos en unas horas.<br>Mientras tanto escribinos y te atendemos igual.</p>
+  <a href="https://wa.link/nvx9l1">Escribinos por WhatsApp</a>
+</main></body></html>`;
+  return new Response(html, {
+    status: 503,
+    headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "7200", "Cache-Control": "no-store" },
+  });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/functions/create-preference" && request.method === "POST") {
-      return handleCreatePreference(request, env);
-    }
+    // El webhook nunca se bloquea: si Mercado Pago avisa de un pago durante el
+    // mantenimiento y le contestamos la página de espera, esa venta no se
+    // registra nunca y no sale el mail.
     if (url.pathname === "/functions/mp-webhook") {
       return handleMpWebhook(request, env);
     }
+
+    const pase = MANTENIMIENTO ? tienePase(request, url) : "abierto";
+
+    if (MANTENIMIENTO && pase === "query") {
+      const r = new Response(null, { status: 302, headers: { Location: url.pathname } });
+      r.headers.append("Set-Cookie", `pase=${PASE}; Path=/; Max-Age=86400; Secure; SameSite=Lax`);
+      return r;
+    }
+
+    if (url.pathname === "/functions/create-preference" && request.method === "POST") {
+      if (!pase) return new Response(JSON.stringify({ error: "en_mantenimiento" }), {
+        status: 503, headers: { "Content-Type": "application/json" },
+      });
+      return handleCreatePreference(request, env);
+    }
+
+    // El logo y el favicon pasan igual, porque los usa la propia página de espera.
+    const libre = url.pathname === "/img/logo.png" || url.pathname === "/img/favicon.png";
+    if (!pase && !libre) return paginaMantenimiento();
 
     return env.ASSETS.fetch(request);
   },
