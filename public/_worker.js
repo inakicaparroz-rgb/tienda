@@ -123,7 +123,7 @@ async function handleCreatePreference(request, env) {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.MP_ACCESS_TOKEN}` },
       body: JSON.stringify({
         items: mpItems, payer, back_urls, auto_return: "approved",
-        statement_descriptor: "COP OR DROP",
+        statement_descriptor: "COPTIME",
         notification_url: "https://copordropstore.com/functions/mp-webhook",
         payment_methods: { installments: 3, default_installments: 3 },
         metadata: {
