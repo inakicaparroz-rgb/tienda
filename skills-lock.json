@@ -8,6 +8,13 @@
       "skillPath": "skills/agent-browser/SKILL.md",
       "computedHash": "a0dfac7503f69bcf529b2660fc79964064c4f179eb65695904ddc45fc0d99d20"
     },
+    "canvas-design": {
+      "source": "anthropics/skills",
+      "commit": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba",
+      "sourceType": "github",
+      "skillPath": "skills/canvas-design/SKILL.md",
+      "computedHash": "1866477474e694f562261008bb6a817e53f027b6347b062fbd1e2ee2eb83f20d"
+    },
     "grill-me": {
       "source": "mattpocock/skills",
       "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
@@ -21,6 +28,34 @@
       "sourceType": "github",
       "skillPath": "skills/productivity/grilling/SKILL.md",
       "computedHash": "485451958784497cd4c4dbea13cb5bbb579da58fac0d0e45f3bcb310fab68ac7"
+    },
+    "video-lens": {
+      "source": "kar2phi/video-lens",
+      "commit": "12a10285a1403b48e8f3e3b1e1d28714d4d2853d",
+      "sourceType": "github",
+      "skillPath": "skills/video-lens/SKILL.md",
+      "computedHash": "080272226a209f8d9af10c27ba0788bade0b94d847b1bf05a7fd8ecd64df4035"
+    },
+    "video-lens-gallery": {
+      "source": "kar2phi/video-lens",
+      "commit": "12a10285a1403b48e8f3e3b1e1d28714d4d2853d",
+      "sourceType": "github",
+      "skillPath": "skills/video-lens-gallery/SKILL.md",
+      "computedHash": "30b50e95485f67bff0fcaaa0379340229a3801bd66d0ec230984d93d355032ce"
+    },
+    "video-lens-recs": {
+      "source": "kar2phi/video-lens",
+      "commit": "12a10285a1403b48e8f3e3b1e1d28714d4d2853d",
+      "sourceType": "github",
+      "skillPath": "skills/video-lens-recs/SKILL.md",
+      "computedHash": "d654d290d8844622b6ec03796de41956f3337771e570dc541c355729e8395f10"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "4f68ae07187fb0d1fb78c88b503d089da4cf5a9d9625d1f2e425b1590bf96d92"
     }
   }
 }

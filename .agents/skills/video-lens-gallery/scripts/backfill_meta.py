@@ -1,0 +1,317 @@
+#!/usr/bin/env python3
+"""Backfill video-lens-meta blocks into existing reports that lack them.
+
+Usage: python3 backfill_meta.py --dir DIR [--dry-run] [--channel-ids [--lookup]]
+
+Scans DIR for *video-lens*.html files without a <script id="video-lens-meta">
+block, extracts available metadata from the HTML structure, injects the block,
+and writes the file back.
+
+--channel-ids also adds a `channelId` to meta blocks that lack one (video-lens-recs
+matches channels by id). It matches the channel name against other reports, the
+video-lens-recs subscriptions and its name cache; --lookup asks yt-dlp for the rest,
+one video per channel.
+
+Note: tags will be empty for backfilled reports (cannot be generated retroactively).
+"""
+import argparse
+import concurrent.futures
+import json
+import os
+import pathlib
+import re
+import subprocess
+import sys
+
+
+META_SCRIPT_START = '<script type="application/json" id="video-lens-meta">'
+
+
+def extract_video_id(html: str) -> str:
+    """Extract YouTube video ID from iframe embed or outline links."""
+    # iframe src="https://www.youtube.com/embed/VIDEO_ID"
+    m = re.search(r'youtube\.com/embed/([A-Za-z0-9_-]{11})', html)
+    if m:
+        return m.group(1)
+    # href="https://www.youtube.com/watch?v=VIDEO_ID"
+    m = re.search(r'youtube\.com/watch\?v=([A-Za-z0-9_-]{11})', html)
+    if m:
+        return m.group(1)
+    return ""
+
+
+def extract_title(html: str) -> str:
+    """Extract plain-text title from <title> tag."""
+    m = re.search(r'<title[^>]*>(.*?)</title>', html, re.DOTALL | re.IGNORECASE)
+    if m:
+        raw = m.group(1).strip()
+        # Remove the site suffix: " · video-lens" (036 shell) or " — video-lens" (older reports)
+        raw = re.sub(r'\s*(?:[—–-]+|·|&middot;|&#183;)\s*video.lens\s*$', '', raw, flags=re.IGNORECASE)
+        return unescape_html(raw)
+    return ""
+
+
+_DURATION_RE = re.compile(r'^\d+\s*(min|h\b)', re.IGNORECASE)
+_DATE_RE = re.compile(
+    r'^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d+\s+\d{4}$'
+    r'|^\d{4}-\d{2}-\d{2}$',
+    re.IGNORECASE,
+)
+
+
+def _looks_like_duration_or_date(s: str) -> bool:
+    return bool(_DURATION_RE.match(s) or _DATE_RE.match(s))
+
+
+def extract_meta_line_parts(html: str) -> tuple[str, str, str]:
+    """Extract channel, duration, publishDate from the meta-line element."""
+    # <p class="meta-line">Channel · Duration · Date · Views</p>
+    m = re.search(r'class="meta-line"[^>]*>(.*?)</p>', html, re.DOTALL | re.IGNORECASE)
+    if not m:
+        return "", "", ""
+    raw = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+    raw = unescape_html(raw)  # converts &middot; → · (and other entities)
+    parts = [p.strip() for p in raw.split('·')]
+    # Drop trailing "Open on YouTube ↗" fragment that the template appends after META_LINE
+    parts = [p for p in parts if '↗' not in p and 'youtube' not in p.lower()]
+    channel = parts[0] if len(parts) > 0 else ""
+    duration = parts[1] if len(parts) > 1 else ""
+    pub_date = parts[2] if len(parts) > 2 else ""
+    # If channel looks like a duration or date, META_LINE had no channel prefix — shift
+    if _looks_like_duration_or_date(channel):
+        duration = parts[0] if len(parts) > 0 else ""
+        pub_date = parts[1] if len(parts) > 1 else ""
+        channel = ""
+    return channel, duration, pub_date
+
+
+def extract_summary(html: str) -> str:
+    """Extract plain text of the first <p> in the summary section."""
+    m = re.search(r'id="summary".*?<p>(.*?)</p>', html, re.DOTALL | re.IGNORECASE)
+    if m:
+        raw = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+        return unescape_html(raw[:400])
+    return ""
+
+
+def extract_keywords(html: str) -> list[str]:
+    """Extract <strong> headline text from key-points section."""
+    kp_m = re.search(r'id="key-points"(.*?)</section>', html, re.DOTALL | re.IGNORECASE)
+    if not kp_m:
+        return []
+    kp_html = kp_m.group(1)
+    strongs = re.findall(r'<strong>(.*?)</strong>', kp_html, re.DOTALL)
+    keywords = []
+    for s in strongs:
+        plain = re.sub(r'<[^>]+>', '', s).strip()
+        plain = unescape_html(plain)
+        # Strip " — ..." suffix that sometimes appears in the strong tag
+        plain = re.split(r'\s+[—–]\s+', plain)[0].strip()
+        if plain:
+            keywords.append(plain)
+    return keywords[:10]
+
+
+def parse_gen_date(filename: str) -> str:
+    """Parse YYYY-MM-DD from filename like 2026-03-06-210126-video-lens_*.html"""
+    m = re.match(r'^(\d{4}-\d{2}-\d{2})', filename)
+    return m.group(1) if m else ""
+
+
+def unescape_html(s: str) -> str:
+    """Basic HTML entity unescaping."""
+    replacements = {
+        '&amp;': '&', '&lt;': '<', '&gt;': '>',
+        '&quot;': '"', '&#39;': "'", '&apos;': "'",
+        '&mdash;': '—', '&ndash;': '–', '&ldquo;': '"', '&rdquo;': '"',
+        '&lsquo;': "'", '&rsquo;': "'", '&hellip;': '…', '&middot;': '·',
+    }
+    for entity, char in replacements.items():
+        s = s.replace(entity, char)
+    # Numeric entities
+    s = re.sub(r'&#(\d+);', lambda m: chr(int(m.group(1))), s)
+    return s
+
+
+def backfill_file(path: pathlib.Path, dry_run: bool) -> bool:
+    """Add video-lens-meta block to a report file. Returns True if modified."""
+    html = path.read_text(encoding="utf-8", errors="replace")
+
+    if META_SCRIPT_START in html:
+        return False  # already has meta block
+
+    video_id = extract_video_id(html)
+    title = extract_title(html)
+    channel, duration, pub_date = extract_meta_line_parts(html)
+    gen_date = parse_gen_date(path.name)
+    summary = extract_summary(html)
+    keywords = extract_keywords(html)
+
+    meta_obj = {
+        "videoId": video_id,
+        "title": title,
+        "channel": channel,
+        "duration": duration,
+        "publishDate": pub_date,
+        "generationDate": gen_date,
+        "summary": summary,
+        "tags": [],  # cannot generate retroactively
+        "keywords": keywords,
+        "filename": path.name,
+    }
+
+    meta_json = json.dumps(meta_obj, ensure_ascii=False).replace("</", "<\\/")
+    meta_block = f'{META_SCRIPT_START}{meta_json}</script>'
+    new_html = html.replace('</body>', f'{meta_block}\n</body>', 1)
+
+    if new_html == html:
+        print(f"WARN: could not find </body> in {path.name}", file=sys.stderr)
+        return False
+
+    if not dry_run:
+        path.write_text(new_html, encoding="utf-8")
+
+    return True
+
+
+META_BLOCK_RE = re.compile(r'(<script type="application/json" id="video-lens-meta">)(.*?)(</script>)', re.S)
+CHANNEL_ID_RE = re.compile(r"^UC[A-Za-z0-9_-]{22}$")
+
+
+def _read_meta(html: str):
+    m = META_BLOCK_RE.search(html)
+    if not m:
+        return None, None
+    try:
+        meta = json.loads(m.group(2).replace("<\\/", "</"))
+    except ValueError:
+        return None, None
+    return (meta, m) if isinstance(meta, dict) else (None, None)
+
+
+def _recs_name_map() -> dict:
+    """channel name (lowercase) → id from video-lens-recs state, when it is installed."""
+    out = {}
+    data_home = pathlib.Path(os.environ.get("XDG_DATA_HOME") or pathlib.Path.home() / ".local" / "share")
+    cache_home = pathlib.Path(os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / ".cache")
+    try:
+        subs = json.loads((data_home / "video-lens" / "recs" / "subscriptions.json").read_text(encoding="utf-8"))
+        for c in subs.get("channels", []):
+            if c.get("title") and CHANNEL_ID_RE.fullmatch(c.get("id", "")):
+                out[c["title"].lower()] = c["id"]
+    except (OSError, ValueError, AttributeError):
+        pass
+    try:
+        cached = json.loads((cache_home / "video-lens" / "recs" / "channel_ids.json").read_text(encoding="utf-8"))
+        for name, cid in cached.items():
+            if CHANNEL_ID_RE.fullmatch(cid or ""):
+                out.setdefault(name.lower(), cid)
+    except (OSError, ValueError, AttributeError):
+        pass
+    return out
+
+
+def _lookup_channel(video_id: str) -> str:
+    try:
+        r = subprocess.run(["yt-dlp", "--quiet", "--no-warnings", "--skip-download", "--print", "%(channel_id)s",
+                            f"https://www.youtube.com/watch?v={video_id}"],
+                           capture_output=True, text=True, timeout=90)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    cid = r.stdout.strip().splitlines()[0] if r.stdout.strip() else ""
+    return cid if CHANNEL_ID_RE.fullmatch(cid) else ""
+
+
+def backfill_channel_ids(report_files, dry_run: bool, lookup: bool) -> tuple[int, int]:
+    """Add channelId to meta blocks without one. Returns (updated, still missing)."""
+    metas = {}
+    names = _recs_name_map()
+    for path in report_files:
+        meta, _ = _read_meta(path.read_text(encoding="utf-8", errors="replace"))
+        if meta is None:
+            continue
+        metas[path] = meta
+        if CHANNEL_ID_RE.fullmatch(meta.get("channelId") or "") and meta.get("channel"):
+            names[meta["channel"].lower()] = meta["channelId"]
+    todo = {p: m for p, m in metas.items() if not CHANNEL_ID_RE.fullmatch(m.get("channelId") or "")}
+    if lookup:
+        missing = {}
+        for p, m in todo.items():
+            ch = (m.get("channel") or "").lower()
+            key = ch or m.get("videoId")
+            if (not ch or ch not in names) and m.get("videoId") and key not in missing:
+                missing[key] = m["videoId"]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            found = dict(zip(missing, pool.map(_lookup_channel, missing.values())))
+        for key, cid in found.items():
+            if cid:
+                names[key.lower()] = cid
+    updated = still = 0
+    for path, meta in todo.items():
+        key = (meta.get("channel") or meta.get("videoId") or "").lower()
+        cid = names.get(key, "")
+        if not cid:
+            still += 1
+            continue
+        meta["channelId"] = cid
+        if not dry_run:
+            html = path.read_text(encoding="utf-8", errors="replace")
+            block = json.dumps(meta, ensure_ascii=True).replace("</", "<\\/")
+            html = META_BLOCK_RE.sub(lambda m: m.group(1) + block + m.group(3), html, count=1)
+            path.write_text(html, encoding="utf-8")
+        updated += 1
+    return updated, still
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Backfill video-lens-meta into existing reports")
+    parser.add_argument("--dir", required=True, help="Directory containing video-lens HTML reports")
+    parser.add_argument("--dry-run", action="store_true", help="Print what would be changed without writing")
+    parser.add_argument("--channel-ids", action="store_true",
+                        help="Also add channelId to meta blocks that lack one (by channel name)")
+    parser.add_argument("--lookup", action="store_true",
+                        help="With --channel-ids: ask yt-dlp for channels no name matches (network)")
+    args = parser.parse_args()
+
+    scan_dir = pathlib.Path(args.dir).expanduser().resolve()
+    if not scan_dir.is_dir():
+        print(f"ERROR: directory not found: {scan_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    # Reports live in scan_dir/reports/ since the directory reorganisation, but
+    # older reports may still sit at the legacy flat location. Scan both.
+    candidates = list(scan_dir.glob("*video-lens*.html"))
+    candidates.extend((scan_dir / "reports").glob("*video-lens*.html"))
+    seen: set[str] = set()
+    report_files: list[pathlib.Path] = []
+    for p in sorted(candidates):
+        if p.name in seen:
+            continue
+        seen.add(p.name)
+        report_files.append(p)
+
+    modified = 0
+    skipped = 0
+
+    for path in report_files:
+        if path.name == "index.html":
+            continue
+        changed = backfill_file(path, dry_run=args.dry_run)
+        if changed:
+            modified += 1
+            action = "would update" if args.dry_run else "updated"
+            print(f"{action}: {path.name}")
+        else:
+            skipped += 1
+
+    print(f"\nDone: {modified} {'would be ' if args.dry_run else ''}updated, {skipped} already had meta block or skipped.")
+
+    if args.channel_ids:
+        files = [p for p in report_files if p.name != "index.html"]
+        updated, still = backfill_channel_ids(files, args.dry_run, args.lookup)
+        print(f"Channel ids: {updated} {'would be ' if args.dry_run else ''}added, {still} still unknown"
+              + ("" if args.lookup or not still else " (rerun with --lookup to ask yt-dlp)") + ".")
+
+
+if __name__ == "__main__":
+    main()

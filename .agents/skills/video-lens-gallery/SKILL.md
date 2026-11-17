@@ -1,0 +1,66 @@
+---
+name: video-lens-gallery
+description: >
+  Open or rebuild the video-lens gallery index — your personal library of saved video summaries.
+  Use this whenever the user wants to browse, open, or search saved video reports:
+  "show my gallery", "open video library", "browse saved videos", "build gallery",
+  "what videos have I saved", "show my video notes", "my video summaries",
+  "find my saved summary for [topic]", "rebuild the index", "show video-lens index",
+  "backfill metadata", "update index".
+license: MIT
+allowed-tools: Bash Read
+metadata:
+  author: kar2phi
+  version: "2.3"
+---
+
+# video-lens-gallery
+
+Manage and browse your saved video-lens reports.
+
+## Step 1 — Locate skill scripts
+
+Find both `video-lens/scripts` and `video-lens-gallery/scripts` with the standard 8-agent discovery loop:
+
+```bash
+_sd=$(for d in ~/.agents ~/.claude ~/.copilot ~/.gemini ~/.cursor ~/.windsurf ~/.opencode ~/.codex; do
+  [ -d "$d/skills/video-lens/scripts" ] && echo "$d/skills/video-lens/scripts" && break
+done)
+_gd=$(for d in ~/.agents ~/.claude ~/.copilot ~/.gemini ~/.cursor ~/.windsurf ~/.opencode ~/.codex; do
+  [ -d "$d/skills/video-lens-gallery/scripts" ] && echo "$d/skills/video-lens-gallery/scripts" && break
+done)
+[ -z "$_sd" ] && echo "video-lens skill not found — install it first: npx skills add kar2phi/video-lens" && exit 1
+[ -z "$_gd" ] && echo "video-lens-gallery skill not found — install it first: npx skills add kar2phi/video-lens" && exit 1
+echo "SCRIPTS_DIR: $_sd"; echo "GALLERY_DIR: $_gd"
+```
+
+Each Bash call runs in a **fresh shell**, so `$_sd` and `$_gd` do not survive into the next steps. Keep the two printed paths and, where a command below shows `SCRIPTS_DIR` or `GALLERY_DIR`, substitute the path as a literal, never as `$VAR`.
+
+## Step 2 — Backfill metadata (only if requested)
+
+If the user's request mentions "backfill", run:
+
+```bash
+python3 "GALLERY_DIR/backfill_meta.py" --dir ~/Downloads/video-lens --channel-ids
+```
+
+`--channel-ids` adds channel ids to older reports by name; add `--lookup` when the user asks to fill the rest from YouTube (one yt-dlp call per channel).
+
+## Step 3 — Rebuild index
+
+Check that the reports directory exists before running:
+
+```bash
+[ -d ~/Downloads/video-lens ] || { echo "No reports directory found — save some videos first with the video-lens skill."; exit 1; }
+python3 "GALLERY_DIR/build_index.py" --dir ~/Downloads/video-lens
+```
+
+Tell the user the number of reports indexed, from the script's output.
+
+## Step 4 — Serve gallery
+
+```bash
+bash "SCRIPTS_DIR/serve_report.sh" ~/Downloads/video-lens/index.html ~/Downloads/video-lens
+```
+
+If `serve_report.sh` prints an `ERROR:` line (e.g. `ERROR:SERVE_PORT_BUSY` when port 8765 is held by another program), report the message and stop. Otherwise — confirmed by its `HTML_REPORT:` line — tell the user the gallery is now available at `http://localhost:8765/index.html`.
