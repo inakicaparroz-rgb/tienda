@@ -876,6 +876,14 @@
   const tallesDisponibles = (p) =>
     (p.talles || []).filter(t => t.disponible).map(t => t.talle).join(" · ");
 
+  // Un producto queda sin talles por dos motivos opuestos: porque no le quedan,
+  // o porque es de talle unico y esta disponible. El stock los distingue.
+  function lineaTalles(p) {
+    const t = tallesDisponibles(p);
+    if (t) return `Talles ${t}`;
+    return p.status === "stock" ? "Talle único" : "Disponible por encargo";
+  }
+
   const ICONO_BOLSA = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`;
   const ICONO_TILDE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
 
@@ -952,7 +960,7 @@ const WA_NUMBER = "541134435571";
           <h3>${nombreSinMarca(p)}</h3>
           <span class="pcard-usd">USD ${p.priceUSD}</span>
           <span class="pcard-cuotas">${formatARS(transferARS(p))} · 3 cuotas de ${formatARS(cuotaARS(p))}</span>
-          ${tallesDisponibles(p) ? `<span class="pcard-talles">Talles ${tallesDisponibles(p)}</span>` : ""}
+          <span class="pcard-talles">${lineaTalles(p)}</span>
         </div>
       </div>`;
     }).join("");
