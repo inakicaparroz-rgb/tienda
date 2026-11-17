@@ -128,6 +128,11 @@
     .pcard h3{font-family:'Archivo',sans-serif;font-weight:500;text-transform:uppercase;line-height:1.2;letter-spacing:-0.005em;color:var(--ink);font-size:14px;min-height:2.4em;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
     .pcard-cuotas{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
     @media(max-width:480px){.pcard-cuotas{font-size:7.5px}}
+    .pcard-usd{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.04em;color:var(--ink)}
+    .pcard-talles{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .pcard-fab{position:absolute;right:10px;bottom:10px;z-index:3;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#FFFFFF;border:1px solid var(--border);color:var(--ink);cursor:pointer;padding:0;transition:background .2s ease,color .2s ease,border-color .2s ease;box-shadow:0 2px 10px rgba(11,13,18,.12)}
+    .pcard-fab:hover{background:var(--accent);border-color:var(--accent);color:#FFFFFF}
+    .pcard-fab.in-cart{background:var(--accent);border-color:var(--accent);color:#FFFFFF}
     .btn-add-cart{width:100%;margin-top:.25rem;padding:.55rem;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;border:1px solid var(--accent);color:var(--accent);background:transparent;transition:background .2s ease,color .2s ease;cursor:pointer}
     .btn-add-cart:hover{background:var(--accent);color:var(--bg)}
     .btn-add-cart.in-cart{background:var(--accent);color:var(--bg)}
@@ -856,6 +861,26 @@
   const transferARS = (p) => Math.round(p.priceUSD * BLUE / 1000) * 1000;
   const cuotaARS = (p) => Math.round(effectiveARS(p) / 3 / 1000) * 1000;
   const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
+  const tallesDisponibles = (p) =>
+    (p.talles || []).filter(t => t.disponible).map(t => t.talle).join(" · ");
+
+  const ICONO_BOLSA = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`;
+  const ICONO_TILDE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+
+  // Un solo boton redondo sobre la foto. Mantiene los tres destinos que tenia
+  // el boton ancho: encargo, alta directa al carrito y, si hay talles, el
+  // detalle para que el cliente elija cual.
+  function accionCard(p, inCart) {
+    const nombre = p.name.replace(/'/g, "\\'");
+    if (p.status === "encargo" || p.status === "sin-stock") {
+      return `<button class="pcard-fab" aria-label="Encargar ${p.name}" onclick="event.stopPropagation();openEncargo('${nombre}')">${ICONO_BOLSA}</button>`;
+    }
+    const accion = (!p.talles || p.talles.length === 0)
+      ? `cartToggle('${p.slug}')`
+      : `openPDP('${p.slug}')`;
+    return `<button class="pcard-fab${inCart ? " in-cart" : ""}" data-slug="${p.slug}" aria-label="${inCart ? "En el carrito" : "Agregar"} ${p.name}" onclick="event.stopPropagation();${accion}">${inCart ? ICONO_TILDE : ICONO_BOLSA}</button>`;
+  }
+
   const statusLabel = (s) => s==="stock" ? "EN STOCK" : s==="encargo" ? "POR ENCARGO" : "SIN STOCK";
   const statusClass = (s) => s==="stock" ? "badge-stock" : s==="encargo" ? "badge-encargo" : "badge-sin-stock";
 const WA_NUMBER = "541134435571";
@@ -904,24 +929,19 @@ const WA_NUMBER = "541134435571";
             <div class="ph-cat">${p.category.toUpperCase()}</div>
             <div class="flex flex-col items-center gap-2 relative z-[1]"><span class="ph-word ph-w1">${p.w1}</span><span class="ph-word ph-w2">${p.w2}</span></div>
           </div>`}
+          ${accionCard(p, inCart)}
           <div class="absolute left-3 top-3 z-10">${p.status === "encargo"
             ? `<button onclick="event.stopPropagation();openEncargo('${p.name.replace(/'/g,"\\'")}');" class="badge badge-encargo" style="cursor:pointer"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>POR ENCARGO</button>`
             : `<span class="badge ${statusClass(p.status)}" ><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>`
           }</div>
         </div>
         <div class="flex flex-col gap-0.5">
-          <div class="flex items-baseline justify-between gap-2"><span class="spec-label">${p.brand}</span><span class="font-mono text-xs uppercase tracking-wider text-accent">USD ${p.priceUSD}</span></div>
+          <span class="spec-label">${p.brand}</span>
           <h3>${p.name}</h3>
+          <span class="pcard-usd">USD ${p.priceUSD}</span>
           <span class="pcard-cuotas">${formatARS(transferARS(p))} · 3 cuotas de ${formatARS(cuotaARS(p))}</span>
+          ${tallesDisponibles(p) ? `<span class="pcard-talles">Talles ${tallesDisponibles(p)}</span>` : ""}
         </div>
-        ${p.status === "encargo"
-          ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
-          : p.status === "sin-stock"
-            ? `<button class="btn-add-cart" onclick="openEncargo('${p.name.replace(/'/g,"\\'")}')">+ ENCARGAR</button>`
-            : (!p.talles || p.talles.length === 0)
-              ? `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="event.stopPropagation();cartToggle('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
-              : `<button class="btn-add-cart${inCart?" in-cart":""}" data-slug="${p.slug}" onclick="openPDP('${p.slug}')">${inCart ? "✓ EN CARRITO" : "+ AGREGAR AL CARRITO"}</button>`
-        }
       </div>`;
     }).join("");
     if (typeof anime !== "undefined") {
