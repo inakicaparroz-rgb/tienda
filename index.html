@@ -861,6 +861,18 @@
   const transferARS = (p) => Math.round(p.priceUSD * BLUE / 1000) * 1000;
   const cuotaARS = (p) => Math.round(effectiveARS(p) / 3 / 1000) * 1000;
   const formatARS = (v) => new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(v);
+  // La marca ya va arriba del nombre, repetirla en el titulo sobra. Solo se
+  // recorta para mostrar: p.name entero se sigue usando para buscar, para el
+  // carrito y para el mensaje de WhatsApp.
+  function nombreSinMarca(p) {
+    const marca = (p.brand || "").trim();
+    if (!marca) return p.name;
+    const n = p.name.trim();
+    if (!n.toLowerCase().startsWith(marca.toLowerCase())) return p.name;
+    const resto = n.slice(marca.length).replace(/^[\s\-–·:]+/, "").trim();
+    return resto || p.name;
+  }
+
   const tallesDisponibles = (p) =>
     (p.talles || []).filter(t => t.disponible).map(t => t.talle).join(" · ");
 
@@ -937,7 +949,7 @@ const WA_NUMBER = "541134435571";
         </div>
         <div class="flex flex-col gap-0.5">
           <span class="spec-label">${p.brand}</span>
-          <h3>${p.name}</h3>
+          <h3>${nombreSinMarca(p)}</h3>
           <span class="pcard-usd">USD ${p.priceUSD}</span>
           <span class="pcard-cuotas">${formatARS(transferARS(p))} · 3 cuotas de ${formatARS(cuotaARS(p))}</span>
           ${tallesDisponibles(p) ? `<span class="pcard-talles">Talles ${tallesDisponibles(p)}</span>` : ""}
@@ -1459,7 +1471,7 @@ const WA_NUMBER = "541134435571";
     pdpInfo.innerHTML = `
       <div>
         <span class="spec-label">${p.brand}</span>
-        <h2 class="display text-ink mt-1" style="font-size:clamp(.85rem,3.5vw,1.6rem);line-height:1.15">${p.name}</h2>
+        <h2 class="display text-ink mt-1" style="font-size:clamp(.85rem,3.5vw,1.6rem);line-height:1.15">${nombreSinMarca(p)}</h2>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <span class="badge ${statusClass(p.status)}" style="width:fit-content"><span class="inline-block h-1.5 w-1.5 rounded-full bg-current"></span>${statusLabel(p.status)}</span>
@@ -1828,7 +1840,7 @@ document.addEventListener("keydown", e => { if (!pdpModal.classList.contains("op
     // Title block (brand + name above the gallery)
     document.getElementById("mpdp-title-block").innerHTML = `
       <span class="spec-label">${p.brand}</span>
-      <h2 class="display text-ink mt-0.5" style="font-size:clamp(1.4rem,6vw,2rem);line-height:1.1">${p.name}</h2>
+      <h2 class="display text-ink mt-0.5" style="font-size:clamp(1.4rem,6vw,2rem);line-height:1.1">${nombreSinMarca(p)}</h2>
     `;
 
     const inCart = cart.some(c => c.slug === slug || c.slug.startsWith(slug + '__'));
