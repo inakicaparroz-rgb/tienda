@@ -317,7 +317,7 @@ async function handleMpWebhook(request, env) {
 }
 
 // Mantenimiento: poner en false para volver a abrir la tienda.
-const MANTENIMIENTO = true;
+const MANTENIMIENTO = false;
 // Entrar con ?pase=<esto> deja ver el sitio real y guarda una cookie por 24 h.
 const PASE = "coptime";
 
